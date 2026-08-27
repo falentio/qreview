@@ -130,7 +130,15 @@ export class QrRepository {
     const rows = await this.dependencies.db
       .update(qrCodes)
       .set({ organizationId, claimedById, claimedAt, updatedAt })
-      .where(and(eq(qrCodes.slug, slug), isNull(qrCodes.organizationId), isNull(qrCodes.deletedAt)))
+      .where(
+        and(
+          eq(qrCodes.slug, slug),
+          isNull(qrCodes.organizationId),
+          isNull(qrCodes.claimedById),
+          isNull(qrCodes.claimedAt),
+          isNull(qrCodes.deletedAt),
+        ),
+      )
       .returning()
     return rows[0] ?? null
   }

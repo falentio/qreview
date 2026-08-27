@@ -26,7 +26,13 @@ export const qrCodes = sqliteTable(
   ],
 )
 
+export const qrCodeLegacyContent = sqliteTable("qr_code_legacy_content", {
+  qrCodeId: text("qr_code_id").primaryKey(),
+  content: text("content").notNull(),
+})
+
 export const schema = {
   ...authSchema,
   qrCodes,
+  qrCodeLegacyContent,
 }

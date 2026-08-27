@@ -9,7 +9,12 @@ export type QrErrorCode =
   | "PLACES_UNAVAILABLE"
   | "SLUG_CONFLICT"
 
-export type QrOrpcErrorCode = "BAD_REQUEST" | "FORBIDDEN" | "NOT_FOUND" | "CONFLICT"
+export type QrOrpcErrorCode =
+  | "BAD_REQUEST"
+  | "FORBIDDEN"
+  | "NOT_FOUND"
+  | "CONFLICT"
+  | "SERVICE_UNAVAILABLE"
 
 const orpcCodeForQrError: Record<QrErrorCode, QrOrpcErrorCode> = {
   INVALID_INPUT: "BAD_REQUEST",
@@ -19,7 +24,7 @@ const orpcCodeForQrError: Record<QrErrorCode, QrOrpcErrorCode> = {
   CONFLICT: "CONFLICT",
   ARCHIVED: "CONFLICT",
   PLACE_RESOLUTION_FAILED: "BAD_REQUEST",
-  PLACES_UNAVAILABLE: "BAD_REQUEST",
+  PLACES_UNAVAILABLE: "SERVICE_UNAVAILABLE",
   SLUG_CONFLICT: "CONFLICT",
 }
 

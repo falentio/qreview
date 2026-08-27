@@ -20,7 +20,11 @@ function setup() {
   const repository = mock<QrRepository>()
   const places = mock<PlacesAdapter>()
   const clock = { now: () => new Date("2030-01-01T00:00:00.000Z") }
-  const service = new QrService({ repository, places, clock })
+  const ids = {
+    generateId: () => "generated-id",
+    generateSlug: () => "generated1a",
+  }
+  const service = new QrService({ repository, places, clock, ids })
   repository.getOrganizationMemberRole.mockResolvedValue("owner")
   places.getPlaceDetails.mockResolvedValue(placeDetails)
   return { repository, places, service }
@@ -42,6 +46,10 @@ describe("QrService.create", () => {
     expect(result.configurationState).toBe("active")
     expect(result.ownershipState).toBe("not-orphan")
     expect(repository.create.mock.calls).toHaveLength(1)
+    expect(repository.create.mock.calls[0]?.[0]).toMatchObject({
+      id: "generated-id",
+      slug: "generated1a",
+    })
     expect(repository.create.mock.calls[0]?.[0].target).toEqual({
       rawGoogleMapsUrl: targetUrl,
       googlePlaceId: "ChIJ123456789",
@@ -97,9 +105,44 @@ describe("QrService.createOrphan", () => {
       code: "FORBIDDEN",
     })
   })
+
+  it("preserves an optional preconfigured target on an orphan", async () => {
+    const { repository, service } = setup()
+    repository.create.mockResolvedValue(createQrRecord({ organizationId: null }))
+
+    const result = await service.createOrphan({
+      actor: globalAdmin,
+      alias: "Configured sign",
+      googleMapsUrl: targetUrl,
+      googlePlaceId: "ChIJ123456789",
+    })
+
+    expect(result).toMatchObject({
+      ownershipState: "orphan",
+      configurationState: "active",
+    })
+    expect(repository.create.mock.calls[0]?.[0].target).toEqual({
+      rawGoogleMapsUrl: targetUrl,
+      googlePlaceId: "ChIJ123456789",
+      canonicalReviewUrl: placeDetails.canonicalReviewUrl,
+    })
+  })
 })
 
 describe("QrService authorization", () => {
+  it("accepts owner and admin when Better Auth stores multiple roles", async () => {
+    const { repository, service } = setup()
+    repository.listForOrganization.mockResolvedValue([])
+
+    for (const role of ["member,owner", "member, admin"]) {
+      repository.getOrganizationMemberRole.mockResolvedValue(role)
+
+      await expect(service.list({ actor: owner, organizationId: "org-1" })).resolves.toEqual({
+        items: [],
+      })
+    }
+  })
+
   it("does not let organization members manage QR codes", async () => {
     const { repository, service } = setup()
     repository.getOrganizationMemberRole.mockResolvedValue("member")
@@ -171,6 +214,22 @@ describe("QrService.claim", () => {
     await expect(
       service.claim({ actor: owner, slug: "abc123def4", organizationId: "org-1" }),
     ).rejects.toMatchObject({ code: "CONFLICT" })
+  })
+
+  it("does not reclaim a QR whose organization was deleted", async () => {
+    const { repository, service } = setup()
+    repository.findBySlug.mockResolvedValue(
+      createQrRecord({
+        organizationId: null,
+        claimedById: owner.id,
+        claimedAt: new Date("2030-01-01T00:00:00.000Z"),
+      }),
+    )
+
+    await expect(
+      service.claim({ actor: owner, slug: "abc123def4", organizationId: "org-1" }),
+    ).rejects.toMatchObject({ code: "CONFLICT" })
+    expect(repository.claimBySlug.mock.calls).toHaveLength(0)
   })
 })
 

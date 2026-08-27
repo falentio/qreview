@@ -1,7 +1,6 @@
 import type { PlacesAdapter, PlaceCandidate } from "@/orpc-server/resource/qr/places"
 import { QrDomainError } from "@/orpc-server/resource/qr/errors"
-import { parseGoogleMapsUrl } from "@/orpc-server/resource/qr/url"
-import { generateQrId, generateQrSlug } from "@/orpc-server/resource/qr/random"
+import { isGoogleCanonicalReviewUrl, parseGoogleMapsUrl } from "@/orpc-server/resource/qr/url"
 import type {
   NewQrRecord,
   QrRecord,
@@ -53,7 +52,7 @@ export class QrService {
       >
       places: PlacesAdapter
       clock?: { now(): Date }
-      ids?: { generateId(): string; generateSlug(): string }
+      ids: { generateId(): string; generateSlug(): string }
     },
   ) {}
 
@@ -148,7 +147,7 @@ export class QrService {
     if (!existing) throw this.notFound()
     if (existing.deletedAt)
       throw new QrDomainError("ARCHIVED", "Archived QR codes cannot be claimed.")
-    if (existing.organizationId) {
+    if (existing.organizationId || existing.claimedById || existing.claimedAt) {
       throw new QrDomainError("CONFLICT", "This QR code has already been claimed.")
     }
 
@@ -290,10 +289,11 @@ export class QrService {
   async resolvePublic({ slug }: { slug: string }): Promise<PublicQrResponse> {
     const record = await this.dependencies.repository.findBySlug({ slug })
     if (!record || record.deletedAt) throw this.notFound()
-    if (!record.organizationId || !record.googlePlaceId || !record.canonicalReviewUrl) {
+    const canonicalReviewUrl = record.canonicalReviewUrl
+    if (!isQrReady(record) || !record.organizationId || !canonicalReviewUrl) {
       return { kind: "setup" }
     }
-    return { kind: "redirect", canonicalReviewUrl: record.canonicalReviewUrl }
+    return { kind: "redirect", canonicalReviewUrl }
   }
 
   private async createRecord({
@@ -307,13 +307,12 @@ export class QrService {
     createdById: string
     target?: QrTarget
   }): Promise<QrResponse> {
-    const ids = this.dependencies.ids ?? { generateId: generateQrId, generateSlug: generateQrSlug }
     for (let attempt = 0; attempt < 5; attempt += 1) {
       const now = this.now()
       const input: NewQrRecord = {
-        id: ids.generateId(),
+        id: this.dependencies.ids.generateId(),
         alias,
-        slug: ids.generateSlug(),
+        slug: this.dependencies.ids.generateSlug(),
         organizationId,
         createdById,
         claimedById: null,
@@ -416,7 +415,7 @@ export class QrService {
     organizationId: string
   }) {
     const role = await this.requireMember({ actor, organizationId })
-    if (role !== "owner" && role !== "admin") {
+    if (!role.split(",").some((value) => value.trim() === "owner" || value.trim() === "admin")) {
       throw new QrDomainError("FORBIDDEN", "Organization owner or admin access is required.")
     }
   }
@@ -456,7 +455,7 @@ function toResponse(record: QrRecord): QrResponse {
     alias: record.alias,
     slug: record.slug,
     ownershipState: record.organizationId ? "not-orphan" : "orphan",
-    configurationState: record.googlePlaceId && record.canonicalReviewUrl ? "active" : "incomplete",
+    configurationState: isQrReady(record) ? "active" : "incomplete",
     rawGoogleMapsUrl: record.rawGoogleMapsUrl,
     googlePlaceId: record.googlePlaceId,
     canonicalReviewUrl: record.canonicalReviewUrl,
@@ -468,6 +467,15 @@ function toResponse(record: QrRecord): QrResponse {
     updatedAt: record.updatedAt.toISOString(),
     deletedAt: record.deletedAt?.toISOString() ?? null,
   }
+}
+
+function isQrReady(record: QrRecord): boolean {
+  return Boolean(
+    record.rawGoogleMapsUrl &&
+    record.googlePlaceId &&
+    record.canonicalReviewUrl &&
+    isGoogleCanonicalReviewUrl(record.canonicalReviewUrl),
+  )
 }
 
 function toCandidate(place: PlaceCandidate): PlaceCandidate {

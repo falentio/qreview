@@ -1,17 +1,30 @@
 import { describe, expect, it } from "vite-plus/test"
 import { mock } from "vitest-mock-extended"
 
-import type { QrService } from "@/orpc-server/resource/qr/service"
 import { createQrPublicResponse } from "@/orpc-server/resource/qr/public"
-import { QrDomainError } from "@/orpc-server/resource/qr/errors"
+import type { PlacesAdapter } from "@/orpc-server/resource/qr/places"
+import { createQrRecord } from "@/orpc-server/resource/qr/fixtures"
+import type { QrRecord, QrRepository } from "@/orpc-server/resource/qr/repository"
+import { QrService } from "@/orpc-server/resource/qr/service"
+
+function setup(record: QrRecord | null) {
+  const repository = mock<QrRepository>()
+  const places = mock<PlacesAdapter>()
+  repository.findBySlug.mockResolvedValue(record)
+  const service = new QrService({
+    repository,
+    places,
+    ids: {
+      generateId: () => "generated-id",
+      generateSlug: () => "generated1a",
+    },
+  })
+  return service
+}
 
 describe("createQrPublicResponse", () => {
   it("redirects active QR codes without allowing the redirect to be cached", async () => {
-    const service = mock<QrService>()
-    service.resolvePublic.mockResolvedValue({
-      kind: "redirect",
-      canonicalReviewUrl: "https://search.google.com/local/writereview?placeid=ChIJ123456789",
-    })
+    const service = setup(createQrRecord())
 
     const response = await createQrPublicResponse({ service, slug: "abc123def4" })
 
@@ -23,8 +36,23 @@ describe("createQrPublicResponse", () => {
   })
 
   it("returns a neutral setup response for orphan or incomplete QR codes", async () => {
-    const service = mock<QrService>()
-    service.resolvePublic.mockResolvedValue({ kind: "setup" })
+    for (const record of [
+      createQrRecord({ organizationId: null }),
+      createQrRecord({ rawGoogleMapsUrl: null }),
+    ]) {
+      const service = setup(record)
+
+      const response = await createQrPublicResponse({ service, slug: "abc123def4" })
+
+      expect(response.status).toBe(200)
+      expect(await response.text()).toContain("not configured")
+    }
+  })
+
+  it("does not redirect to an invalid stored canonical URL", async () => {
+    const service = setup(
+      createQrRecord({ canonicalReviewUrl: "https://evil.google.com/not-a-review" }),
+    )
 
     const response = await createQrPublicResponse({ service, slug: "abc123def4" })
 
@@ -33,11 +61,12 @@ describe("createQrPublicResponse", () => {
   })
 
   it("returns 404 for archived or missing QR codes", async () => {
-    const service = mock<QrService>()
-    service.resolvePublic.mockRejectedValue(new QrDomainError("NOT_FOUND", "Missing"))
+    for (const record of [null, createQrRecord({ deletedAt: new Date() })]) {
+      const service = setup(record)
 
-    const response = await createQrPublicResponse({ service, slug: "abc123def4" })
+      const response = await createQrPublicResponse({ service, slug: "abc123def4" })
 
-    expect(response.status).toBe(404)
+      expect(response.status).toBe(404)
+    }
   })
 })

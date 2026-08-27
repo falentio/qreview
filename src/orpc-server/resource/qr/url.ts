@@ -1,6 +1,6 @@
 import { QrDomainError } from "@/orpc-server/resource/qr/errors"
 
-const allowedHosts = new Set(["google.com", "www.google.com", "maps.google.com", "maps.app.goo.gl"])
+const allowedHosts = new Set(["google.com", "www.google.com", "maps.google.com"])
 
 export type ParsedGoogleMapsUrl = {
   rawUrl: string
@@ -58,14 +58,13 @@ export function parseGoogleMapsUrl(rawValue: string): ParsedGoogleMapsUrl {
   }
 
   const hostname = url.hostname.toLowerCase()
-  const isMapsPath = hostname === "google.com" || hostname === "www.google.com"
   if (
     url.protocol !== "https:" ||
     !allowedHosts.has(hostname) ||
     url.username ||
     url.password ||
     url.port ||
-    (isMapsPath && !/^\/maps(?:\/|$)/i.test(url.pathname))
+    !/^\/maps(?:\/|$)/i.test(url.pathname)
   ) {
     throw new QrDomainError("INVALID_GOOGLE_MAPS_URL", "Only HTTPS Google Maps URLs are supported.")
   }
@@ -86,10 +85,23 @@ export function isGoogleCanonicalReviewUrl(value: string): boolean {
   try {
     const url = new URL(value)
     const hostname = url.hostname.toLowerCase()
+    if (url.protocol !== "https:" || url.username || url.password || url.port || url.hash) {
+      return false
+    }
+
+    if (
+      hostname === "search.google.com" &&
+      url.pathname === "/local/writereview" &&
+      url.searchParams.size === 1
+    ) {
+      return isPlaceId(url.searchParams.get("placeid"))
+    }
+
     return (
-      url.protocol === "https:" &&
-      (hostname === "google.com" || hostname.endsWith(".google.com")) &&
-      Boolean(url.pathname)
+      hostname === "www.google.com" &&
+      !url.search &&
+      url.pathname.match(/^\/maps\/place\/\/data=!4m3!3m2!1s0x[0-9a-f]+:0x[0-9a-f]+!12e1$/i) !==
+        null
     )
   } catch {
     return false

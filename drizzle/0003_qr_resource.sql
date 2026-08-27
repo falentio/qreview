@@ -36,10 +36,14 @@ SELECT
 	`id`,
 	CASE WHEN length(trim(`content`)) > 0 THEN substr(trim(`content`), 1, 120) ELSE 'Imported QR code' END,
 	lower(substr(hex(randomblob(5)), 1, 10)),
-	CASE WHEN trim(`content`) LIKE 'https://google.com/maps%'
-		OR trim(`content`) LIKE 'https://www.google.com/maps%'
-		OR trim(`content`) LIKE 'https://maps.google.com/%'
-		THEN trim(`content`) ELSE NULL END,
+	CASE WHEN
+		`normalized_content` = 'https://google.com/maps'
+		OR `normalized_content` GLOB 'https://google.com/maps[/?#]*'
+		OR `normalized_content` = 'https://www.google.com/maps'
+		OR `normalized_content` GLOB 'https://www.google.com/maps[/?#]*'
+		OR `normalized_content` = 'https://maps.google.com/maps'
+		OR `normalized_content` GLOB 'https://maps.google.com/maps[/?#]*'
+	THEN trim(`content`) ELSE NULL END,
 	NULL,
 	NULL,
 	NULL,
@@ -49,7 +53,34 @@ SELECT
 	`created_at`,
 	`created_at`,
 	NULL
-FROM `qr_codes`;
+FROM (
+	SELECT
+		*,
+		lower(trim(`content`)) AS `normalized_content`
+	FROM `qr_codes`
+);
+--> statement-breakpoint
+CREATE TABLE `qr_code_legacy_content` (
+	`qr_code_id` text PRIMARY KEY NOT NULL,
+	`content` text NOT NULL
+);
+--> statement-breakpoint
+INSERT INTO `qr_code_legacy_content` (`qr_code_id`, `content`)
+SELECT `id`, `content`
+FROM (
+	SELECT
+		*,
+		lower(trim(`content`)) AS `normalized_content`
+	FROM `qr_codes`
+)
+WHERE NOT (
+	`normalized_content` = 'https://google.com/maps'
+	OR `normalized_content` GLOB 'https://google.com/maps[/?#]*'
+	OR `normalized_content` = 'https://www.google.com/maps'
+	OR `normalized_content` GLOB 'https://www.google.com/maps[/?#]*'
+	OR `normalized_content` = 'https://maps.google.com/maps'
+	OR `normalized_content` GLOB 'https://maps.google.com/maps[/?#]*'
+);
 --> statement-breakpoint
 DROP TABLE `qr_codes`;
 --> statement-breakpoint
