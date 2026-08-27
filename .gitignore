@@ -8,6 +8,7 @@ worker-configuration.d.ts
 # dependencies
 node_modules/
 .vite-hooks/_/
+.playwright-mcp/
 
 # logs
 pnpm-debug.log*
