@@ -1,4 +1,4 @@
-import { describe, expect, it } from "vitest"
+import { describe, expect, it } from "vite-plus/test"
 import { mock } from "vitest-mock-extended"
 
 import {
@@ -26,9 +26,7 @@ describe("SessionRepository.getCurrentSession", () => {
     const repository = new SessionRepository({ auth })
     const headers = new Headers({ cookie: "session=token" })
 
-    await expect(repository.getCurrentSession({ headers })).resolves.toBe(
-      currentSession,
-    )
+    await expect(repository.getCurrentSession({ headers })).resolves.toBe(currentSession)
     expect(authApi.getSession).toHaveBeenCalledWith({ headers })
   })
 })

@@ -1,10 +1,7 @@
 {
   "name": "",
-  "type": "module",
   "version": "0.0.1",
-  "engines": {
-    "node": ">=22.12.0"
-  },
+  "type": "module",
   "scripts": {
     "dev": "astro dev",
     "build": "astro build",
@@ -15,9 +12,9 @@
     "db:generate": "drizzle-kit generate",
     "db:migrate:local": "wrangler d1 migrations apply qr --local",
     "db:migrate:remote": "wrangler d1 migrations apply qr --remote",
-    "test": "vitest run",
-    "test:watch": "vitest",
-    "typecheck": "tsc --noEmit"
+    "test": "vp test",
+    "test:watch": "vp test watch",
+    "typecheck": "vp check --no-fmt --no-lint"
   },
   "dependencies": {
     "@astrojs/cloudflare": "^14.2.5",
@@ -53,14 +50,31 @@
     "valibot": "^1.4.2",
     "wrangler": "^4.127.0"
   },
-  "allowScripts": {
-    "esbuild": true
-  },
   "devDependencies": {
     "@cloudflare/workers-types": "^5.20260827.1",
     "@types/node": "^26.4.0",
     "auth": "^1.7.2",
     "drizzle-kit": "^0.31.10",
-    "vitest": "^4.1.11"
+    "vite": "npm:@voidzero-dev/vite-plus-core@0.2.9",
+    "vite-plus": "0.2.9",
+    "vitest-mock-extended": "^5.1.1"
+  },
+  "devEngines": {
+    "packageManager": {
+      "name": "pnpm",
+      "version": "11.24.0",
+      "onFail": "download"
+    },
+    "runtime": {
+      "name": "node",
+      "version": "24.20.0",
+      "onFail": "download"
+    }
+  },
+  "engines": {
+    "node": "^22.18.0 || >=24.11.0"
+  },
+  "allowScripts": {
+    "esbuild": true
   }
 }

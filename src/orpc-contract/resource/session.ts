@@ -8,12 +8,10 @@ const user = v.object({
 })
 
 export const sessionContract = {
-  current: oc
-    .input(v.object({}))
-    .output(
-      v.object({
-        user,
-        expiresAt: v.string(),
-      }),
-    ),
+  current: oc.input(v.object({})).output(
+    v.object({
+      user,
+      expiresAt: v.string(),
+    }),
+  ),
 }

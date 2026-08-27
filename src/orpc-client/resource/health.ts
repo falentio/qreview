@@ -4,8 +4,6 @@ import type { ApiContract } from "@/orpc-contract"
 
 export type HealthClient = ContractRouterClient<ApiContract>["health"]
 
-export function createHealthClient(
-  client: ContractRouterClient<ApiContract>,
-): HealthClient {
+export function createHealthClient(client: ContractRouterClient<ApiContract>): HealthClient {
   return client.health
 }

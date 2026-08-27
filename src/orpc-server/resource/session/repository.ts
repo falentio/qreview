@@ -9,11 +9,7 @@ export interface SessionAuth {
 export class SessionRepository {
   constructor(private readonly dependencies: { auth: SessionAuth }) {}
 
-  getCurrentSession({
-    headers,
-  }: {
-    headers: Headers
-  }): Promise<AuthSession | null> {
+  getCurrentSession({ headers }: { headers: Headers }): Promise<AuthSession | null> {
     return this.dependencies.auth.api.getSession({ headers })
   }
 }

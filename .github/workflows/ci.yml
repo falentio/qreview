@@ -1,0 +1,27 @@
+name: CI
+
+on:
+  pull_request:
+  push:
+    branches: [main]
+
+permissions:
+  contents: read
+
+jobs:
+  validate:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v6
+
+      - uses: voidzero-dev/setup-vp@v1.18.0
+        with:
+          version: "0.2.9"
+          cache: true
+          run-install: false
+
+      # Keep CI reproducible while the checked-in lockfile ages past Vite+'s local policy.
+      - run: vp install --frozen-lockfile -- --config.minimum-release-age=0
+      - run: vp run astro-build
+      - run: vp check
+      - run: vp test

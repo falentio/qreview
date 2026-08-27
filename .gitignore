@@ -7,11 +7,9 @@ worker-configuration.d.ts
 
 # dependencies
 node_modules/
+.vite-hooks/_/
 
 # logs
-npm-debug.log*
-yarn-debug.log*
-yarn-error.log*
 pnpm-debug.log*
 
 

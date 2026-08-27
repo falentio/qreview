@@ -1,13 +1,10 @@
 import { call } from "@orpc/server"
-import { describe, expect, it } from "vitest"
+import { describe, expect, it } from "vite-plus/test"
 import { mock } from "vitest-mock-extended"
 
 import type { ApiContext } from "@/orpc-server/context"
 import { createSessionRouter } from "@/orpc-server/resource/session/router"
-import type {
-  AuthSession,
-  SessionRepository,
-} from "@/orpc-server/resource/session/repository"
+import type { AuthSession, SessionRepository } from "@/orpc-server/resource/session/repository"
 import { SessionService } from "@/orpc-server/resource/session/service"
 
 const currentSession = {
@@ -39,9 +36,9 @@ describe("session router current", () => {
       service: context.sessionService,
     })
 
-    await expect(
-      call(sessionRouter.current, {}, { context }),
-    ).rejects.toMatchObject({ code: "UNAUTHORIZED" })
+    await expect(call(sessionRouter.current, {}, { context })).rejects.toMatchObject({
+      code: "UNAUTHORIZED",
+    })
   })
 
   it("returns the current authenticated session", async () => {
@@ -50,9 +47,7 @@ describe("session router current", () => {
       service: context.sessionService,
     })
 
-    await expect(
-      call(sessionRouter.current, {}, { context }),
-    ).resolves.toEqual({
+    await expect(call(sessionRouter.current, {}, { context })).resolves.toEqual({
       user: {
         id: "user-1",
         email: "user@example.com",

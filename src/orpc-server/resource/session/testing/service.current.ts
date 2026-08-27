@@ -1,10 +1,7 @@
-import { describe, expect, it } from "vitest"
+import { describe, expect, it } from "vite-plus/test"
 import { mock } from "vitest-mock-extended"
 
-import type {
-  AuthSession,
-  SessionRepository,
-} from "@/orpc-server/resource/session/repository"
+import type { AuthSession, SessionRepository } from "@/orpc-server/resource/session/repository"
 import { SessionService } from "@/orpc-server/resource/session/service"
 
 const currentSession = {
@@ -25,9 +22,7 @@ describe("SessionService.getCurrentSession", () => {
     const service = new SessionService({ repository })
     const headers = new Headers({ cookie: "session=token" })
 
-    await expect(service.getCurrentSession({ headers })).resolves.toBe(
-      currentSession,
-    )
+    await expect(service.getCurrentSession({ headers })).resolves.toBe(currentSession)
     expect(repository.getCurrentSession).toHaveBeenCalledWith({ headers })
   })
 })

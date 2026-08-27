@@ -53,28 +53,11 @@ export function AuthArtwork() {
           <stop stopColor="#FDE68A" stopOpacity="0.16" />
           <stop offset="1" stopColor="#F472B6" stopOpacity="0.08" />
         </linearGradient>
-        <pattern
-          id="auth-artwork-grid"
-          width="32"
-          height="32"
-          patternUnits="userSpaceOnUse"
-        >
+        <pattern id="auth-artwork-grid" width="32" height="32" patternUnits="userSpaceOnUse">
           <path d="M32 0H0V32" stroke="#FFFFFF" strokeOpacity="0.08" />
         </pattern>
-        <filter
-          id="auth-artwork-shadow"
-          x="-40%"
-          y="-40%"
-          width="180%"
-          height="180%"
-        >
-          <feDropShadow
-            dx="0"
-            dy="18"
-            stdDeviation="16"
-            floodColor="#020617"
-            floodOpacity="0.28"
-          />
+        <filter id="auth-artwork-shadow" x="-40%" y="-40%" width="180%" height="180%">
+          <feDropShadow dx="0" dy="18" stdDeviation="16" floodColor="#020617" floodOpacity="0.28" />
         </filter>
       </defs>
 
@@ -144,31 +127,12 @@ export function AuthArtwork() {
       </g>
 
       <g opacity="0.8">
-        <path
-          d="M116 226L130 240L116 254L102 240L116 226Z"
-          fill="#FDE68A"
-        />
-        <path
-          d="M438 370L452 384L438 398L424 384L438 370Z"
-          fill="#A7F3D0"
-        />
-        <path
-          d="M436 188V220M420 204H452"
-          stroke="#E0F2FE"
-          strokeOpacity="0.7"
-          strokeWidth="2"
-        />
+        <path d="M116 226L130 240L116 254L102 240L116 226Z" fill="#FDE68A" />
+        <path d="M438 370L452 384L438 398L424 384L438 370Z" fill="#A7F3D0" />
+        <path d="M436 188V220M420 204H452" stroke="#E0F2FE" strokeOpacity="0.7" strokeWidth="2" />
       </g>
 
-      <rect
-        x="24"
-        y="24"
-        width="512"
-        height="592"
-        rx="28"
-        stroke="#FFFFFF"
-        strokeOpacity="0.18"
-      />
+      <rect x="24" y="24" width="512" height="592" rx="28" stroke="#FFFFFF" strokeOpacity="0.18" />
     </svg>
   )
 }

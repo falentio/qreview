@@ -10,8 +10,7 @@ const link = new RPCLink({
   url: () => new URL("/rpc", window.location.origin),
 })
 
-export const rpcClient: ContractRouterClient<ApiContract> =
-  createORPCClient(link)
+export const rpcClient: ContractRouterClient<ApiContract> = createORPCClient(link)
 
 export const healthClient = createHealthClient(rpcClient)
 export const sessionClient = createSessionClient(rpcClient)

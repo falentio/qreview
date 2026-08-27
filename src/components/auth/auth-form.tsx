@@ -58,13 +58,9 @@ export function AuthForm({ className, mode, ...props }: AuthFormProps) {
   const [isPending, setIsPending] = useState(false)
   const isLogin = mode === "login"
   const formTitle = isLogin ? "Welcome back" : "Create your account"
-  const formDescription = isLogin
-    ? "Log in to your QR account"
-    : "Sign up to start using QR"
+  const formDescription = isLogin ? "Log in to your QR account" : "Sign up to start using QR"
   const submitLabel = isLogin ? "Log in" : "Create account"
-  const switchDescription = isLogin
-    ? "Don't have an account?"
-    : "Already have an account?"
+  const switchDescription = isLogin ? "Don't have an account?" : "Already have an account?"
   const switchLabel = isLogin ? "Sign up" : "Log in"
   const switchHref = isLogin ? "/signup" : "/login"
 
@@ -123,9 +119,7 @@ export function AuthForm({ className, mode, ...props }: AuthFormProps) {
             <FieldGroup>
               <div className="flex flex-col items-center gap-2 text-center">
                 <h1 className="text-2xl font-bold">{formTitle}</h1>
-                <p className="text-balance text-muted-foreground">
-                  {formDescription}
-                </p>
+                <p className="text-balance text-muted-foreground">{formDescription}</p>
               </div>
 
               {!isLogin && (
@@ -158,10 +152,7 @@ export function AuthForm({ className, mode, ...props }: AuthFormProps) {
                 <div className="flex items-center">
                   <FieldLabel htmlFor="password">Password</FieldLabel>
                   {isLogin && (
-                    <a
-                      href="#"
-                      className="ml-auto text-sm underline-offset-2 hover:underline"
-                    >
+                    <a href="#" className="ml-auto text-sm underline-offset-2 hover:underline">
                       Forgot your password?
                     </a>
                   )}
@@ -177,9 +168,7 @@ export function AuthForm({ className, mode, ...props }: AuthFormProps) {
 
               {!isLogin && (
                 <Field>
-                  <FieldLabel htmlFor="confirm-password">
-                    Confirm password
-                  </FieldLabel>
+                  <FieldLabel htmlFor="confirm-password">Confirm password</FieldLabel>
                   <Input
                     id="confirm-password"
                     name="confirmPassword"
@@ -207,29 +196,22 @@ export function AuthForm({ className, mode, ...props }: AuthFormProps) {
               </FieldSeparator>
 
               <Field className="grid grid-cols-3 gap-4">
-                  <Button variant="outline" type="button" disabled>
+                <Button variant="outline" type="button" disabled>
                   <AppleIcon />
-                  <span className="sr-only">
-                    Continue with Apple
-                  </span>
+                  <span className="sr-only">Continue with Apple</span>
                 </Button>
-                  <Button variant="outline" type="button" disabled>
+                <Button variant="outline" type="button" disabled>
                   <GoogleIcon />
-                  <span className="sr-only">
-                    Continue with Google
-                  </span>
+                  <span className="sr-only">Continue with Google</span>
                 </Button>
-                  <Button variant="outline" type="button" disabled>
+                <Button variant="outline" type="button" disabled>
                   <MetaIcon />
-                  <span className="sr-only">
-                    Continue with Meta
-                  </span>
+                  <span className="sr-only">Continue with Meta</span>
                 </Button>
               </Field>
 
               <FieldDescription className="text-center">
-                {switchDescription} {" "}
-                <a href={switchHref}>{switchLabel}</a>
+                {switchDescription} <a href={switchHref}>{switchLabel}</a>
               </FieldDescription>
             </FieldGroup>
           </form>
@@ -241,8 +223,7 @@ export function AuthForm({ className, mode, ...props }: AuthFormProps) {
       </Card>
 
       <FieldDescription className="px-6 text-center">
-        By continuing, you agree to our {" "}
-        <a href="#">Terms of Service</a> and {" "}
+        By continuing, you agree to our <a href="#">Terms of Service</a> and{" "}
         <a href="#">Privacy Policy</a>.
       </FieldDescription>
     </div>

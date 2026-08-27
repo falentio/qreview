@@ -1,4 +1,4 @@
-import { describe, expect, it } from "vitest"
+import { describe, expect, it } from "vite-plus/test"
 import { mock } from "vitest-mock-extended"
 
 import { HealthService } from "@/orpc-server/resource/health/service"

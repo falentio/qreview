@@ -1,7 +1,4 @@
-import type {
-  AuthSession,
-  SessionRepository,
-} from "@/orpc-server/resource/session/repository"
+import type { AuthSession, SessionRepository } from "@/orpc-server/resource/session/repository"
 
 export type CurrentSessionResponse = {
   user: {
@@ -19,17 +16,11 @@ export class SessionService {
     },
   ) {}
 
-  getCurrentSession({
-    headers,
-  }: {
-    headers: Headers
-  }): Promise<AuthSession | null> {
+  getCurrentSession({ headers }: { headers: Headers }): Promise<AuthSession | null> {
     return this.dependencies.repository.getCurrentSession({ headers })
   }
 
-  toCurrentSessionResponse(
-    session: AuthSession,
-  ): CurrentSessionResponse {
+  toCurrentSessionResponse(session: AuthSession): CurrentSessionResponse {
     return {
       user: {
         id: session.user.id,
