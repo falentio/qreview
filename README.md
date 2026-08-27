@@ -1,43 +1,34 @@
-# Astro Starter Kit: Minimal
+# QR
 
-```sh
-pnpm create astro@latest -- --template minimal
-```
+QR is an Astro application running on Cloudflare Workers. It uses Cloudflare
+D1 with Drizzle ORM, Better Auth, and oRPC.
 
-> 🧑‍🚀 **Seasoned astronaut?** Delete this file. Have fun!
+## Local Setup
 
-## 🚀 Project Structure
+1. Install dependencies with `pnpm install`.
+2. Create a local `.dev.vars` file from `.dev.vars.example`.
+3. Replace the D1 placeholder in `wrangler.jsonc` with the ID from
+   `wrangler d1 create qr` before using a remote database.
+4. Generate Worker types with `pnpm generate-types`.
+5. Generate the Better Auth schema with `pnpm auth:generate`.
+6. Generate Drizzle migrations with `pnpm db:generate`.
+7. Apply local migrations with `pnpm db:migrate:local`.
 
-Inside of your Astro project, you'll see the following folders and files:
+## Commands
 
-```text
-/
-├── public/
-├── src/
-│   └── pages/
-│       └── index.astro
-└── package.json
-```
+| Command | Action |
+| --- | --- |
+| `pnpm dev` | Start the local Worker dev server |
+| `pnpm build` | Build the application |
+| `pnpm typecheck` | Run TypeScript validation |
+| `pnpm test` | Run the test suite |
+| `pnpm auth:generate` | Generate Better Auth's Drizzle schema |
+| `pnpm db:generate` | Generate Drizzle SQL migrations |
+| `pnpm db:migrate:local` | Apply migrations to local D1 |
+| `pnpm db:migrate:remote` | Apply migrations to remote D1 |
 
-Astro looks for `.astro` or `.md` files in the `src/pages/` directory. Each page is exposed as a route based on its file name.
+## Integration Endpoints
 
-There's nothing special about `src/components/`, but that's where we like to put any Astro/React/Vue/Svelte/Preact components.
-
-Any static assets, like images, can be placed in the `public/` directory.
-
-## 🧞 Commands
-
-All commands are run from the root of the project, from a terminal:
-
-| Command                   | Action                                           |
-| :------------------------ | :----------------------------------------------- |
-| `pnpm install`             | Installs dependencies                            |
-| `pnpm dev`             | Starts local dev server at `localhost:4321`      |
-| `pnpm build`           | Build your production site to `./dist/`          |
-| `pnpm preview`         | Preview your build locally, before deploying     |
-| `pnpm astro ...`       | Run CLI commands like `astro add`, `astro check` |
-| `pnpm astro -- --help` | Get help using the Astro CLI                     |
-
-## 👀 Want to learn more?
-
-Feel free to check [our documentation](https://docs.astro.build) or jump into our [Discord server](https://astro.build/chat).
+- Better Auth: `/api/auth/*`
+- oRPC: `/rpc/*`
+- Protected example page: `/dashboard`

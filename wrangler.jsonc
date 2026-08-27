@@ -8,6 +8,15 @@
     "directory": "./dist",
     "binding": "ASSETS",
   },
+  "d1_databases": [
+    {
+      "binding": "DB",
+      "database_name": "qr",
+      // Replace this local placeholder with the ID from `wrangler d1 create qr`.
+      "database_id": "00000000-0000-0000-0000-000000000000",
+      "migrations_dir": "./drizzle",
+    },
+  ],
   "observability": {
     "enabled": true,
   },
