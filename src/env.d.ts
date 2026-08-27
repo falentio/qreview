@@ -3,12 +3,14 @@
 interface Env {
   BETTER_AUTH_SECRET: string
   BETTER_AUTH_URL: string
+  GOOGLE_MAPS_API_KEY: string
 }
 
 declare namespace Cloudflare {
   interface Env {
     BETTER_AUTH_SECRET: string
     BETTER_AUTH_URL: string
+    GOOGLE_MAPS_API_KEY: string
   }
 }
 
