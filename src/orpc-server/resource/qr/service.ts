@@ -1,6 +1,10 @@
 import type { PlacesAdapter, PlaceCandidate } from "@/orpc-server/resource/qr/places"
 import { QrDomainError } from "@/orpc-server/resource/qr/errors"
-import { isGoogleCanonicalReviewUrl, parseGoogleMapsUrl } from "@/orpc-server/resource/qr/url"
+import {
+  isGoogleCanonicalReviewUrlForPlace,
+  isGooglePlaceId,
+  parseGoogleMapsUrl,
+} from "@/orpc-server/resource/qr/url"
 import type {
   NewQrRecord,
   QrRecord,
@@ -201,9 +205,7 @@ export class QrService {
       : await this.dependencies.repository.findBySlug({ slug: slug as string })
     if (!record) throw this.notFound()
 
-    const canRead =
-      record.organizationId === organizationId || (slug !== undefined && !record.organizationId)
-    if (!canRead) throw this.notFound()
+    if (record.organizationId !== organizationId) throw this.notFound()
     return toResponse(record)
   }
 
@@ -357,7 +359,7 @@ export class QrService {
     googleMapsUrl: string
     googlePlaceId: string
   }): Promise<QrTarget> {
-    if (!/^[A-Za-z0-9_-]{10,}$/.test(googlePlaceId)) {
+    if (!isGooglePlaceId(googlePlaceId)) {
       throw new QrDomainError("PLACE_RESOLUTION_FAILED", "The Google Place ID is invalid.")
     }
     const parsed = parseGoogleMapsUrl(googleMapsUrl)
@@ -385,6 +387,12 @@ export class QrService {
     }
 
     const details = await this.dependencies.places.getPlaceDetails({ placeId: googlePlaceId })
+    if (!isGoogleCanonicalReviewUrlForPlace(details.canonicalReviewUrl, googlePlaceId)) {
+      throw new QrDomainError(
+        "PLACE_RESOLUTION_FAILED",
+        "Google Places returned no canonical review URL for that location.",
+      )
+    }
     return {
       rawGoogleMapsUrl: parsed.rawUrl,
       googlePlaceId,
@@ -473,8 +481,9 @@ function isQrReady(record: QrRecord): boolean {
   return Boolean(
     record.rawGoogleMapsUrl &&
     record.googlePlaceId &&
+    isGooglePlaceId(record.googlePlaceId) &&
     record.canonicalReviewUrl &&
-    isGoogleCanonicalReviewUrl(record.canonicalReviewUrl),
+    isGoogleCanonicalReviewUrlForPlace(record.canonicalReviewUrl, record.googlePlaceId),
   )
 }
 

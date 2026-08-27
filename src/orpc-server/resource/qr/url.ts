@@ -8,21 +8,21 @@ export type ParsedGoogleMapsUrl = {
   query: string | null
 }
 
-function isPlaceId(value: string | null): value is string {
-  return value !== null && /^[A-Za-z0-9_-]{10,}$/.test(value)
+export function isGooglePlaceId(value: unknown): value is string {
+  return typeof value === "string" && /^[A-Za-z0-9_-]{10,}$/.test(value)
 }
 
 function findPlaceId(url: URL): string | null {
   const queryPlaceId = url.searchParams.get("query_place_id") ?? url.searchParams.get("place_id")
-  if (isPlaceId(queryPlaceId)) return queryPlaceId
+  if (isGooglePlaceId(queryPlaceId)) return queryPlaceId
 
   const decodedUrl = decodeUrlPart(url.href)
   const dataPlaceId = decodedUrl.match(/(?:!1s|place_id:)([A-Za-z0-9_-]{10,})/i)?.[1] ?? null
-  if (isPlaceId(dataPlaceId)) return dataPlaceId
+  if (isGooglePlaceId(dataPlaceId)) return dataPlaceId
 
   const pathPlaceId =
     decodeUrlPart(url.pathname).match(/\/place\/(ChI[A-Za-z0-9_-]{8,})(?:\/|$)/)?.[1] ?? null
-  return isPlaceId(pathPlaceId) ? pathPlaceId : null
+  return isGooglePlaceId(pathPlaceId) ? pathPlaceId : null
 }
 
 function findQuery(url: URL, placeId: string | null): string | null {
@@ -94,7 +94,7 @@ export function isGoogleCanonicalReviewUrl(value: string): boolean {
       url.pathname === "/local/writereview" &&
       url.searchParams.size === 1
     ) {
-      return isPlaceId(url.searchParams.get("placeid"))
+      return isGooglePlaceId(url.searchParams.get("placeid"))
     }
 
     return (
@@ -103,6 +103,18 @@ export function isGoogleCanonicalReviewUrl(value: string): boolean {
       url.pathname.match(/^\/maps\/place\/\/data=!4m3!3m2!1s0x[0-9a-f]+:0x[0-9a-f]+!12e1$/i) !==
         null
     )
+  } catch {
+    return false
+  }
+}
+
+export function isGoogleCanonicalReviewUrlForPlace(value: string, placeId: string): boolean {
+  if (!isGoogleCanonicalReviewUrl(value)) return false
+
+  try {
+    const url = new URL(value)
+    if (url.hostname.toLowerCase() !== "search.google.com") return true
+    return url.searchParams.get("placeid") === placeId
   } catch {
     return false
   }

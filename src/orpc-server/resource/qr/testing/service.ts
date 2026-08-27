@@ -154,6 +154,17 @@ describe("QrService authorization", () => {
   })
 })
 
+describe("QrService.get", () => {
+  it("does not expose orphan metadata to an organization admin", async () => {
+    const { repository, service } = setup()
+    repository.findBySlug.mockResolvedValue(createQrRecord({ organizationId: null }))
+
+    await expect(
+      service.get({ actor: owner, organizationId: "org-1", slug: "abc123def4" }),
+    ).rejects.toMatchObject({ code: "NOT_FOUND" })
+  })
+})
+
 describe("QrService target resolution", () => {
   it("does not mutate an existing QR code when Places resolution fails", async () => {
     const { repository, places, service } = setup()
@@ -172,6 +183,25 @@ describe("QrService target resolution", () => {
       }),
     ).rejects.toMatchObject({ code: "PLACE_RESOLUTION_FAILED" })
     expect(repository.updateById.mock.calls).toHaveLength(0)
+  })
+
+  it("does not persist a canonical URL for a different Place ID", async () => {
+    const { repository, places, service } = setup()
+    places.getPlaceDetails.mockResolvedValue({
+      ...placeDetails,
+      canonicalReviewUrl: "https://search.google.com/local/writereview?placeid=ChIJ987654321",
+    })
+
+    await expect(
+      service.create({
+        actor: owner,
+        organizationId: "org-1",
+        alias: "Example location",
+        googleMapsUrl: targetUrl,
+        googlePlaceId: "ChIJ123456789",
+      }),
+    ).rejects.toMatchObject({ code: "PLACE_RESOLUTION_FAILED" })
+    expect(repository.create.mock.calls).toHaveLength(0)
   })
 })
 

@@ -67,20 +67,7 @@ CREATE TABLE `qr_code_legacy_content` (
 --> statement-breakpoint
 INSERT INTO `qr_code_legacy_content` (`qr_code_id`, `content`)
 SELECT `id`, `content`
-FROM (
-	SELECT
-		*,
-		lower(trim(`content`)) AS `normalized_content`
-	FROM `qr_codes`
-)
-WHERE NOT (
-	`normalized_content` = 'https://google.com/maps'
-	OR `normalized_content` GLOB 'https://google.com/maps[/?#]*'
-	OR `normalized_content` = 'https://www.google.com/maps'
-	OR `normalized_content` GLOB 'https://www.google.com/maps[/?#]*'
-	OR `normalized_content` = 'https://maps.google.com/maps'
-	OR `normalized_content` GLOB 'https://maps.google.com/maps[/?#]*'
-);
+FROM `qr_codes`;
 --> statement-breakpoint
 DROP TABLE `qr_codes`;
 --> statement-breakpoint

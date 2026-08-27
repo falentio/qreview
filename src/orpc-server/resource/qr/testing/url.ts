@@ -1,7 +1,11 @@
 import { describe, expect, it } from "vite-plus/test"
 
 import { QrDomainError } from "@/orpc-server/resource/qr/errors"
-import { isGoogleCanonicalReviewUrl, parseGoogleMapsUrl } from "@/orpc-server/resource/qr/url"
+import {
+  isGoogleCanonicalReviewUrl,
+  isGoogleCanonicalReviewUrlForPlace,
+  parseGoogleMapsUrl,
+} from "@/orpc-server/resource/qr/url"
 
 describe("parseGoogleMapsUrl", () => {
   it("accepts supported HTTPS Google Maps URLs and extracts a place ID", () => {
@@ -52,5 +56,37 @@ describe("isGoogleCanonicalReviewUrl", () => {
     ]) {
       expect(isGoogleCanonicalReviewUrl(value)).toBe(false)
     }
+  })
+})
+
+describe("isGoogleCanonicalReviewUrlForPlace", () => {
+  it("requires the place ID on review URLs that carry one", () => {
+    expect(
+      isGoogleCanonicalReviewUrlForPlace(
+        "https://search.google.com/local/writereview?placeid=ChIJ123456789",
+        "ChIJ123456789",
+      ),
+    ).toBe(true)
+    expect(
+      isGoogleCanonicalReviewUrlForPlace(
+        "https://search.google.com/local/writereview?placeid=ChIJ123456789",
+        "ChIJ987654321",
+      ),
+    ).toBe(false)
+  })
+
+  it("keeps the other strict Google review URL form allowlisted", () => {
+    expect(
+      isGoogleCanonicalReviewUrlForPlace(
+        "https://www.google.com/maps/place//data=!4m3!3m2!1s0x808f778c55555555:0xa4f25c571acded3f!12e1",
+        "ChIJ123456789",
+      ),
+    ).toBe(true)
+    expect(
+      isGoogleCanonicalReviewUrlForPlace(
+        "https://search.google.com/local/writereview?placeid=ChIJ123456789&hl=en",
+        "ChIJ123456789",
+      ),
+    ).toBe(false)
   })
 })

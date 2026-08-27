@@ -1,7 +1,7 @@
 import { describe, expect, it } from "vite-plus/test"
 import { mock } from "vitest-mock-extended"
 
-import { createQrPublicResponse } from "@/orpc-server/resource/qr/public"
+import { createQrNotFoundResponse, createQrPublicResponse } from "@/orpc-server/resource/qr/public"
 import type { PlacesAdapter } from "@/orpc-server/resource/qr/places"
 import { createQrRecord } from "@/orpc-server/resource/qr/fixtures"
 import type { QrRecord, QrRepository } from "@/orpc-server/resource/qr/repository"
@@ -50,14 +50,17 @@ describe("createQrPublicResponse", () => {
   })
 
   it("does not redirect to an invalid stored canonical URL", async () => {
-    const service = setup(
-      createQrRecord({ canonicalReviewUrl: "https://evil.google.com/not-a-review" }),
-    )
+    for (const canonicalReviewUrl of [
+      "https://evil.google.com/not-a-review",
+      "https://search.google.com/local/writereview?placeid=ChIJ987654321",
+    ]) {
+      const service = setup(createQrRecord({ canonicalReviewUrl }))
 
-    const response = await createQrPublicResponse({ service, slug: "abc123def4" })
+      const response = await createQrPublicResponse({ service, slug: "abc123def4" })
 
-    expect(response.status).toBe(200)
-    expect(await response.text()).toContain("not configured")
+      expect(response.status).toBe(200)
+      expect(await response.text()).toContain("not configured")
+    }
   })
 
   it("returns 404 for archived or missing QR codes", async () => {
@@ -67,6 +70,14 @@ describe("createQrPublicResponse", () => {
       const response = await createQrPublicResponse({ service, slug: "abc123def4" })
 
       expect(response.status).toBe(404)
+      expect(response.headers.get("Cache-Control")).toBe("no-store")
     }
+  })
+
+  it("creates a cache-resistant 404 for a missing route slug", () => {
+    const response = createQrNotFoundResponse()
+
+    expect(response.status).toBe(404)
+    expect(response.headers.get("Cache-Control")).toBe("no-store")
   })
 })

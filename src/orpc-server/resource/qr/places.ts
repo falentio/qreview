@@ -1,5 +1,5 @@
 import { QrDomainError } from "@/orpc-server/resource/qr/errors"
-import { isGoogleCanonicalReviewUrl } from "@/orpc-server/resource/qr/url"
+import { isGoogleCanonicalReviewUrlForPlace, isGooglePlaceId } from "@/orpc-server/resource/qr/url"
 
 export type PlaceCandidate = {
   placeId: string
@@ -31,7 +31,7 @@ function candidateFromJson(value: unknown): PlaceCandidate | null {
 
   const placeId = stringValue(value.id)
   const displayName = isJsonObject(value.displayName) ? stringValue(value.displayName.text) : null
-  if (!placeId || !displayName) return null
+  if (!isGooglePlaceId(placeId) || !displayName) return null
 
   return {
     placeId,
@@ -60,10 +60,7 @@ export class GooglePlacesAdapter implements PlacesAdapter {
     })
 
     if (!response.ok) {
-      throw new QrDomainError(
-        "PLACE_RESOLUTION_FAILED",
-        "Google Places could not resolve that location.",
-      )
+      throwForResponse(response.status, "Google Places could not resolve that location.")
     }
 
     const body = await readJson(response)
@@ -75,6 +72,10 @@ export class GooglePlacesAdapter implements PlacesAdapter {
   }
 
   async getPlaceDetails({ placeId }: { placeId: string }): Promise<PlaceDetails> {
+    if (!isGooglePlaceId(placeId)) {
+      throw new QrDomainError("PLACE_RESOLUTION_FAILED", "The Google Place ID is invalid.")
+    }
+
     const response = await this.request(
       `https://places.googleapis.com/v1/places/${encodeURIComponent(placeId)}`,
       {
@@ -87,10 +88,7 @@ export class GooglePlacesAdapter implements PlacesAdapter {
     )
 
     if (!response.ok) {
-      throw new QrDomainError(
-        "PLACE_RESOLUTION_FAILED",
-        "Google Places could not confirm that location.",
-      )
+      throwForResponse(response.status, "Google Places could not confirm that location.")
     }
 
     const body = await readJson(response)
@@ -102,7 +100,7 @@ export class GooglePlacesAdapter implements PlacesAdapter {
       !candidate ||
       candidate.placeId !== placeId ||
       !canonicalReviewUrl ||
-      !isGoogleCanonicalReviewUrl(canonicalReviewUrl)
+      !isGoogleCanonicalReviewUrlForPlace(canonicalReviewUrl, placeId)
     ) {
       throw new QrDomainError(
         "PLACE_RESOLUTION_FAILED",
@@ -113,32 +111,38 @@ export class GooglePlacesAdapter implements PlacesAdapter {
     return { ...candidate, canonicalReviewUrl }
   }
 
-  private request(input: RequestInfo | URL, init: RequestInit): Promise<Response> {
-    if (!this.dependencies.apiKey) {
+  private async request(input: RequestInfo | URL, init: RequestInit): Promise<Response> {
+    if (!this.dependencies.apiKey?.trim()) {
       throw new QrDomainError(
         "PLACES_UNAVAILABLE",
         "Google Places is not configured on this server.",
       )
     }
 
-    return (this.dependencies.fetcher ?? fetch)(input, init).catch((error: unknown) => {
+    try {
+      return await (this.dependencies.fetcher ?? fetch)(input, init)
+    } catch (error: unknown) {
       throw new QrDomainError("PLACES_UNAVAILABLE", "Google Places is unavailable.", {
         cause: error,
       })
-    })
+    }
   }
+}
+
+function throwForResponse(status: number, message: string): never {
+  if (status === 401 || status === 403 || status === 408 || status === 429 || status >= 500) {
+    throw new QrDomainError("PLACES_UNAVAILABLE", "Google Places is unavailable.")
+  }
+
+  throw new QrDomainError("PLACE_RESOLUTION_FAILED", message)
 }
 
 async function readJson(response: Response): Promise<unknown> {
   try {
     return await response.json()
   } catch (error) {
-    throw new QrDomainError(
-      "PLACE_RESOLUTION_FAILED",
-      "Google Places returned an invalid response.",
-      {
-        cause: error,
-      },
-    )
+    throw new QrDomainError("PLACES_UNAVAILABLE", "Google Places returned an invalid response.", {
+      cause: error,
+    })
   }
 }
