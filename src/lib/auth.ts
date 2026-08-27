@@ -1,5 +1,6 @@
 import { drizzleAdapter } from "@better-auth/drizzle-adapter"
 import { betterAuth } from "better-auth/minimal"
+import { admin, organization } from "better-auth/plugins"
 import { env } from "cloudflare:workers"
 
 import { createDb } from "@/db/client"
@@ -17,4 +18,5 @@ export const auth = betterAuth({
   emailAndPassword: {
     enabled: true,
   },
+  plugins: [organization(), admin()],
 })
