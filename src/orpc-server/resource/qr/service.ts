@@ -21,6 +21,7 @@ export type QrResponse = {
   id: string
   alias: string
   slug: string
+  claimable: boolean
   ownershipState: "orphan" | "not-orphan"
   configurationState: "incomplete" | "active"
   rawGoogleMapsUrl: string | null
@@ -151,7 +152,12 @@ export class QrService {
     if (!existing) throw this.notFound()
     if (existing.deletedAt)
       throw new QrDomainError("ARCHIVED", "Archived QR codes cannot be claimed.")
-    if (existing.organizationId || existing.claimedById || existing.claimedAt) {
+    if (
+      !existing.claimable ||
+      existing.organizationId ||
+      existing.claimedById ||
+      existing.claimedAt
+    ) {
       throw new QrDomainError("CONFLICT", "This QR code has already been claimed.")
     }
 
@@ -200,9 +206,10 @@ export class QrService {
       throw new QrDomainError("INVALID_INPUT", "Provide exactly one QR id or slug.")
     }
 
-    const record = id
-      ? await this.dependencies.repository.findById({ id })
-      : await this.dependencies.repository.findBySlug({ slug: slug as string })
+    const record =
+      id !== undefined
+        ? await this.dependencies.repository.findById({ id })
+        : await this.dependencies.repository.findBySlug({ slug: slug as string })
     if (!record) throw this.notFound()
 
     if (record.organizationId !== organizationId) throw this.notFound()
@@ -319,6 +326,7 @@ export class QrService {
         createdById,
         claimedById: null,
         claimedAt: null,
+        claimable: organizationId === null,
         createdAt: now,
         updatedAt: now,
         deletedAt: null,
@@ -462,6 +470,7 @@ function toResponse(record: QrRecord): QrResponse {
     id: record.id,
     alias: record.alias,
     slug: record.slug,
+    claimable: record.claimable,
     ownershipState: record.organizationId ? "not-orphan" : "orphan",
     configurationState: isQrReady(record) ? "active" : "incomplete",
     rawGoogleMapsUrl: record.rawGoogleMapsUrl,
@@ -478,13 +487,22 @@ function toResponse(record: QrRecord): QrResponse {
 }
 
 function isQrReady(record: QrRecord): boolean {
-  return Boolean(
-    record.rawGoogleMapsUrl &&
-    record.googlePlaceId &&
-    isGooglePlaceId(record.googlePlaceId) &&
-    record.canonicalReviewUrl &&
-    isGoogleCanonicalReviewUrlForPlace(record.canonicalReviewUrl, record.googlePlaceId),
-  )
+  if (
+    !record.rawGoogleMapsUrl ||
+    !record.googlePlaceId ||
+    !isGooglePlaceId(record.googlePlaceId) ||
+    !record.canonicalReviewUrl ||
+    !isGoogleCanonicalReviewUrlForPlace(record.canonicalReviewUrl, record.googlePlaceId)
+  ) {
+    return false
+  }
+
+  try {
+    const parsed = parseGoogleMapsUrl(record.rawGoogleMapsUrl)
+    return parsed.placeId === null || parsed.placeId === record.googlePlaceId
+  } catch {
+    return false
+  }
 }
 
 function toCandidate(place: PlaceCandidate): PlaceCandidate {

@@ -4,6 +4,8 @@ import { QrDomainError } from "@/orpc-server/resource/qr/errors"
 import {
   isGoogleCanonicalReviewUrl,
   isGoogleCanonicalReviewUrlForPlace,
+  MAX_GOOGLE_MAPS_QUERY_LENGTH,
+  MAX_GOOGLE_MAPS_URL_LENGTH,
   parseGoogleMapsUrl,
 } from "@/orpc-server/resource/qr/url"
 
@@ -31,6 +33,19 @@ describe("parseGoogleMapsUrl", () => {
     ]) {
       expect(() => parseGoogleMapsUrl(value)).toThrow(QrDomainError)
     }
+  })
+
+  it("rejects oversized URLs and place queries", () => {
+    expect(() =>
+      parseGoogleMapsUrl(
+        `https://www.google.com/maps/search/?query=${"x".repeat(MAX_GOOGLE_MAPS_URL_LENGTH)}`,
+      ),
+    ).toThrow(QrDomainError)
+    expect(() =>
+      parseGoogleMapsUrl(
+        `https://www.google.com/maps/search/?query=${"x".repeat(MAX_GOOGLE_MAPS_QUERY_LENGTH + 1)}`,
+      ),
+    ).toThrow(QrDomainError)
   })
 })
 

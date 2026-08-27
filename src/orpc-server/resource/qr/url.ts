@@ -1,6 +1,8 @@
 import { QrDomainError } from "@/orpc-server/resource/qr/errors"
 
 const allowedHosts = new Set(["google.com", "www.google.com", "maps.google.com"])
+export const MAX_GOOGLE_MAPS_URL_LENGTH = 2048
+export const MAX_GOOGLE_MAPS_QUERY_LENGTH = 200
 
 export type ParsedGoogleMapsUrl = {
   rawUrl: string
@@ -27,14 +29,22 @@ function findPlaceId(url: URL): string | null {
 
 function findQuery(url: URL, placeId: string | null): string | null {
   const query = url.searchParams.get("query") ?? url.searchParams.get("q")
-  if (query?.trim()) return query.trim()
+  const normalizedQuery = query?.trim()
+  if (normalizedQuery) return boundedQuery(normalizedQuery)
 
   const path = decodeUrlPart(url.pathname)
   const placePath = path.match(/\/maps\/(?:place|search)\/([^/]+)/i)?.[1]
   if (!placePath || placePath === placeId) return null
 
   const readablePath = placePath.replace(/\+/g, " ").replace(/,@.*$/, "").trim()
-  return readablePath || null
+  return readablePath ? boundedQuery(readablePath) : null
+}
+
+function boundedQuery(value: string): string {
+  if (value.length > MAX_GOOGLE_MAPS_QUERY_LENGTH) {
+    throw new QrDomainError("INVALID_GOOGLE_MAPS_URL", "The Google Maps place query is too long.")
+  }
+  return value
 }
 
 function decodeUrlPart(value: string): string {
@@ -47,6 +57,9 @@ function decodeUrlPart(value: string): string {
 
 export function parseGoogleMapsUrl(rawValue: string): ParsedGoogleMapsUrl {
   const rawUrl = rawValue.trim()
+  if (rawUrl.length > MAX_GOOGLE_MAPS_URL_LENGTH) {
+    throw new QrDomainError("INVALID_GOOGLE_MAPS_URL", "The Google Maps URL is too long.")
+  }
   let url: URL
 
   try {

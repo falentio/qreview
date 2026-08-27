@@ -45,10 +45,12 @@ describe("QrService.create", () => {
 
     expect(result.configurationState).toBe("active")
     expect(result.ownershipState).toBe("not-orphan")
+    expect(result.claimable).toBe(false)
     expect(repository.create.mock.calls).toHaveLength(1)
     expect(repository.create.mock.calls[0]?.[0]).toMatchObject({
       id: "generated-id",
       slug: "generated1a",
+      claimable: false,
     })
     expect(repository.create.mock.calls[0]?.[0].target).toEqual({
       rawGoogleMapsUrl: targetUrl,
@@ -98,6 +100,7 @@ describe("QrService.createOrphan", () => {
       alias: "Unclaimed sign",
       ownershipState: "orphan",
       configurationState: "incomplete",
+      claimable: true,
     })
     await expect(
       service.createOrphan({ actor: owner, alias: "Not allowed" }),
@@ -120,6 +123,7 @@ describe("QrService.createOrphan", () => {
     expect(result).toMatchObject({
       ownershipState: "orphan",
       configurationState: "active",
+      claimable: true,
     })
     expect(repository.create.mock.calls[0]?.[0].target).toEqual({
       rawGoogleMapsUrl: targetUrl,
@@ -162,6 +166,17 @@ describe("QrService.get", () => {
     await expect(
       service.get({ actor: owner, organizationId: "org-1", slug: "abc123def4" }),
     ).rejects.toMatchObject({ code: "NOT_FOUND" })
+  })
+
+  it("uses an explicitly supplied empty ID rather than falling back to slug lookup", async () => {
+    const { repository, service } = setup()
+    repository.findById.mockResolvedValue(null)
+
+    await expect(
+      service.get({ actor: owner, organizationId: "org-1", id: "" }),
+    ).rejects.toMatchObject({ code: "NOT_FOUND" })
+    expect(repository.findById.mock.calls).toEqual([[{ id: "" }]])
+    expect(repository.findBySlug.mock.calls).toHaveLength(0)
   })
 })
 
@@ -227,6 +242,7 @@ describe("QrService.claim", () => {
 
     expect(result.organizationId).toBe("org-1")
     expect(result.configurationState).toBe("incomplete")
+    expect(result.claimable).toBe(false)
     expect(repository.claimBySlug.mock.calls[0]?.[0]).toEqual({
       slug: orphan.slug,
       organizationId: "org-1",
@@ -251,8 +267,7 @@ describe("QrService.claim", () => {
     repository.findBySlug.mockResolvedValue(
       createQrRecord({
         organizationId: null,
-        claimedById: owner.id,
-        claimedAt: new Date("2030-01-01T00:00:00.000Z"),
+        claimable: false,
       }),
     )
 

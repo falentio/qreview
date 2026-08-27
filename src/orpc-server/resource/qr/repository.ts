@@ -21,6 +21,7 @@ export type NewQrRecord = {
   createdById: string
   claimedById: string | null
   claimedAt: Date | null
+  claimable: boolean
   createdAt: Date
   updatedAt: Date
   deletedAt: Date | null
@@ -45,6 +46,7 @@ export class QrRepository {
           createdById: input.createdById,
           claimedById: input.claimedById,
           claimedAt: input.claimedAt,
+          claimable: input.claimable,
           createdAt: input.createdAt,
           updatedAt: input.updatedAt,
           deletedAt: input.deletedAt,
@@ -129,13 +131,14 @@ export class QrRepository {
   }): Promise<QrRecord | null> {
     const rows = await this.dependencies.db
       .update(qrCodes)
-      .set({ organizationId, claimedById, claimedAt, updatedAt })
+      .set({ organizationId, claimedById, claimedAt, claimable: false, updatedAt })
       .where(
         and(
           eq(qrCodes.slug, slug),
           isNull(qrCodes.organizationId),
           isNull(qrCodes.claimedById),
           isNull(qrCodes.claimedAt),
+          eq(qrCodes.claimable, true),
           isNull(qrCodes.deletedAt),
         ),
       )

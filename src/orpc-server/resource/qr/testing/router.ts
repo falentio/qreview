@@ -62,4 +62,37 @@ describe("QR router", () => {
       data: { code: "PLACES_UNAVAILABLE" },
     })
   })
+
+  it("rejects empty IDs and malformed slugs at the get contract boundary", async () => {
+    const repository = mock<QrRepository>()
+    repository.getOrganizationMemberRole.mockResolvedValue("owner")
+    const places = mock<PlacesAdapter>()
+    const service = new QrService({
+      repository,
+      places,
+      ids: {
+        generateId: () => "generated-id",
+        generateSlug: () => "generated1a",
+      },
+    })
+    const router = createQrRouter({ service })
+    const sessionRepository = mock<SessionRepository>()
+    sessionRepository.getCurrentSession.mockResolvedValue(currentSession)
+    const context = {
+      request: new Request("http://localhost/rpc"),
+      db: {} as ApiContext["db"],
+      sessionService: new SessionService({ repository: sessionRepository }),
+    } satisfies ApiContext
+
+    for (const input of [
+      { organizationId: "org-1", id: "" },
+      { organizationId: "org-1", slug: "bad-slug" },
+    ]) {
+      await expect(call(router.get, input, { context })).rejects.toMatchObject({
+        code: "BAD_REQUEST",
+      })
+    }
+    expect(repository.findById.mock.calls).toHaveLength(0)
+    expect(repository.findBySlug.mock.calls).toHaveLength(0)
+  })
 })

@@ -1,5 +1,9 @@
 import { QrDomainError } from "@/orpc-server/resource/qr/errors"
-import { isGoogleCanonicalReviewUrlForPlace, isGooglePlaceId } from "@/orpc-server/resource/qr/url"
+import {
+  isGoogleCanonicalReviewUrlForPlace,
+  isGooglePlaceId,
+  MAX_GOOGLE_MAPS_QUERY_LENGTH,
+} from "@/orpc-server/resource/qr/url"
 
 export type PlaceCandidate = {
   placeId: string
@@ -17,6 +21,7 @@ export interface PlacesAdapter {
 }
 
 type JsonObject = Record<string, unknown>
+const MAX_CANDIDATES = 5
 
 function isJsonObject(value: unknown): value is JsonObject {
   return typeof value === "object" && value !== null
@@ -49,6 +54,11 @@ export class GooglePlacesAdapter implements PlacesAdapter {
   ) {}
 
   async search({ query }: { query: string }): Promise<PlaceCandidate[]> {
+    const normalizedQuery = query.trim()
+    if (!normalizedQuery || normalizedQuery.length > MAX_GOOGLE_MAPS_QUERY_LENGTH) {
+      throw new QrDomainError("INVALID_INPUT", "The Google Maps place query is invalid.")
+    }
+
     const response = await this.request("https://places.googleapis.com/v1/places:searchText", {
       method: "POST",
       headers: {
@@ -56,7 +66,7 @@ export class GooglePlacesAdapter implements PlacesAdapter {
         "X-Goog-Api-Key": this.dependencies.apiKey,
         "X-Goog-FieldMask": "places.id,places.displayName,places.formattedAddress",
       },
-      body: JSON.stringify({ textQuery: query, maxResultCount: 5 }),
+      body: JSON.stringify({ textQuery: normalizedQuery, maxResultCount: MAX_CANDIDATES }),
     })
 
     if (!response.ok) {
@@ -65,10 +75,12 @@ export class GooglePlacesAdapter implements PlacesAdapter {
 
     const body = await readJson(response)
     const places = isJsonObject(body) && Array.isArray(body.places) ? body.places : []
-    return places.flatMap((place) => {
-      const candidate = candidateFromJson(place)
-      return candidate ? [candidate] : []
-    })
+    return places
+      .flatMap((place) => {
+        const candidate = candidateFromJson(place)
+        return candidate ? [candidate] : []
+      })
+      .slice(0, MAX_CANDIDATES)
   }
 
   async getPlaceDetails({ placeId }: { placeId: string }): Promise<PlaceDetails> {

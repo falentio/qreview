@@ -63,6 +63,20 @@ describe("createQrPublicResponse", () => {
     }
   })
 
+  it("does not redirect when the stored Maps URL is malformed or conflicts with its Place ID", async () => {
+    for (const rawGoogleMapsUrl of [
+      "not-a-google-maps-url",
+      "https://www.google.com/maps/search/?query=Example&query_place_id=ChIJ987654321",
+    ]) {
+      const service = setup(createQrRecord({ rawGoogleMapsUrl }))
+
+      const response = await createQrPublicResponse({ service, slug: "abc123def4" })
+
+      expect(response.status).toBe(200)
+      expect(await response.text()).toContain("not configured")
+    }
+  })
+
   it("returns 404 for archived or missing QR codes", async () => {
     for (const record of [null, createQrRecord({ deletedAt: new Date() })]) {
       const service = setup(record)

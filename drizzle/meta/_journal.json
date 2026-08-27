@@ -36,6 +36,13 @@
       "when": 1787920000001,
       "tag": "0004_preserve_legacy_qr_content",
       "breakpoints": true
+    },
+    {
+      "idx": 5,
+      "version": "6",
+      "when": 1787859881932,
+      "tag": "0005_mature_selene",
+      "breakpoints": true
     }
   ]
 }

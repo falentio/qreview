@@ -6,6 +6,7 @@ export const globalAdmin = { id: "admin-1", role: "admin" }
 
 export function createQrRecord(overrides: Partial<QrRecord> = {}): QrRecord {
   const timestamp = new Date("2030-01-01T00:00:00.000Z")
+  const organizationId = overrides.organizationId === undefined ? "org-1" : overrides.organizationId
   return {
     id: "qr-1",
     alias: "Example location",
@@ -13,7 +14,7 @@ export function createQrRecord(overrides: Partial<QrRecord> = {}): QrRecord {
     rawGoogleMapsUrl: "https://www.google.com/maps/search/?api=1&query=Example",
     googlePlaceId: "ChIJ123456789",
     canonicalReviewUrl: "https://search.google.com/local/writereview?placeid=ChIJ123456789",
-    organizationId: "org-1",
+    organizationId,
     createdById: "user-1",
     claimedById: null,
     claimedAt: null,
@@ -21,5 +22,6 @@ export function createQrRecord(overrides: Partial<QrRecord> = {}): QrRecord {
     updatedAt: timestamp,
     deletedAt: null,
     ...overrides,
+    claimable: overrides.claimable ?? organizationId === null,
   }
 }

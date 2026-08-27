@@ -17,6 +17,17 @@ CREATE TABLE `qr_codes_new` (
 	FOREIGN KEY (`organization_id`) REFERENCES `organization`(`id`) ON UPDATE no action ON DELETE set null
 );
 --> statement-breakpoint
+-- Randomized row positions plus one random offset make the 10-character hex slugs unique.
+WITH `legacy` AS (
+  SELECT
+    *,
+    lower(trim(`content`)) AS `normalized_content`,
+    row_number() OVER (ORDER BY random()) - 1 AS `slug_position`
+  FROM `qr_codes`
+),
+`seed`(`value`) AS MATERIALIZED (
+  SELECT (random() & 0x7fffffffffffffff) % 1099511627776
+)
 INSERT INTO `qr_codes_new` (
 	`id`,
 	`alias`,
@@ -35,7 +46,7 @@ INSERT INTO `qr_codes_new` (
 SELECT
 	`id`,
 	CASE WHEN length(trim(`content`)) > 0 THEN substr(trim(`content`), 1, 120) ELSE 'Imported QR code' END,
-	lower(substr(hex(randomblob(5)), 1, 10)),
+	printf('%010x', (`legacy`.`slug_position` + `seed`.`value`) % 1099511627776),
 	CASE WHEN
 		`normalized_content` = 'https://google.com/maps'
 		OR `normalized_content` GLOB 'https://google.com/maps[/?#]*'
@@ -53,12 +64,8 @@ SELECT
 	`created_at`,
 	`created_at`,
 	NULL
-FROM (
-	SELECT
-		*,
-		lower(trim(`content`)) AS `normalized_content`
-	FROM `qr_codes`
-);
+FROM `legacy`
+CROSS JOIN `seed`;
 --> statement-breakpoint
 CREATE TABLE `qr_code_legacy_content` (
 	`qr_code_id` text PRIMARY KEY NOT NULL,

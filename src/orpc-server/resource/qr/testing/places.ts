@@ -84,6 +84,37 @@ describe("GooglePlacesAdapter failures", () => {
 })
 
 describe("GooglePlacesAdapter candidate boundaries", () => {
+  it("returns no more than five valid candidates even when the API over-returns", async () => {
+    const adapter = new GooglePlacesAdapter({
+      apiKey: "test-key",
+      fetcher: async () =>
+        response(200, {
+          places: Array.from({ length: 6 }, (_, index) => ({
+            id: `ChIJ1234567${index}`,
+            displayName: { text: `Example location ${index}` },
+          })),
+        }),
+    })
+
+    await expect(adapter.search({ query: "Example" })).resolves.toHaveLength(5)
+  })
+
+  it("rejects an overlong search query before making a Places request", async () => {
+    let requestCount = 0
+    const adapter = new GooglePlacesAdapter({
+      apiKey: "test-key",
+      fetcher: async () => {
+        requestCount += 1
+        return response(200, { places: [] })
+      },
+    })
+
+    await expect(adapter.search({ query: "x".repeat(201) })).rejects.toMatchObject({
+      code: "INVALID_INPUT",
+    })
+    expect(requestCount).toBe(0)
+  })
+
   it("filters candidates with malformed Place IDs", async () => {
     const adapter = new GooglePlacesAdapter({
       apiKey: "test-key",

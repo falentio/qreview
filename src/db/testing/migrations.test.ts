@@ -34,12 +34,26 @@ function insertLegacyQrCodes(db: DatabaseSync) {
   insert.run("empty", "", 3000)
 }
 
+function insertLegacyQrCodeBatch(db: DatabaseSync, count: number) {
+  const insert = db.prepare("INSERT INTO qr_codes (id, content, created_at) VALUES (?, ?, ?)")
+  for (let index = 0; index < count; index += 1) {
+    insert.run(`legacy-${index}`, `legacy content ${index}`, 4000 + index)
+  }
+}
+
 function readLegacyContent(db: DatabaseSync) {
   return db
     .prepare(
       "SELECT qr_code_id AS qrCodeId, content FROM qr_code_legacy_content ORDER BY qr_code_id",
     )
     .all() as Array<{ qrCodeId: string; content: string }>
+}
+
+function readClaimability(db: DatabaseSync) {
+  return db.prepare("SELECT id, claimable FROM qr_codes ORDER BY id").all() as Array<{
+    id: string
+    claimable: number
+  }>
 }
 
 describe("QR migrations", () => {
@@ -60,7 +74,51 @@ describe("QR migrations", () => {
     db.close()
   })
 
-  it("backfills only values still available after an older QR migration", () => {
+  it("backfills unique ten-character lowercase slugs for legacy records", () => {
+    const db = createPreQrMigrationDatabase()
+    insertLegacyQrCodeBatch(db, 256)
+
+    applyMigrations(db, ["0003_qr_resource.sql"])
+
+    const slugs = db.prepare("SELECT slug FROM qr_codes").all() as Array<{ slug: string }>
+    expect(new Set(slugs.map(({ slug }) => slug)).size).toBe(slugs.length)
+    expect(slugs.every(({ slug }) => /^[0-9a-f]{10}$/.test(slug))).toBe(true)
+    db.close()
+  })
+
+  it("classifies imported and organization-created records when claimability is added", () => {
+    const db = createPreQrMigrationDatabase()
+    insertLegacyQrCodes(db)
+
+    applyMigrations(db, ["0003_qr_resource.sql", "0004_preserve_legacy_qr_content.sql"])
+
+    db.exec(`
+      INSERT INTO organization (id, name, slug, created_at)
+      VALUES ('org-1', 'Example', 'example', 4000);
+      INSERT INTO qr_codes (
+        id, alias, slug, organization_id, created_by_id, created_at, updated_at
+      ) VALUES ('owned', 'Owned', 'ownedslug', 'org-1', 'owner', 4000, 4000);
+    `)
+
+    applyMigrations(db, ["0005_mature_selene.sql"])
+
+    expect(readClaimability(db)).toEqual([
+      { id: "empty", claimable: 1 },
+      { id: "google", claimable: 1 },
+      { id: "owned", claimable: 0 },
+      { id: "plain", claimable: 1 },
+    ])
+
+    db.prepare(`
+      INSERT INTO qr_codes (
+        id, alias, slug, organization_id, created_by_id, claimable, created_at, updated_at
+      ) VALUES (?, ?, ?, ?, ?, ?, ?, ?)
+    `).run("fresh", "Fresh", "freshslug", "org-1", "owner", 0, 5000, 5000)
+    expect(readClaimability(db)).toContainEqual({ id: "fresh", claimable: 0 })
+    db.close()
+  })
+
+  it("backfills only values still available after an older lossy QR migration", () => {
     const db = createPreQrMigrationDatabase()
     insertLegacyQrCodes(db)
     db.exec(`
@@ -95,15 +153,26 @@ describe("QR migrations", () => {
       FROM qr_codes;
       DROP TABLE qr_codes;
       ALTER TABLE qr_codes_new RENAME TO qr_codes;
+      INSERT INTO organization (id, name, slug, created_at)
+      VALUES ('org-1', 'Example', 'example', 4000);
+      INSERT INTO qr_codes (
+        id, alias, slug, organization_id, created_by_id, created_at, updated_at
+      ) VALUES ('owned', 'Owned', 'ownedslug', 'org-1', 'owner', 4000, 4000);
     `)
 
-    applyMigrations(db, ["0004_preserve_legacy_qr_content.sql"])
+    applyMigrations(db, ["0004_preserve_legacy_qr_content.sql", "0005_mature_selene.sql"])
 
     expect(readLegacyContent(db)).toEqual([
       {
         qrCodeId: "google",
         content: "https://www.google.com/maps/search/?api=1&query=Example",
       },
+    ])
+    expect(readClaimability(db)).toEqual([
+      { id: "empty", claimable: 1 },
+      { id: "google", claimable: 1 },
+      { id: "owned", claimable: 0 },
+      { id: "plain", claimable: 1 },
     ])
     expect(() => applyMigrations(db, ["0004_preserve_legacy_qr_content.sql"])).not.toThrow()
     db.close()
