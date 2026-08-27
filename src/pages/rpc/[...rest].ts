@@ -1,8 +1,7 @@
 import { RPCHandler } from "@orpc/server/fetch"
 import type { APIRoute } from "astro"
 
-import { createApiContext } from "@/api/context"
-import { router } from "@/api/router"
+import { createApiContext, router } from "@/orpc-server"
 
 const handler = new RPCHandler(router)
 
