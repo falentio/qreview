@@ -1,8 +1,8 @@
 import { oc } from "@orpc/contract"
-import { z } from "zod"
+import * as v from "valibot"
 
 export const healthContract = {
   check: oc
-    .input(z.object({}))
-    .output(z.object({ ok: z.literal(true) })),
+    .input(v.object({}))
+    .output(v.object({ ok: v.literal(true) })),
 }

@@ -1,19 +1,19 @@
 import { oc } from "@orpc/contract"
-import { z } from "zod"
+import * as v from "valibot"
 
-const user = z.object({
-  id: z.string(),
-  email: z.email(),
-  name: z.string(),
+const user = v.object({
+  id: v.string(),
+  email: v.pipe(v.string(), v.email()),
+  name: v.string(),
 })
 
 export const sessionContract = {
   current: oc
-    .input(z.object({}))
+    .input(v.object({}))
     .output(
-      z.object({
+      v.object({
         user,
-        expiresAt: z.string(),
+        expiresAt: v.string(),
       }),
     ),
 }
