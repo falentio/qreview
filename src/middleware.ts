@@ -11,6 +11,19 @@ export const onRequest = defineMiddleware(async (context, next) => {
   context.locals.session = currentSession?.session ?? null
 
   const isAppRoute = context.url.pathname === "/app" || context.url.pathname.startsWith("/app/")
+  const isAdminRoute =
+    context.url.pathname === "/admin" || context.url.pathname.startsWith("/admin/")
+
+  if (isAdminRoute) {
+    if (!currentSession) {
+      return Response.redirect(new URL("/login", context.url), 302)
+    }
+
+    if (currentSession.user.role !== "admin") {
+      return Response.redirect(new URL("/app", context.url), 302)
+    }
+  }
+
   if (isAppRoute) {
     if (!currentSession) {
       return Response.redirect(new URL("/login", context.url), 302)

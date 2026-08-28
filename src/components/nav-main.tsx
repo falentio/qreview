@@ -26,10 +26,18 @@ type NavMainItem = {
   }[]
 }
 
-export function NavMain({ items, pathname }: { items: NavMainItem[]; pathname: string }) {
+export function NavMain({
+  items,
+  pathname,
+  label = "Workspace",
+}: {
+  items: NavMainItem[]
+  pathname: string
+  label?: string
+}) {
   return (
     <SidebarGroup>
-      <SidebarGroupLabel>Workspace</SidebarGroupLabel>
+      <SidebarGroupLabel>{label}</SidebarGroupLabel>
       <SidebarMenu>
         {items.map((item) => (
           <Collapsible
