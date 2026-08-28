@@ -1,4 +1,5 @@
 import type { Database } from "@/db/client"
+import { createQrPublicResponse } from "@/orpc-server/resource/qr/public"
 import { createQrRouter } from "@/orpc-server/resource/qr/router"
 import { type PlacesAdapter } from "@/orpc-server/resource/qr/places"
 import { generateQrId, generateQrSlug } from "@/orpc-server/resource/qr/random"
@@ -22,6 +23,7 @@ export function createQr({
     ids: { generateId: generateQrId, generateSlug: generateQrSlug },
   })
   const router = createQrRouter({ service })
+  const publicResponse = createQrPublicResponse({ service })
 
-  return { repository, service, router }
+  return { repository, service, router, publicResponse }
 }

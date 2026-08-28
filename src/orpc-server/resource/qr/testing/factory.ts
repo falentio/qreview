@@ -20,5 +20,6 @@ describe("createQr", () => {
     expect(qr.router.createOrphan).toBeDefined()
     expect(qr.router.claim).toBeDefined()
     expect(qr.router.restore).toBeDefined()
+    expect(qr.publicResponse).toBeDefined()
   })
 })

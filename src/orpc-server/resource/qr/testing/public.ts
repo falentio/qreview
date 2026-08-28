@@ -19,14 +19,14 @@ function setup(record: QrRecord | null) {
       generateSlug: () => "generated1a",
     },
   })
-  return service
+  return createQrPublicResponse({ service })
 }
 
 describe("createQrPublicResponse", () => {
   it("redirects active QR codes without allowing the redirect to be cached", async () => {
-    const service = setup(createQrRecord())
+    const publicResponse = setup(createQrRecord())
 
-    const response = await createQrPublicResponse({ service, slug: "abc123def4" })
+    const response = await publicResponse({ slug: "abc123def4" })
 
     expect(response.status).toBe(307)
     expect(response.headers.get("Location")).toBe(
@@ -40,9 +40,9 @@ describe("createQrPublicResponse", () => {
       createQrRecord({ organizationId: null }),
       createQrRecord({ rawGoogleMapsUrl: null }),
     ]) {
-      const service = setup(record)
+      const publicResponse = setup(record)
 
-      const response = await createQrPublicResponse({ service, slug: "abc123def4" })
+      const response = await publicResponse({ slug: "abc123def4" })
 
       expect(response.status).toBe(200)
       expect(await response.text()).toContain("not configured")
@@ -54,9 +54,9 @@ describe("createQrPublicResponse", () => {
       "https://evil.google.com/not-a-review",
       "https://search.google.com/local/writereview?placeid=ChIJ987654321",
     ]) {
-      const service = setup(createQrRecord({ canonicalReviewUrl }))
+      const publicResponse = setup(createQrRecord({ canonicalReviewUrl }))
 
-      const response = await createQrPublicResponse({ service, slug: "abc123def4" })
+      const response = await publicResponse({ slug: "abc123def4" })
 
       expect(response.status).toBe(200)
       expect(await response.text()).toContain("not configured")
@@ -68,9 +68,9 @@ describe("createQrPublicResponse", () => {
       "not-a-google-maps-url",
       "https://www.google.com/maps/search/?query=Example&query_place_id=ChIJ987654321",
     ]) {
-      const service = setup(createQrRecord({ rawGoogleMapsUrl }))
+      const publicResponse = setup(createQrRecord({ rawGoogleMapsUrl }))
 
-      const response = await createQrPublicResponse({ service, slug: "abc123def4" })
+      const response = await publicResponse({ slug: "abc123def4" })
 
       expect(response.status).toBe(200)
       expect(await response.text()).toContain("not configured")
@@ -79,9 +79,9 @@ describe("createQrPublicResponse", () => {
 
   it("returns 404 for archived or missing QR codes", async () => {
     for (const record of [null, createQrRecord({ deletedAt: new Date() })]) {
-      const service = setup(record)
+      const publicResponse = setup(record)
 
-      const response = await createQrPublicResponse({ service, slug: "abc123def4" })
+      const response = await publicResponse({ slug: "abc123def4" })
 
       expect(response.status).toBe(404)
       expect(response.headers.get("Cache-Control")).toBe("no-store")
