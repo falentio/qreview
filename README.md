@@ -41,4 +41,4 @@ pnpm version and its runtime uses the pinned Node.js version declared in
 
 - Better Auth: `/api/auth/*`
 - oRPC: `/rpc/*`
-- Protected example page: `/dashboard`
+- Protected app: `/app/*`

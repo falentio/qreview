@@ -101,13 +101,13 @@ export function AuthForm({ className, mode, ...props }: AuthFormProps) {
           ? await authClient.signIn.email({
               email,
               password: value.password,
-              callbackURL: "/dashboard",
+              callbackURL: "/app",
             })
           : await authClient.signUp.email({
               email,
               password: value.password,
               name: value.fullName.trim(),
-              callbackURL: "/dashboard",
+              callbackURL: "/app",
             })
 
         if (result.error) {
@@ -115,7 +115,7 @@ export function AuthForm({ className, mode, ...props }: AuthFormProps) {
           return
         }
 
-        window.location.assign("/dashboard")
+        window.location.assign("/app")
       } catch {
         setError("Something went wrong. Please try again.")
       }

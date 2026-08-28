@@ -1,0 +1,39 @@
+---
+import { AppShell } from "@/components/app-shell"
+import "../styles/global.css"
+
+interface Props {
+  title: string
+  description: string
+}
+
+if (!Astro.locals.session || !Astro.locals.user) {
+  return Astro.redirect("/login")
+}
+
+const { title, description } = Astro.props
+const user = Astro.locals.user
+---
+
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
+    <link rel="icon" href="/favicon.ico" />
+    <meta name="viewport" content="width=device-width" />
+    <meta name="description" content={description} />
+    <meta name="generator" content={Astro.generator} />
+    <title>{title} | QR</title>
+  </head>
+  <body>
+    <AppShell
+      client:load
+      pathname={Astro.url.pathname}
+      title={title}
+      user={{ name: user.name, email: user.email, image: user.image }}
+    >
+      <slot />
+    </AppShell>
+  </body>
+</html>

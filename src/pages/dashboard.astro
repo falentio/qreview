@@ -1,24 +1,5 @@
 ---
 export const prerender = false
 
-if (!Astro.locals.session) {
-  return Astro.redirect("/login")
-}
-
-const user = Astro.locals.user
+return Astro.redirect("/app")
 ---
-
-<!doctype html>
-<html lang="en">
-  <head>
-    <meta charset="UTF-8" />
-    <meta name="viewport" content="width=device-width" />
-    <title>Dashboard | QR</title>
-  </head>
-  <body>
-    <main>
-      <h1>Welcome, {user?.name}</h1>
-      <p>{user?.email}</p>
-    </main>
-  </body>
-</html>
