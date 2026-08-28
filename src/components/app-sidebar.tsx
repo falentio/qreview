@@ -7,7 +7,6 @@ import {
   LifeBuoy,
   PieChart,
   QrCode,
-  Send,
   ShieldCheck,
   Settings2,
   Users,
@@ -98,7 +97,6 @@ export function AppSidebar({ pathname, user, ...props }: AppSidebarProps) {
   const navSecondary = [
     ...(user.role === "admin" ? [{ title: "Admin", url: "/admin", icon: ShieldCheck }] : []),
     { title: "Support", url: "/app", icon: LifeBuoy },
-    { title: "Feedback", url: "/app", icon: Send },
   ]
 
   return (

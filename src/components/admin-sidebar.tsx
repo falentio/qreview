@@ -1,10 +1,20 @@
 "use client"
 
 import * as React from "react"
-import { Building2, Command, QrCode, ShieldCheck, Users, type LucideIcon } from "lucide-react"
+import {
+  Building2,
+  Command,
+  LayoutDashboard,
+  LifeBuoy,
+  QrCode,
+  ShieldCheck,
+  Users,
+  type LucideIcon,
+} from "lucide-react"
 
 import type { AppUser } from "@/components/app-sidebar"
 import { NavMain } from "@/components/nav-main"
+import { NavSecondary } from "@/components/nav-secondary"
 import { NavUser } from "@/components/nav-user"
 import {
   Sidebar,
@@ -60,6 +70,11 @@ export function AdminSidebar({ pathname, user, ...props }: AdminSidebarProps) {
     },
   ]
 
+  const navSecondary = [
+    { title: "App", url: "/app", icon: LayoutDashboard },
+    { title: "Support", url: "/app", icon: LifeBuoy },
+  ]
+
   return (
     <Sidebar variant="inset" {...props}>
       <SidebarHeader>
@@ -79,6 +94,7 @@ export function AdminSidebar({ pathname, user, ...props }: AdminSidebarProps) {
       </SidebarHeader>
       <SidebarContent>
         <NavMain items={navMain} pathname={pathname} label="Administration" />
+        <NavSecondary items={navSecondary} className="mt-auto" />
       </SidebarContent>
       <SidebarFooter>
         <NavUser user={user} />
