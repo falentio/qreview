@@ -21,7 +21,7 @@ export default defineConfig(async () => {
       },
     },
     test: {
-      include: ["test/worker/**/*.test.ts"],
+      include: ["src/orpc-server/resource/**/testing/**/*.integration.test.ts"],
       setupFiles: ["./test/worker/apply-migrations.ts"],
       passWithNoTests: false,
     },
