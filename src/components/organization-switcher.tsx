@@ -31,7 +31,12 @@ function OrganizationLogo({ logo, small = false }: { logo?: string | null; small
 
 export function OrganizationSwitcher() {
   const { isMobile } = useSidebar()
-  const { data: organizations, isPending } = authClient.useListOrganizations()
+  const {
+    data: organizations,
+    isPending,
+    error: organizationsError,
+    refetch: refetchOrganizations,
+  } = authClient.useListOrganizations()
   const { data: activeOrganization } = authClient.useActiveOrganization()
   const [selectedOrganizationId, setSelectedOrganizationId] = React.useState<string | null>(null)
 
@@ -46,19 +51,33 @@ export function OrganizationSwitcher() {
   }
 
   if (!selectedOrganization) {
+    const hasError = Boolean(organizationsError)
+
     return (
       <SidebarMenu>
         <SidebarMenuItem>
-          <SidebarMenuButton size="lg" disabled>
+          <SidebarMenuButton
+            size="lg"
+            disabled={isPending && !hasError}
+            onClick={() => void refetchOrganizations()}
+          >
             <div className="flex aspect-square size-8 items-center justify-center rounded-lg bg-sidebar-primary text-sidebar-primary-foreground">
               <Building2 className="size-4" aria-hidden="true" />
             </div>
             <div className="grid flex-1 text-left text-sm leading-tight">
               <span className="truncate font-medium">
-                {isPending ? "Loading businesses..." : "No businesses"}
+                {hasError
+                  ? "Couldn't load businesses"
+                  : isPending
+                    ? "Loading businesses..."
+                    : "No businesses"}
               </span>
               <span className="truncate text-xs">
-                {isPending ? "Please wait" : "Create one to get started"}
+                {hasError
+                  ? "Click to try again"
+                  : isPending
+                    ? "Please wait"
+                    : "Create one to get started"}
               </span>
             </div>
           </SidebarMenuButton>
