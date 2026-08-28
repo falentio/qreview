@@ -1,0 +1,20 @@
+---
+export const prerender = false
+
+import { auth } from "@/lib/auth"
+import OnboardingLayout from "@/layouts/onboarding-layout.astro"
+
+if (!Astro.locals.session || !Astro.locals.user) {
+  return Astro.redirect("/login")
+}
+
+const organizations = await auth.api.listOrganizations({ headers: Astro.request.headers })
+if (organizations?.length) {
+  return Astro.redirect("/app")
+}
+---
+
+<OnboardingLayout
+  title="Create your business | QR"
+  description="Set up your business in QR."
+/>

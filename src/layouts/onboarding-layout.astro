@@ -1,0 +1,31 @@
+---
+import { OrganizationOnboardingForm } from "@/components/auth/organization-onboarding-form"
+import "../styles/global.css"
+
+interface Props {
+  title: string
+  description: string
+}
+
+const { title, description } = Astro.props
+---
+
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
+    <link rel="icon" href="/favicon.ico" />
+    <meta name="viewport" content="width=device-width" />
+    <meta name="description" content={description} />
+    <meta name="generator" content={Astro.generator} />
+    <title>{title}</title>
+  </head>
+  <body>
+    <main class="flex min-h-svh flex-col items-center justify-center bg-muted p-6 md:p-10">
+      <div class="w-full max-w-sm md:max-w-md">
+        <OrganizationOnboardingForm client:load />
+      </div>
+    </main>
+  </body>
+</html>

@@ -55,7 +55,7 @@ export function OrganizationSwitcher() {
             </div>
             <div className="grid flex-1 text-left text-sm leading-tight">
               <span className="truncate font-medium">
-                {isPending ? "Loading organizations..." : "No organizations"}
+                {isPending ? "Loading businesses..." : "No businesses"}
               </span>
               <span className="truncate text-xs">
                 {isPending ? "Please wait" : "Create one to get started"}
@@ -97,7 +97,7 @@ export function OrganizationSwitcher() {
           >
             <DropdownMenuGroup>
               <DropdownMenuLabel className="text-xs text-muted-foreground">
-                Organizations
+                Businesses
               </DropdownMenuLabel>
               {organizations?.map((organization, index) => (
                 <DropdownMenuItem
@@ -121,7 +121,7 @@ export function OrganizationSwitcher() {
               <div className="flex size-6 items-center justify-center rounded-md border bg-transparent">
                 <Plus className="size-4" />
               </div>
-              <div className="font-medium text-muted-foreground">Add organization</div>
+              <div className="font-medium text-muted-foreground">Add business</div>
             </DropdownMenuItem>
           </DropdownMenuContent>
         </DropdownMenu>
