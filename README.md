@@ -27,7 +27,8 @@ pnpm version and its runtime uses the pinned Node.js version declared in
 | `vp run build`             | Build the Astro application              |
 | `vp run preview`           | Preview the production build             |
 | `vp check`                 | Format, lint, and type-check the project |
-| `vp test`                  | Run the Vite+ Vitest test suite          |
+| `vp test`                  | Run the Vite+ unit test suite            |
+| `vp run test:integration`  | Run real D1 tests in the Workers runtime |
 | `vp run quality`           | Run cacheable Vite+ quality checks       |
 | `vp run unit`              | Run cacheable Vite+ unit tests           |
 | `vp run astro-build`       | Run a cacheable Astro production build   |

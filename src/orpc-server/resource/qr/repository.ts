@@ -227,7 +227,24 @@ export class QrRepository {
   }
 }
 
-function isSlugConflict(error: unknown): boolean {
+function isSlugConflict(error: unknown, seen = new Set<unknown>()): boolean {
+  if (typeof error === "object" && error !== null) {
+    if (seen.has(error)) return false
+    seen.add(error)
+  }
+
   const message = error instanceof Error ? error.message.toLowerCase() : String(error).toLowerCase()
-  return message.includes("qr_codes.slug") || message.includes("slug_unique")
+  if (
+    message.includes("qr_codes.slug") ||
+    message.includes("unique constraint failed: qr_codes.slug") ||
+    message.includes("slug_unique")
+  ) {
+    return true
+  }
+
+  if (typeof error === "object" && error !== null && "cause" in error) {
+    return isSlugConflict(error.cause, seen)
+  }
+
+  return false
 }

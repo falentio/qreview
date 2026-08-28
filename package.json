@@ -13,6 +13,7 @@
     "db:migrate:local": "wrangler d1 migrations apply qr --local",
     "db:migrate:remote": "wrangler d1 migrations apply qr --remote",
     "test": "vp test",
+    "test:integration": "vp test --config vitest.integration.config.ts",
     "test:watch": "vp test watch",
     "typecheck": "vp check --no-fmt --no-lint"
   },
@@ -52,6 +53,7 @@
     "wrangler": "^4.127.0"
   },
   "devDependencies": {
+    "@cloudflare/vitest-pool-workers": "^0.22.0",
     "@cloudflare/workers-types": "^5.20260827.1",
     "@types/node": "^26.4.0",
     "auth": "^1.7.2",

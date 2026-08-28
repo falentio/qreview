@@ -1,0 +1,14 @@
+{
+  "$schema": "./node_modules/wrangler/config-schema.json",
+  "compatibility_date": "2026-08-22",
+  "name": "qr-integration-tests",
+  "main": "./test/worker/worker.ts",
+  "d1_databases": [
+    {
+      "binding": "DB",
+      "database_name": "qr-integration-tests",
+      "database_id": "00000000-0000-0000-0000-000000000000",
+      "migrations_dir": "./drizzle",
+    },
+  ],
+}
