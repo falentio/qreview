@@ -14,6 +14,7 @@ describe("health router check", () => {
     const service = new HealthService({ repository })
     const health = createHealthRouter({ service })
     const context = {
+      auth: {} as ApiContext["auth"],
       request: new Request("http://localhost/rpc"),
       db: {} as ApiContext["db"],
       sessionService: mock<ApiContext["sessionService"]>(),

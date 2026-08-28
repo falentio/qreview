@@ -23,6 +23,7 @@ function createContext(session: AuthSession | null): ApiContext {
   repository.getCurrentSession.mockResolvedValue(session)
 
   return {
+    auth: {} as ApiContext["auth"],
     request: new Request("http://localhost/rpc"),
     db: {} as ApiContext["db"],
     sessionService: new SessionService({ repository }),

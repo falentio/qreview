@@ -28,6 +28,7 @@ describe("createSession", () => {
       headers: { cookie: "session=token" },
     })
     const context = {
+      auth: {} as ApiContext["auth"],
       request,
       db: {} as ApiContext["db"],
       sessionService: session.service,

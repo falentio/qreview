@@ -20,7 +20,18 @@ const placeDetails = {
   canonicalReviewUrl: "https://search.google.com/local/writereview?placeid=ChIJ123456789",
 }
 
-function setup({ role = "user" }: { role?: string } = {}) {
+function createOrganizationAuth(role: string): ApiContext["auth"] {
+  return {
+    api: {
+      getActiveMemberRole: async () => ({ role }),
+    },
+  } as unknown as ApiContext["auth"]
+}
+
+function setup({
+  role = "user",
+  organizationRole = "owner",
+}: { role?: string; organizationRole?: string } = {}) {
   const repository = mock<QrRepository>()
   const places = mock<PlacesAdapter>()
   repository.getOrganizationMemberRole.mockResolvedValue("owner")
@@ -45,6 +56,7 @@ function setup({ role = "user" }: { role?: string } = {}) {
   const context = {
     request: new Request("http://localhost/rpc"),
     db: {} as ApiContext["db"],
+    auth: createOrganizationAuth(organizationRole),
     sessionService: new SessionService({ repository: sessionRepository }),
   } satisfies ApiContext
 
@@ -106,6 +118,16 @@ describe("QrRouter behavior", () => {
     })
   })
 
+  it("rejects organization routes for non-admin members", async () => {
+    const { context, repository, router } = setup({ organizationRole: "member" })
+
+    await expect(call(router.list, { organizationId: "org-1" }, { context })).rejects.toMatchObject(
+      { code: "FORBIDDEN" },
+    )
+    expect(repository.getOrganizationMemberRole.mock.calls).toHaveLength(0)
+    expect(repository.listForOrganization.mock.calls).toHaveLength(0)
+  })
+
   it("claims an orphan through the conditional claim route", async () => {
     const { context, repository, router } = setup()
     repository.findBySlug.mockResolvedValue(createQrRecord({ organizationId: null }))
@@ -153,6 +175,7 @@ describe("QrRouter behavior", () => {
     const context = {
       request: new Request("http://localhost/rpc"),
       db: {} as ApiContext["db"],
+      auth: createOrganizationAuth("owner"),
       sessionService: new SessionService({ repository: sessionRepository }),
     } satisfies ApiContext
     places.getPlaceDetails.mockResolvedValue(placeDetails)

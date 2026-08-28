@@ -13,6 +13,7 @@ describe("createHealth", () => {
 
     const health = createHealth({ db })
     const context = {
+      auth: {} as ApiContext["auth"],
       request: new Request("http://localhost/rpc"),
       db,
       sessionService: mock<ApiContext["sessionService"]>(),

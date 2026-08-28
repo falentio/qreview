@@ -45,6 +45,7 @@ describe("QrRouter.resolve", () => {
     const context = {
       request: new Request("http://localhost/rpc"),
       db: {} as ApiContext["db"],
+      auth: {} as ApiContext["auth"],
       sessionService: new SessionService({ repository: sessionRepository }),
     } satisfies ApiContext
 
@@ -82,6 +83,7 @@ describe("QrRouter.resolve", () => {
     const context = {
       request: new Request("http://localhost/rpc"),
       db: {} as ApiContext["db"],
+      auth: {} as ApiContext["auth"],
       sessionService: new SessionService({ repository: sessionRepository }),
     } satisfies ApiContext
 

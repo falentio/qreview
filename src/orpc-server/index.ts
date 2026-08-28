@@ -26,5 +26,5 @@ export const qrService = qrResource.service
 export const qrPublicResponse = qrResource.publicResponse
 
 export function createApiContext({ request }: { request: Request }) {
-  return createContext({ request, db, sessionService: sessionResource.service })
+  return createContext({ auth, request, db, sessionService: sessionResource.service })
 }

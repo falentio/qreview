@@ -1,6 +1,11 @@
 import { ORPCError } from "@orpc/server"
 
-import { implementer, requireAuth } from "@/orpc-server/implementer"
+import {
+  implementer,
+  requireAuth,
+  requireGlobalAdmin,
+  requireOrgsAdmin,
+} from "@/orpc-server/implementer"
 import { QrDomainError } from "@/orpc-server/resource/qr/errors"
 import type { QrService } from "@/orpc-server/resource/qr/service"
 
@@ -28,36 +33,43 @@ export function createQrRouter({ service }: { service: QrService }) {
     ),
     createOrphan: implementer.qr.createOrphan
       .use(requireAuth)
+      .use(requireGlobalAdmin)
       .handler(({ context, input }) =>
         execute(() => service.createOrphan({ actor: context.user, ...input })),
       ),
     claim: implementer.qr.claim
       .use(requireAuth)
+      .use(requireOrgsAdmin)
       .handler(({ context, input }) =>
         execute(() => service.claim({ actor: context.user, ...input })),
       ),
     list: implementer.qr.list
       .use(requireAuth)
+      .use(requireOrgsAdmin)
       .handler(({ context, input }) =>
         execute(() => service.list({ actor: context.user, ...input })),
       ),
     get: implementer.qr.get
       .use(requireAuth)
+      .use(requireOrgsAdmin)
       .handler(({ context, input }) =>
         execute(() => service.get({ actor: context.user, ...input })),
       ),
     update: implementer.qr.update
       .use(requireAuth)
+      .use(requireOrgsAdmin)
       .handler(({ context, input }) =>
         execute(() => service.update({ actor: context.user, ...input })),
       ),
     archive: implementer.qr.archive
       .use(requireAuth)
+      .use(requireOrgsAdmin)
       .handler(({ context, input }) =>
         execute(() => service.archive({ actor: context.user, ...input })),
       ),
     restore: implementer.qr.restore
       .use(requireAuth)
+      .use(requireOrgsAdmin)
       .handler(({ context, input }) =>
         execute(() => service.restore({ actor: context.user, ...input })),
       ),

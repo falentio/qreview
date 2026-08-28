@@ -22,6 +22,14 @@ const currentSession = {
   },
 } as AuthSession
 
+function createOrganizationAuth(): ApiContext["auth"] {
+  return {
+    api: {
+      getActiveMemberRole: async () => ({ role: "owner" }),
+    },
+  } as unknown as ApiContext["auth"]
+}
+
 describe("QrRouter.get", () => {
   it("rejects empty IDs and malformed slugs at the get contract boundary", async () => {
     const repository = mock<QrRepository>()
@@ -41,6 +49,7 @@ describe("QrRouter.get", () => {
     const context = {
       request: new Request("http://localhost/rpc"),
       db: {} as ApiContext["db"],
+      auth: createOrganizationAuth(),
       sessionService: new SessionService({ repository: sessionRepository }),
     } satisfies ApiContext
 
