@@ -3,7 +3,8 @@ import { createQrPublicResponse } from "@/orpc-server/resource/qr/public"
 import { createQrRouter } from "@/orpc-server/resource/qr/router"
 import { type PlacesAdapter } from "@/orpc-server/resource/qr/places"
 import { generateQrId, generateQrSlug } from "@/orpc-server/resource/qr/random"
-import { QrRepository } from "@/orpc-server/resource/qr/repository"
+import { DrizzleQrRepository } from "@/orpc-server/resource/qr/repository.drizzle"
+import type { QrRepository } from "@/orpc-server/resource/qr/repository"
 import { QrService } from "@/orpc-server/resource/qr/service"
 
 export function createQr({
@@ -15,7 +16,7 @@ export function createQr({
   places: PlacesAdapter
   clock?: { now(): Date }
 }) {
-  const repository = new QrRepository({ db })
+  const repository: QrRepository = new DrizzleQrRepository({ db })
   const service = new QrService({
     repository,
     places,

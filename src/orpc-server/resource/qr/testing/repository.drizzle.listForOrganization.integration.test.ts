@@ -11,7 +11,7 @@ beforeEach(async () => {
   await clearTestData()
 })
 
-describe("QrRepository.listForOrganization against D1", () => {
+describe("DrizzleQrRepository.listForOrganization against D1", () => {
   it("returns only the requested organization and orders records by creation time", async () => {
     await createOrganization({ id: "repo-test-org-1", userId: "repo-test-user-1" })
     await createOrganization({ id: "repo-test-org-2", userId: "repo-test-user-2" })

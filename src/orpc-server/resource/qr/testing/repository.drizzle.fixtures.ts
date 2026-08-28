@@ -1,11 +1,11 @@
 import { member, organization, user } from "@/db/auth-schema"
 import { createDb } from "@/db/client"
 import type { NewQrRecord } from "@/orpc-server/resource/qr/repository"
-import { QrRepository } from "@/orpc-server/resource/qr/repository"
+import { DrizzleQrRepository } from "@/orpc-server/resource/qr/repository.drizzle"
 import { env } from "cloudflare:workers"
 
 export const db = createDb(env.DB)
-export const repository = new QrRepository({ db })
+export const repository = new DrizzleQrRepository({ db })
 export const timestamp = new Date("2030-01-01T00:00:00.000Z")
 
 export async function clearTestData() {
