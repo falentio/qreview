@@ -1,4 +1,5 @@
 import { useState } from "react"
+import { useForm } from "@tanstack/react-form"
 
 import { authClient } from "@/lib/auth-client"
 import { cn } from "@/lib/utils"
@@ -8,6 +9,7 @@ import { AuthArtwork } from "@/components/auth/auth-artwork"
 import {
   Field,
   FieldDescription,
+  FieldError,
   FieldGroup,
   FieldLabel,
   FieldSeparator,
@@ -18,6 +20,26 @@ export type AuthMode = "login" | "signup"
 
 type AuthFormProps = React.ComponentProps<"div"> & {
   mode: AuthMode
+}
+
+function validateEmail(value: string) {
+  if (!value) {
+    return "Email is required"
+  }
+
+  return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(value) ? undefined : "Enter a valid email address"
+}
+
+function validatePassword(value: string) {
+  if (!value) {
+    return "Password is required"
+  }
+
+  if (value.length < 8) {
+    return "Password must be at least 8 characters"
+  }
+
+  return value.length > 128 ? "Password must be at most 128 characters" : undefined
 }
 
 function AppleIcon() {
@@ -55,7 +77,6 @@ function MetaIcon() {
 
 export function AuthForm({ className, mode, ...props }: AuthFormProps) {
   const [error, setError] = useState<string | null>(null)
-  const [isPending, setIsPending] = useState(false)
   const isLogin = mode === "login"
   const formTitle = isLogin ? "Welcome back" : "Create your account"
   const formDescription = isLogin ? "Log in to your QR account" : "Sign up to start using QR"
@@ -64,56 +85,52 @@ export function AuthForm({ className, mode, ...props }: AuthFormProps) {
   const switchLabel = isLogin ? "Sign up" : "Log in"
   const switchHref = isLogin ? "/signup" : "/login"
 
-  async function handleSubmit(event: React.FormEvent<HTMLFormElement>) {
-    event.preventDefault()
+  const form = useForm({
+    defaultValues: {
+      fullName: "",
+      email: "",
+      password: "",
+      confirmPassword: "",
+    },
+    onSubmit: async ({ value }) => {
+      setError(null)
 
-    const form = new FormData(event.currentTarget)
-    const email = String(form.get("email") ?? "")
-    const password = String(form.get("password") ?? "")
+      const email = value.email.trim()
+      try {
+        const result = isLogin
+          ? await authClient.signIn.email({
+              email,
+              password: value.password,
+              callbackURL: "/dashboard",
+            })
+          : await authClient.signUp.email({
+              email,
+              password: value.password,
+              name: value.fullName.trim(),
+              callbackURL: "/dashboard",
+            })
 
-    if (!isLogin && form.get("confirmPassword") !== form.get("password")) {
-      setError("Passwords do not match")
-      return
-    }
+        if (result.error) {
+          setError(result.error.message || "Authentication failed")
+          return
+        }
 
-    setError(null)
-    setIsPending(true)
-
-    try {
-      const result = isLogin
-        ? await authClient.signIn.email({
-            email,
-            password,
-            callbackURL: "/dashboard",
-          })
-        : await authClient.signUp.email({
-            email,
-            password,
-            name: String(form.get("fullName") ?? ""),
-            callbackURL: "/dashboard",
-          })
-
-      if (result.error) {
-        setError(result.error.message ?? "Authentication failed")
-        return
+        window.location.assign("/dashboard")
+      } catch {
+        setError("Something went wrong. Please try again.")
       }
-
-      window.location.assign("/dashboard")
-    } catch {
-      setError("Something went wrong. Please try again.")
-    } finally {
-      setIsPending(false)
-    }
-  }
+    },
+  })
 
   return (
     <div className={cn("flex flex-col gap-6", className)} {...props}>
       <Card className="overflow-hidden p-0">
         <CardContent className="grid p-0 md:grid-cols-2">
           <form
-            action={isLogin ? "/login" : "/signup"}
-            method="post"
-            onSubmit={handleSubmit}
+            onSubmit={(event) => {
+              event.preventDefault()
+              void form.handleSubmit()
+            }}
             className="p-6 md:p-8"
           >
             <FieldGroup>
@@ -123,60 +140,157 @@ export function AuthForm({ className, mode, ...props }: AuthFormProps) {
               </div>
 
               {!isLogin && (
-                <Field>
-                  <FieldLabel htmlFor="full-name">Full name</FieldLabel>
-                  <Input
-                    id="full-name"
-                    name="fullName"
-                    type="text"
-                    placeholder="Jane Doe"
-                    autoComplete="name"
-                    required
-                  />
-                </Field>
+                <form.Field
+                  name="fullName"
+                  validators={{
+                    onBlur: ({ value }) => (value.trim() ? undefined : "Full name is required"),
+                    onSubmit: ({ value }) => (value.trim() ? undefined : "Full name is required"),
+                  }}
+                >
+                  {(field) => {
+                    const isInvalid = field.state.meta.isTouched && !field.state.meta.isValid
+
+                    return (
+                      <Field data-invalid={isInvalid}>
+                        <FieldLabel htmlFor={field.name}>Full name</FieldLabel>
+                        <Input
+                          id={field.name}
+                          name={field.name}
+                          type="text"
+                          value={field.state.value}
+                          onBlur={field.handleBlur}
+                          onChange={(event) => field.handleChange(event.target.value)}
+                          placeholder="Jane Doe"
+                          autoComplete="name"
+                          aria-invalid={isInvalid}
+                        />
+                        {isInvalid && (
+                          <FieldError>
+                            {field.state.meta.errors.filter(Boolean).join(", ")}
+                          </FieldError>
+                        )}
+                      </Field>
+                    )
+                  }}
+                </form.Field>
               )}
 
-              <Field>
-                <FieldLabel htmlFor="email">Email</FieldLabel>
-                <Input
-                  id="email"
-                  name="email"
-                  type="email"
-                  placeholder="you@example.com"
-                  autoComplete="email"
-                  required
-                />
-              </Field>
+              <form.Field
+                name="email"
+                validators={{
+                  onBlur: ({ value }) => validateEmail(value),
+                  onSubmit: ({ value }) => validateEmail(value),
+                }}
+              >
+                {(field) => {
+                  const isInvalid = field.state.meta.isTouched && !field.state.meta.isValid
 
-              <Field>
-                <div className="flex items-center">
-                  <FieldLabel htmlFor="password">Password</FieldLabel>
-                  {isLogin && (
-                    <a href="#" className="ml-auto text-sm underline-offset-2 hover:underline">
-                      Forgot your password?
-                    </a>
-                  )}
-                </div>
-                <Input
-                  id="password"
-                  name="password"
-                  type="password"
-                  autoComplete={isLogin ? "current-password" : "new-password"}
-                  required
-                />
-              </Field>
+                  return (
+                    <Field data-invalid={isInvalid}>
+                      <FieldLabel htmlFor={field.name}>Email</FieldLabel>
+                      <Input
+                        id={field.name}
+                        name={field.name}
+                        type="email"
+                        value={field.state.value}
+                        onBlur={field.handleBlur}
+                        onChange={(event) => field.handleChange(event.target.value)}
+                        placeholder="you@example.com"
+                        autoComplete="email"
+                        aria-invalid={isInvalid}
+                      />
+                      {isInvalid && (
+                        <FieldError>
+                          {field.state.meta.errors.filter(Boolean).join(", ")}
+                        </FieldError>
+                      )}
+                    </Field>
+                  )
+                }}
+              </form.Field>
+
+              <form.Field
+                name="password"
+                validators={{
+                  onBlur: ({ value }) => validatePassword(value),
+                  onSubmit: ({ value }) => validatePassword(value),
+                }}
+              >
+                {(field) => {
+                  const isInvalid = field.state.meta.isTouched && !field.state.meta.isValid
+
+                  return (
+                    <Field data-invalid={isInvalid}>
+                      <div className="flex items-center">
+                        <FieldLabel htmlFor={field.name}>Password</FieldLabel>
+                        {isLogin && (
+                          <a
+                            href="#"
+                            className="ml-auto text-sm underline-offset-2 hover:underline"
+                          >
+                            Forgot your password?
+                          </a>
+                        )}
+                      </div>
+                      <Input
+                        id={field.name}
+                        name={field.name}
+                        type="password"
+                        value={field.state.value}
+                        onBlur={field.handleBlur}
+                        onChange={(event) => field.handleChange(event.target.value)}
+                        autoComplete={isLogin ? "current-password" : "new-password"}
+                        aria-invalid={isInvalid}
+                      />
+                      {isInvalid && (
+                        <FieldError>
+                          {field.state.meta.errors.filter(Boolean).join(", ")}
+                        </FieldError>
+                      )}
+                    </Field>
+                  )
+                }}
+              </form.Field>
 
               {!isLogin && (
-                <Field>
-                  <FieldLabel htmlFor="confirm-password">Confirm password</FieldLabel>
-                  <Input
-                    id="confirm-password"
-                    name="confirmPassword"
-                    type="password"
-                    autoComplete="new-password"
-                    required
-                  />
-                </Field>
+                <form.Field
+                  name="confirmPassword"
+                  validators={{
+                    onBlur: ({ value, fieldApi }) =>
+                      value === fieldApi.form.getFieldValue("password")
+                        ? undefined
+                        : "Passwords do not match",
+                    onSubmit: ({ value, fieldApi }) =>
+                      value === fieldApi.form.getFieldValue("password")
+                        ? undefined
+                        : "Passwords do not match",
+                  }}
+                >
+                  {(field) => {
+                    const isInvalid = field.state.meta.isTouched && !field.state.meta.isValid
+
+                    return (
+                      <Field data-invalid={isInvalid}>
+                        <FieldLabel htmlFor={field.name}>Confirm password</FieldLabel>
+                        <Input
+                          id={field.name}
+                          name={field.name}
+                          type="password"
+                          value={field.state.value}
+                          onBlur={field.handleBlur}
+                          onChange={(event) => field.handleChange(event.target.value)}
+                          autoComplete="new-password"
+                          aria-invalid={isInvalid}
+                        />
+                        {isInvalid && (
+                          <FieldError>
+                            {field.state.meta.errors.filter(Boolean).join(", ")}
+                          </FieldError>
+                        )}
+                      </Field>
+                    )
+                  }}
+                </form.Field>
               )}
 
               {error && (
@@ -186,9 +300,13 @@ export function AuthForm({ className, mode, ...props }: AuthFormProps) {
               )}
 
               <Field>
-                <Button type="submit" disabled={isPending}>
-                  {isPending ? "Please wait..." : submitLabel}
-                </Button>
+                <form.Subscribe selector={(state) => state.isSubmitting}>
+                  {(isSubmitting) => (
+                    <Button type="submit" disabled={isSubmitting}>
+                      {isSubmitting ? "Please wait..." : submitLabel}
+                    </Button>
+                  )}
+                </form.Subscribe>
               </Field>
 
               <FieldSeparator className="*:data-[slot=field-separator-content]:bg-card">

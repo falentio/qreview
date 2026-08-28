@@ -9,6 +9,7 @@ import { schema } from "@/db/schema"
 export const db = createDb(env.DB)
 
 export const auth = betterAuth({
+  basePath: "/api/auth",
   database: drizzleAdapter(db, {
     provider: "sqlite",
     schema,
