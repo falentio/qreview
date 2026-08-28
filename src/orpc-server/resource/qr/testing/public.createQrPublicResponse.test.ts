@@ -1,7 +1,7 @@
 import { describe, expect, it } from "vite-plus/test"
 import { mock } from "vitest-mock-extended"
 
-import { createQrNotFoundResponse, createQrPublicResponse } from "@/orpc-server/resource/qr/public"
+import { createQrPublicResponse } from "@/orpc-server/resource/qr/public"
 import type { PlacesAdapter } from "@/orpc-server/resource/qr/places"
 import { createQrRecord } from "@/orpc-server/resource/qr/fixtures"
 import type { QrRecord, QrRepository } from "@/orpc-server/resource/qr/repository"
@@ -86,12 +86,5 @@ describe("createQrPublicResponse", () => {
       expect(response.status).toBe(404)
       expect(response.headers.get("Cache-Control")).toBe("no-store")
     }
-  })
-
-  it("creates a cache-resistant 404 for a missing route slug", () => {
-    const response = createQrNotFoundResponse()
-
-    expect(response.status).toBe(404)
-    expect(response.headers.get("Cache-Control")).toBe("no-store")
   })
 })

@@ -21,6 +21,7 @@
 - Use `src/lib/utils.ts` for utilities shared within this application. Create a `packages/utils` workspace package only when multiple packages need to share code.
 - The API module owns one reusable aggregate oRPC implementer for server-supported resources: create it with `implement({ ... }).$context<ApiContext>()`, define resource handlers from its branches, return implemented resource routers from `create<Resource>()`, and let the API composition root assemble those routers.
 - Constructors with dependencies receive one named dependency object with explicit property names rather than positional arguments.
+- Tautological testing are considered harmfull
 
 ## Third-Party Libraries
 

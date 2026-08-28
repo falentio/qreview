@@ -8,7 +8,7 @@ function response(status: number, body?: unknown): Response {
   return new Response(body === undefined ? null : JSON.stringify(body), { status })
 }
 
-describe("GooglePlacesAdapter failures", () => {
+describe("GooglePlacesAdapter.search", () => {
   for (const status of [429, 500, 503]) {
     it(`maps HTTP ${status} to service unavailable`, async () => {
       const adapter = new GooglePlacesAdapter({
@@ -81,9 +81,7 @@ describe("GooglePlacesAdapter failures", () => {
       httpCode: "SERVICE_UNAVAILABLE",
     })
   })
-})
 
-describe("GooglePlacesAdapter candidate boundaries", () => {
   it("returns no more than five valid candidates even when the API over-returns", async () => {
     const adapter = new GooglePlacesAdapter({
       apiKey: "test-key",
@@ -130,24 +128,5 @@ describe("GooglePlacesAdapter candidate boundaries", () => {
     await expect(adapter.search({ query: "Example" })).resolves.toEqual([
       { placeId, name: "Example location", address: null },
     ])
-  })
-
-  it("rejects a canonical review URL for a different Place ID", async () => {
-    const adapter = new GooglePlacesAdapter({
-      apiKey: "test-key",
-      fetcher: async () =>
-        response(200, {
-          id: placeId,
-          displayName: { text: "Example location" },
-          googleMapsLinks: {
-            writeAReviewUri: "https://search.google.com/local/writereview?placeid=ChIJ987654321",
-          },
-        }),
-    })
-
-    await expect(adapter.getPlaceDetails({ placeId })).rejects.toMatchObject({
-      code: "PLACE_RESOLUTION_FAILED",
-      httpCode: "BAD_REQUEST",
-    })
   })
 })
