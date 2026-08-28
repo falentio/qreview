@@ -46,6 +46,7 @@ export class QrService {
       repository: Pick<
         QrRepository,
         | "create"
+        | "updateMapBySlug"
         | "findById"
         | "findBySlug"
         | "listForOrganization"
@@ -114,6 +115,42 @@ export class QrService {
       createdById: actor.id,
       target,
     })
+  }
+
+  async batchCreate({
+    actor,
+    organizationId,
+    alias,
+    googleMapsUrl,
+    googlePlaceId,
+    count,
+  }: {
+    actor: QrActor
+    organizationId: string
+    alias: string
+    googleMapsUrl: string
+    googlePlaceId: string
+    count: number
+  }): Promise<{ items: QrResponse[] }> {
+    this.requireGlobalAdmin(actor)
+    if (!Number.isInteger(count) || count < 1 || count > 100) {
+      throw new QrDomainError("INVALID_INPUT", "QR batch count must be between 1 and 100.")
+    }
+
+    const normalizedAlias = normalizeAlias(alias)
+    const target = await this.resolveTarget({ googleMapsUrl, googlePlaceId })
+    const items: QrResponse[] = []
+    for (let index = 0; index < count; index += 1) {
+      items.push(
+        await this.createRecord({
+          alias: normalizedAlias,
+          organizationId,
+          createdById: actor.id,
+          target,
+        }),
+      )
+    }
+    return { items }
   }
 
   async createOrphan({
@@ -246,6 +283,33 @@ export class QrService {
       id,
       organizationId,
       alias: alias === undefined ? undefined : normalizeAlias(alias),
+      target,
+      updatedAt: this.now(),
+    })
+    if (!updated) throw this.notFound()
+    return toResponse(updated)
+  }
+
+  async updateMapBySlug({
+    actor,
+    slug,
+    googleMapsUrl,
+    googlePlaceId,
+  }: {
+    actor: QrActor
+    slug: string
+    googleMapsUrl: string
+    googlePlaceId: string
+  }): Promise<QrResponse> {
+    this.requireGlobalAdmin(actor)
+    const existing = await this.dependencies.repository.findBySlug({ slug })
+    if (!existing) throw this.notFound()
+    if (existing.deletedAt)
+      throw new QrDomainError("ARCHIVED", "Archived QR codes must be restored first.")
+
+    const target = await this.resolveTarget({ googleMapsUrl, googlePlaceId })
+    const updated = await this.dependencies.repository.updateMapBySlug({
+      slug,
       target,
       updatedAt: this.now(),
     })

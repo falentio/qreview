@@ -118,6 +118,92 @@ describe("QrRouter behavior", () => {
     })
   })
 
+  it("batch creates configured QR codes through the global admin route", async () => {
+    const { context, places, repository, router } = setup({ role: "admin" })
+    places.getPlaceDetails.mockResolvedValue(placeDetails)
+    repository.create.mockResolvedValue(createQrRecord({ alias: "Batch QR" }))
+
+    await expect(
+      call(
+        router.batchCreate,
+        {
+          organizationId: "org-1",
+          alias: "Batch QR",
+          googleMapsUrl: targetUrl,
+          googlePlaceId: placeDetails.placeId,
+          count: 2,
+        },
+        { context },
+      ),
+    ).resolves.toMatchObject({ items: [{ alias: "Batch QR" }, { alias: "Batch QR" }] })
+    expect(places.getPlaceDetails.mock.calls).toHaveLength(1)
+    expect(repository.create.mock.calls).toHaveLength(2)
+  })
+
+  it("updates an orphan map link by slug through the global admin route", async () => {
+    const { context, places, repository, router } = setup({ role: "admin" })
+    places.getPlaceDetails.mockResolvedValue(placeDetails)
+    repository.findBySlug.mockResolvedValue(createQrRecord({ organizationId: null }))
+    repository.updateMapBySlug.mockResolvedValue(
+      createQrRecord({
+        organizationId: null,
+        rawGoogleMapsUrl: targetUrl,
+        googlePlaceId: placeDetails.placeId,
+        canonicalReviewUrl: placeDetails.canonicalReviewUrl,
+      }),
+    )
+
+    await expect(
+      call(
+        router.updateMapBySlug,
+        {
+          slug: "abc123def4",
+          googleMapsUrl: targetUrl,
+          googlePlaceId: placeDetails.placeId,
+        },
+        { context },
+      ),
+    ).resolves.toMatchObject({
+      slug: "abc123def4",
+      organizationId: null,
+      configurationState: "active",
+    })
+    expect(repository.updateMapBySlug.mock.calls).toHaveLength(1)
+  })
+
+  it("rejects global-admin QR operations for regular users", async () => {
+    const { context, places, repository, router } = setup()
+    places.getPlaceDetails.mockResolvedValue(placeDetails)
+
+    await expect(
+      call(
+        router.batchCreate,
+        {
+          organizationId: "org-1",
+          alias: "Batch QR",
+          googleMapsUrl: targetUrl,
+          googlePlaceId: placeDetails.placeId,
+          count: 2,
+        },
+        { context },
+      ),
+    ).rejects.toMatchObject({ code: "FORBIDDEN" })
+    await expect(
+      call(
+        router.updateMapBySlug,
+        {
+          slug: "abc123def4",
+          googleMapsUrl: targetUrl,
+          googlePlaceId: placeDetails.placeId,
+        },
+        { context },
+      ),
+    ).rejects.toMatchObject({ code: "FORBIDDEN" })
+    expect(places.getPlaceDetails.mock.calls).toHaveLength(0)
+    expect(repository.findBySlug.mock.calls).toHaveLength(0)
+    expect(repository.create.mock.calls).toHaveLength(0)
+  })
+
   it("rejects organization routes for non-admin members", async () => {
     const { context, repository, router } = setup({ organizationRole: "member" })
 
@@ -194,11 +280,33 @@ describe("QrRouter behavior", () => {
           },
           { context },
         ),
+      () =>
+        call(
+          router.batchCreate,
+          {
+            organizationId: "org-1",
+            alias: "QR",
+            googleMapsUrl: targetUrl,
+            googlePlaceId: placeDetails.placeId,
+            count: 2,
+          },
+          { context },
+        ),
       () => call(router.createOrphan, { alias: "QR" }, { context }),
       () => call(router.claim, { organizationId: "org-1", slug: "abc123def4" }, { context }),
       () => call(router.list, { organizationId: "org-1" }, { context }),
       () => call(router.get, { organizationId: "org-1", id: "qr-1" }, { context }),
       () => call(router.update, { organizationId: "org-1", id: "qr-1", alias: "QR" }, { context }),
+      () =>
+        call(
+          router.updateMapBySlug,
+          {
+            slug: "abc123def4",
+            googleMapsUrl: targetUrl,
+            googlePlaceId: placeDetails.placeId,
+          },
+          { context },
+        ),
       () => call(router.archive, { organizationId: "org-1", id: "qr-1" }, { context }),
       () => call(router.restore, { organizationId: "org-1", id: "qr-1" }, { context }),
     ]

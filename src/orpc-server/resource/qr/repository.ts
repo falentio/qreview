@@ -59,6 +59,15 @@ export interface QrRepository {
     target?: QrTarget
     updatedAt: Date
   }): Promise<QrRecord | null>
+  updateMapBySlug({
+    slug,
+    target,
+    updatedAt,
+  }: {
+    slug: string
+    target: QrTarget
+    updatedAt: Date
+  }): Promise<QrRecord | null>
   archiveById({
     id,
     organizationId,

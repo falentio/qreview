@@ -164,6 +164,28 @@ export class DrizzleQrRepository implements QrRepository {
     return rows[0] ?? null
   }
 
+  async updateMapBySlug({
+    slug,
+    target,
+    updatedAt,
+  }: {
+    slug: string
+    target: QrTarget
+    updatedAt: Date
+  }): Promise<QrRecord | null> {
+    const rows = await this.dependencies.db
+      .update(qrCodes)
+      .set({
+        rawGoogleMapsUrl: target.rawGoogleMapsUrl,
+        googlePlaceId: target.googlePlaceId,
+        canonicalReviewUrl: target.canonicalReviewUrl,
+        updatedAt,
+      })
+      .where(and(eq(qrCodes.slug, slug), isNull(qrCodes.deletedAt)))
+      .returning()
+    return rows[0] ?? null
+  }
+
   async archiveById({
     id,
     organizationId,

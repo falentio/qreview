@@ -6,6 +6,7 @@ const googleMapsUrl = v.pipe(v.string(), v.minLength(1), v.maxLength(2048))
 const googlePlaceId = v.pipe(v.string(), v.minLength(1))
 const qrId = v.pipe(v.string(), v.minLength(1))
 const qrSlug = v.pipe(v.string(), v.regex(/^[a-z0-9]{10}$/))
+const qrBatchCount = v.pipe(v.number(), v.integer(), v.minValue(1), v.maxValue(100))
 
 const qrCode = v.object({
   id: v.string(),
@@ -50,6 +51,14 @@ export const qrContract = {
   create: oc
     .input(v.intersect([organizationInput, v.object({ alias }), targetInput]))
     .output(qrCode),
+  batchCreate: oc
+    .input(
+      v.intersect([
+        organizationInput,
+        v.object({ alias, ...targetInput.entries, count: qrBatchCount }),
+      ]),
+    )
+    .output(v.object({ items: v.array(qrCode) })),
   createOrphan: oc
     .input(
       v.object({
@@ -84,6 +93,7 @@ export const qrContract = {
       ]),
     )
     .output(qrCode),
+  updateMapBySlug: oc.input(v.object({ slug: qrSlug, ...targetInput.entries })).output(qrCode),
   archive: oc.input(v.intersect([organizationInput, v.object({ id: v.string() })])).output(qrCode),
   restore: oc.input(v.intersect([organizationInput, v.object({ id: v.string() })])).output(qrCode),
 }
