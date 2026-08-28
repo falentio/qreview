@@ -8,18 +8,10 @@ export type QrTarget = {
   canonicalReviewUrl: string
 }
 
-export type NewQrRecord = {
-  id: string
-  alias: string
-  slug: string
-  organizationId: string | null
-  createdById: string
-  claimedById: string | null
-  claimedAt: Date | null
-  claimable: boolean
-  createdAt: Date
-  updatedAt: Date
-  deletedAt: Date | null
+export type NewQrRecord = Omit<
+  QrRecord,
+  "rawGoogleMapsUrl" | "googlePlaceId" | "canonicalReviewUrl"
+> & {
   target?: QrTarget
 }
 
