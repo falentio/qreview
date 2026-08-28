@@ -81,6 +81,7 @@ describe("QR migrations", () => {
     applyMigrations(db, ["0003_qr_resource.sql"])
 
     const slugs = db.prepare("SELECT slug FROM qr_codes").all() as Array<{ slug: string }>
+    expect(slugs).toHaveLength(256)
     expect(new Set(slugs.map(({ slug }) => slug)).size).toBe(slugs.length)
     expect(slugs.every(({ slug }) => /^[0-9a-f]{10}$/.test(slug))).toBe(true)
     db.close()
@@ -115,6 +116,12 @@ describe("QR migrations", () => {
       ) VALUES (?, ?, ?, ?, ?, ?, ?, ?)
     `).run("fresh", "Fresh", "freshslug", "org-1", "owner", 0, 5000, 5000)
     expect(readClaimability(db)).toContainEqual({ id: "fresh", claimable: 0 })
+
+    db.prepare(`
+      INSERT INTO qr_codes (id, alias, slug, organization_id, created_by_id, created_at, updated_at)
+      VALUES (?, ?, ?, ?, ?, ?, ?)
+    `).run("defaulted", "Defaulted", "defaultslug", "org-1", "owner", 6000, 6000)
+    expect(readClaimability(db)).toContainEqual({ id: "defaulted", claimable: 1 })
     db.close()
   })
 
@@ -174,7 +181,15 @@ describe("QR migrations", () => {
       { id: "owned", claimable: 0 },
       { id: "plain", claimable: 1 },
     ])
+    const beforeRerun = {
+      legacyContent: readLegacyContent(db),
+      claimability: readClaimability(db),
+    }
     expect(() => applyMigrations(db, ["0004_preserve_legacy_qr_content.sql"])).not.toThrow()
+    expect({
+      legacyContent: readLegacyContent(db),
+      claimability: readClaimability(db),
+    }).toEqual(beforeRerun)
     db.close()
   })
 })

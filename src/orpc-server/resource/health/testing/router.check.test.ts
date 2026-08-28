@@ -22,6 +22,6 @@ describe("health router check", () => {
     await expect(call(health.check, {}, { context })).resolves.toEqual({
       ok: true,
     })
-    expect(repository.checkDatabase).toHaveBeenCalledOnce()
+    expect(repository.checkDatabase.mock.calls).toHaveLength(1)
   })
 })

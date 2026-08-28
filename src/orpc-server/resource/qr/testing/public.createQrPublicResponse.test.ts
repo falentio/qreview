@@ -46,6 +46,8 @@ describe("createQrPublicResponse", () => {
 
       expect(response.status).toBe(200)
       expect(await response.text()).toContain("not configured")
+      expect(response.headers.get("Cache-Control")).toBe("no-store")
+      expect(response.headers.get("Location")).toBeNull()
     }
   })
 

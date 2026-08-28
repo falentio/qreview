@@ -1,13 +1,10 @@
+import { call } from "@orpc/server"
 import { describe, expect, it } from "vite-plus/test"
 import { mock } from "vitest-mock-extended"
 
+import type { ApiContext } from "@/orpc-server/context"
 import { createSession } from "@/orpc-server/resource/session"
-import {
-  SessionRepository,
-  type AuthSession,
-  type SessionAuth,
-} from "@/orpc-server/resource/session/repository"
-import { SessionService } from "@/orpc-server/resource/session/service"
+import type { AuthSession, SessionAuth } from "@/orpc-server/resource/session/repository"
 
 const currentSession = {
   user: {
@@ -27,13 +24,23 @@ describe("createSession", () => {
     authApi.getSession.mockResolvedValue(currentSession)
 
     const session = createSession({ auth })
+    const request = new Request("http://localhost/rpc", {
+      headers: { cookie: "session=token" },
+    })
+    const context = {
+      request,
+      db: {} as ApiContext["db"],
+      sessionService: session.service,
+    } satisfies ApiContext
 
-    expect(session.repository).toBeInstanceOf(SessionRepository)
-    expect(session.service).toBeInstanceOf(SessionService)
-    expect(session.router.current).toBeDefined()
-    await expect(session.service.getCurrentSession({ headers: new Headers() })).resolves.toBe(
-      currentSession,
-    )
-    expect(authApi.getSession).toHaveBeenCalledWith({ headers: new Headers() })
+    await expect(call(session.router.current, {}, { context })).resolves.toEqual({
+      user: {
+        id: "user-1",
+        email: "user@example.com",
+        name: "Example User",
+      },
+      expiresAt: "2030-01-01T00:00:00.000Z",
+    })
+    expect(authApi.getSession.mock.calls).toEqual([[{ headers: request.headers }]])
   })
 })

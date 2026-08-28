@@ -11,6 +11,6 @@ describe("HealthService.check", () => {
     const service = new HealthService({ repository })
 
     await expect(service.check()).resolves.toEqual({ ok: true })
-    expect(repository.checkDatabase).toHaveBeenCalledOnce()
+    expect(repository.checkDatabase.mock.calls).toHaveLength(1)
   })
 })

@@ -1,25 +1,22 @@
-import { describe, expect, it } from "vite-plus/test"
+import { describe, expect, it, vi } from "vite-plus/test"
 import { mock } from "vitest-mock-extended"
 
 import type { Database } from "@/db/client"
 import { createQr } from "@/orpc-server/resource/qr"
-import { QrRepository } from "@/orpc-server/resource/qr/repository"
 import type { PlacesAdapter } from "@/orpc-server/resource/qr/places"
-import { QrService } from "@/orpc-server/resource/qr/service"
 
 describe("createQr", () => {
-  it("composes the contract resource layers around the injected adapters", () => {
+  it("composes the contract resource layers around the injected adapters", async () => {
     const db = mock<Database>()
     const places = mock<PlacesAdapter>()
 
     const qr = createQr({ db, places })
+    const findBySlug = vi.spyOn(qr.repository, "findBySlug").mockResolvedValue(null)
 
-    expect(qr.repository).toBeInstanceOf(QrRepository)
-    expect(qr.service).toBeInstanceOf(QrService)
-    expect(qr.router.resolve).toBeDefined()
-    expect(qr.router.createOrphan).toBeDefined()
-    expect(qr.router.claim).toBeDefined()
-    expect(qr.router.restore).toBeDefined()
-    expect(qr.publicResponse).toBeDefined()
+    const response = await qr.publicResponse({ slug: "abc123def4" })
+
+    expect(response.status).toBe(404)
+    expect(response.headers.get("Cache-Control")).toBe("no-store")
+    expect(findBySlug.mock.calls).toEqual([[{ slug: "abc123def4" }]])
   })
 })

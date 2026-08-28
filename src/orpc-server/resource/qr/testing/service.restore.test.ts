@@ -35,5 +35,25 @@ describe("QrService.restore", () => {
     ).resolves.toMatchObject({
       deletedAt: null,
     })
+    expect(repository.findById.mock.calls).toEqual([[{ id: "qr-1" }]])
+    expect(repository.restoreById.mock.calls).toEqual([
+      [
+        {
+          id: "qr-1",
+          organizationId: "org-1",
+          updatedAt: new Date("2030-01-01T00:00:00.000Z"),
+        },
+      ],
+    ])
+  })
+
+  it("reports not found when the restore update affects no record", async () => {
+    const { repository, service } = setup()
+    repository.findById.mockResolvedValue(createQrRecord({ deletedAt: new Date() }))
+    repository.restoreById.mockResolvedValue(null)
+
+    await expect(
+      service.restore({ actor: owner, organizationId: "org-1", id: "qr-1" }),
+    ).rejects.toMatchObject({ code: "NOT_FOUND" })
   })
 })

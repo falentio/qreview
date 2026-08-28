@@ -83,18 +83,39 @@ describe("GooglePlacesAdapter.search", () => {
   })
 
   it("returns no more than five valid candidates even when the API over-returns", async () => {
+    let requestInput: RequestInfo | URL | undefined
+    let requestInit: RequestInit | undefined
     const adapter = new GooglePlacesAdapter({
       apiKey: "test-key",
-      fetcher: async () =>
-        response(200, {
+      fetcher: async (input, init) => {
+        requestInput = input
+        requestInit = init
+        return response(200, {
           places: Array.from({ length: 6 }, (_, index) => ({
             id: `ChIJ1234567${index}`,
             displayName: { text: `Example location ${index}` },
           })),
-        }),
+        })
+      },
     })
 
-    await expect(adapter.search({ query: "Example" })).resolves.toHaveLength(5)
+    await expect(adapter.search({ query: " Example " })).resolves.toEqual([
+      { placeId: "ChIJ12345670", name: "Example location 0", address: null },
+      { placeId: "ChIJ12345671", name: "Example location 1", address: null },
+      { placeId: "ChIJ12345672", name: "Example location 2", address: null },
+      { placeId: "ChIJ12345673", name: "Example location 3", address: null },
+      { placeId: "ChIJ12345674", name: "Example location 4", address: null },
+    ])
+    expect(requestInput).toBe("https://places.googleapis.com/v1/places:searchText")
+    expect(requestInit).toEqual({
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        "X-Goog-Api-Key": "test-key",
+        "X-Goog-FieldMask": "places.id,places.displayName,places.formattedAddress",
+      },
+      body: JSON.stringify({ textQuery: "Example", maxResultCount: 5 }),
+    })
   })
 
   it("rejects an overlong search query before making a Places request", async () => {
@@ -128,5 +149,22 @@ describe("GooglePlacesAdapter.search", () => {
     await expect(adapter.search({ query: "Example" })).resolves.toEqual([
       { placeId, name: "Example location", address: null },
     ])
+  })
+
+  it("rejects blank queries before making a Places request", async () => {
+    let requestCount = 0
+    const adapter = new GooglePlacesAdapter({
+      apiKey: "test-key",
+      fetcher: async () => {
+        requestCount += 1
+        return response(200, { places: [] })
+      },
+    })
+
+    await expect(adapter.search({ query: "   " })).rejects.toMatchObject({
+      code: "INVALID_INPUT",
+      httpCode: "BAD_REQUEST",
+    })
+    expect(requestCount).toBe(0)
   })
 })

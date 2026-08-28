@@ -26,14 +26,35 @@ describe("QrService.archive", () => {
   it("archives an organization QR code", async () => {
     const { repository, service } = setup()
     const active = createQrRecord()
-    const archived = createQrRecord({ deletedAt: new Date("2030-01-02T00:00:00.000Z") })
+    const archived = createQrRecord({ deletedAt: new Date("2030-01-01T00:00:00.000Z") })
     repository.findById.mockResolvedValue(active)
     repository.archiveById.mockResolvedValue(archived)
 
     await expect(
       service.archive({ actor: owner, organizationId: "org-1", id: "qr-1" }),
     ).resolves.toMatchObject({
-      deletedAt: "2030-01-02T00:00:00.000Z",
+      deletedAt: "2030-01-01T00:00:00.000Z",
     })
+    expect(repository.findById.mock.calls).toEqual([[{ id: "qr-1" }]])
+    expect(repository.archiveById.mock.calls).toEqual([
+      [
+        {
+          id: "qr-1",
+          organizationId: "org-1",
+          deletedAt: new Date("2030-01-01T00:00:00.000Z"),
+          updatedAt: new Date("2030-01-01T00:00:00.000Z"),
+        },
+      ],
+    ])
+  })
+
+  it("reports not found when the archive update affects no record", async () => {
+    const { repository, service } = setup()
+    repository.findById.mockResolvedValue(createQrRecord())
+    repository.archiveById.mockResolvedValue(null)
+
+    await expect(
+      service.archive({ actor: owner, organizationId: "org-1", id: "qr-1" }),
+    ).rejects.toMatchObject({ code: "NOT_FOUND" })
   })
 })

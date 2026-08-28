@@ -62,4 +62,41 @@ describe("QrRouter.resolve", () => {
       data: { code: "PLACES_UNAVAILABLE" },
     })
   })
+
+  it("maps an unresolved place to a bad-request ORPC error", async () => {
+    const repository = mock<QrRepository>()
+    repository.getOrganizationMemberRole.mockResolvedValue("owner")
+    const places = mock<PlacesAdapter>()
+    places.search.mockResolvedValue([])
+    const service = new QrService({
+      repository,
+      places,
+      ids: {
+        generateId: () => "generated-id",
+        generateSlug: () => "generated1a",
+      },
+    })
+    const router = createQrRouter({ service })
+    const sessionRepository = mock<SessionRepository>()
+    sessionRepository.getCurrentSession.mockResolvedValue(currentSession)
+    const context = {
+      request: new Request("http://localhost/rpc"),
+      db: {} as ApiContext["db"],
+      sessionService: new SessionService({ repository: sessionRepository }),
+    } satisfies ApiContext
+
+    await expect(
+      call(
+        router.resolve,
+        {
+          organizationId: "org-1",
+          googleMapsUrl: "https://www.google.com/maps/search/?query=Unknown",
+        },
+        { context },
+      ),
+    ).rejects.toMatchObject({
+      code: "BAD_REQUEST",
+      data: { code: "PLACE_RESOLUTION_FAILED" },
+    })
+  })
 })

@@ -52,6 +52,18 @@ describe("QrService.createOrphan", () => {
       configurationState: "incomplete",
       claimable: true,
     })
+    expect(repository.create.mock.calls[0]?.[0]).toMatchObject({
+      id: "generated-id",
+      slug: "generated1a",
+      alias: "Unclaimed sign",
+      organizationId: null,
+      createdById: globalAdmin.id,
+      claimedById: null,
+      claimedAt: null,
+      claimable: true,
+      deletedAt: null,
+    })
+    expect(repository.create.mock.calls[0]?.[0].target).toBeUndefined()
     await expect(
       service.createOrphan({ actor: owner, alias: "Not allowed" }),
     ).rejects.toMatchObject({
@@ -75,6 +87,13 @@ describe("QrService.createOrphan", () => {
       configurationState: "active",
       claimable: true,
     })
+    expect(repository.create.mock.calls[0]?.[0]).toMatchObject({
+      alias: "Configured sign",
+      organizationId: null,
+      createdById: globalAdmin.id,
+      claimable: true,
+    })
+    expect(repository.create.mock.calls).toHaveLength(1)
     expect(repository.create.mock.calls[0]?.[0].target).toEqual({
       rawGoogleMapsUrl: targetUrl,
       googlePlaceId: "ChIJ123456789",

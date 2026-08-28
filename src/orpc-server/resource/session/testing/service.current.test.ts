@@ -23,7 +23,7 @@ describe("SessionService.getCurrentSession", () => {
     const headers = new Headers({ cookie: "session=token" })
 
     await expect(service.getCurrentSession({ headers })).resolves.toBe(currentSession)
-    expect(repository.getCurrentSession).toHaveBeenCalledWith({ headers })
+    expect(repository.getCurrentSession.mock.calls).toEqual([[{ headers }]])
   })
 })
 

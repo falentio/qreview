@@ -34,7 +34,7 @@ export default defineConfig({
   },
 
   test: {
-    include: ["src/**/testing/**/*.ts"],
+    include: ["src/**/*.test.ts", "src/**/*.spec.ts"],
   },
 
   run: {
