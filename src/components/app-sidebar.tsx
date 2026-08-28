@@ -8,6 +8,7 @@ import {
   PieChart,
   QrCode,
   Send,
+  ShieldCheck,
   Settings2,
   Users,
   type LucideIcon,
@@ -24,6 +25,7 @@ export type AppUser = {
   name: string
   email: string
   image: string | null
+  role?: string | null
 }
 
 type AppSidebarProps = React.ComponentProps<typeof Sidebar> & {
@@ -94,6 +96,7 @@ export function AppSidebar({ pathname, user, ...props }: AppSidebarProps) {
   ]
 
   const navSecondary = [
+    ...(user.role === "admin" ? [{ title: "Admin", url: "/admin", icon: ShieldCheck }] : []),
     { title: "Support", url: "/app", icon: LifeBuoy },
     { title: "Feedback", url: "/app", icon: Send },
   ]

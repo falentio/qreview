@@ -1,0 +1,44 @@
+---
+export const prerender = false
+
+import AdminLayout from "@/layouts/admin-layout.astro"
+
+const user = Astro.locals.user
+---
+
+<AdminLayout title="Overview" description="Manage the QR platform.">
+  <div class="flex flex-1 flex-col gap-6 p-4 pt-0 md:p-6 md:pt-0">
+    <div class="flex flex-col gap-2 pt-2">
+      <p class="text-sm font-medium text-muted-foreground">Platform administration</p>
+      <h1 class="text-3xl font-semibold tracking-tight">Welcome back, {user?.name}</h1>
+      <p class="max-w-2xl text-muted-foreground">
+        Manage users, organizations, and QR codes across the platform.
+      </p>
+    </div>
+    <div class="grid gap-4 md:grid-cols-3">
+      <section class="rounded-xl border bg-card p-5 shadow-xs">
+        <p class="text-sm text-muted-foreground">Total users</p>
+        <p class="mt-2 text-3xl font-semibold">0</p>
+      </section>
+      <section class="rounded-xl border bg-card p-5 shadow-xs">
+        <p class="text-sm text-muted-foreground">Organizations</p>
+        <p class="mt-2 text-3xl font-semibold">0</p>
+      </section>
+      <section class="rounded-xl border bg-card p-5 shadow-xs">
+        <p class="text-sm text-muted-foreground">QR codes</p>
+        <p class="mt-2 text-3xl font-semibold">0</p>
+      </section>
+    </div>
+    <section class="flex min-h-72 flex-1 flex-col items-center justify-center rounded-xl border border-dashed bg-muted/20 p-8 text-center">
+      <div class="flex size-12 items-center justify-center rounded-xl bg-primary/10 text-primary">
+        <svg viewBox="0 0 24 24" class="size-6" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true">
+          <path d="M12 3v18M3 12h18M5.6 5.6l12.8 12.8M18.4 5.6 5.6 18.4" />
+        </svg>
+      </div>
+      <h2 class="mt-4 text-lg font-semibold">Admin dashboard ready</h2>
+      <p class="mt-1 max-w-md text-sm text-muted-foreground">
+        Platform-wide management tools will appear here as they become available.
+      </p>
+    </section>
+  </div>
+</AdminLayout>
