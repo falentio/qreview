@@ -1,7 +1,9 @@
 "use client"
 
 import { useState } from "react"
-import { ExternalLink, MapPin, QrCode, Search } from "lucide-react"
+import QRCode from "qrcode"
+import { Download, ExternalLink, FileArchive, MapPin, QrCode, Search } from "lucide-react"
+import { render } from "takumi-js"
 
 import { rpcClient } from "@/orpc-client"
 import { Button } from "@/components/ui/button"
@@ -9,6 +11,12 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Field, FieldDescription, FieldError, FieldGroup, FieldLabel } from "@/components/ui/field"
 import { Input } from "@/components/ui/input"
 import { Spinner } from "@/components/ui/spinner"
+import {
+  GOOGLE_REVIEW_CARD_FONTS,
+  GOOGLE_REVIEW_CARD_SIZE,
+  GoogleReviewCard,
+} from "@/templates/google-review-card"
+import { createUncompressedTar, type TarFile } from "@/lib/utils"
 
 type FormValues = {
   alias: string
@@ -19,6 +27,11 @@ type FormValues = {
 type FormErrors = Partial<Record<keyof FormValues, string>> & { place?: string }
 type PlaceCandidate = Awaited<ReturnType<typeof rpcClient.qr.resolvePlace>>["candidates"][number]
 type CreatedQr = Awaited<ReturnType<typeof rpcClient.qr.batchCreateOrphan>>["items"][number]
+type DownloadState =
+  | { kind: "png"; slug: string }
+  | { kind: "template"; slug: string }
+  | { kind: "templates"; completed: number }
+  | null
 
 const initialValues: FormValues = {
   alias: "QR code",
@@ -61,6 +74,8 @@ export function QrBatchCreateForm() {
   const [isResolving, setIsResolving] = useState(false)
   const [createdItems, setCreatedItems] = useState<CreatedQr[]>([])
   const [isSubmitting, setIsSubmitting] = useState(false)
+  const [downloadState, setDownloadState] = useState<DownloadState>(null)
+  const [downloadError, setDownloadError] = useState<string | null>(null)
 
   function updateValue(name: keyof FormValues, value: string) {
     setValues((current) => ({ ...current, [name]: value }))
@@ -122,6 +137,94 @@ export function QrBatchCreateForm() {
       setRequestError(getErrorMessage(error, "Could not create the QR codes. Please try again."))
     } finally {
       setIsSubmitting(false)
+    }
+  }
+
+  async function downloadQrCode(slug: string) {
+    setDownloadState({ kind: "png", slug })
+    setDownloadError(null)
+
+    try {
+      const dataUrl = await QRCode.toDataURL(redirectUrl(slug), {
+        errorCorrectionLevel: "H",
+        margin: 4,
+        width: 800,
+        color: {
+          dark: "#162235",
+          light: "#ffffff",
+        },
+      })
+      const link = document.createElement("a")
+      link.href = dataUrl
+      link.download = `qr-code-${slug}.png`
+      document.body.appendChild(link)
+      link.click()
+      link.remove()
+    } catch (error) {
+      setDownloadError(getErrorMessage(error, "Could not generate the QR code. Please try again."))
+    } finally {
+      setDownloadState(null)
+    }
+  }
+
+  function redirectUrl(slug: string) {
+    return new URL(`/r/${slug}`, window.location.origin).toString()
+  }
+
+  function downloadBlob(blob: Blob, filename: string) {
+    const url = URL.createObjectURL(blob)
+    const link = document.createElement("a")
+    link.href = url
+    link.download = filename
+    document.body.appendChild(link)
+    link.click()
+    link.remove()
+    window.setTimeout(() => URL.revokeObjectURL(url), 0)
+  }
+
+  async function generateTemplate(slug: string) {
+    return render(<GoogleReviewCard qrUrl={redirectUrl(slug)} />, {
+      ...GOOGLE_REVIEW_CARD_SIZE,
+      fonts: GOOGLE_REVIEW_CARD_FONTS,
+    })
+  }
+
+  async function downloadTemplate(slug: string) {
+    setDownloadState({ kind: "template", slug })
+    setDownloadError(null)
+
+    try {
+      const png = await generateTemplate(slug)
+      downloadBlob(new Blob([png], { type: "image/png" }), `google-review-card-${slug}.png`)
+    } catch (error) {
+      setDownloadError(
+        getErrorMessage(error, "Could not generate the review card template. Please try again."),
+      )
+    } finally {
+      setDownloadState(null)
+    }
+  }
+
+  async function downloadAllTemplates() {
+    setDownloadState({ kind: "templates", completed: 0 })
+    setDownloadError(null)
+
+    try {
+      const files: TarFile[] = []
+      for (const [index, item] of createdItems.entries()) {
+        const png = await generateTemplate(item.slug)
+        files.push({ name: `google-review-card-${item.slug}.png`, data: png })
+        setDownloadState({ kind: "templates", completed: index + 1 })
+      }
+
+      const archive = createUncompressedTar(files)
+      downloadBlob(new Blob([archive], { type: "application/x-tar" }), "google-review-cards.tar")
+    } catch (error) {
+      setDownloadError(
+        getErrorMessage(error, "Could not generate the review card templates. Please try again."),
+      )
+    } finally {
+      setDownloadState(null)
     }
   }
 
@@ -248,7 +351,7 @@ export function QrBatchCreateForm() {
               )}
 
               <div className="flex justify-end">
-                <Button type="submit" disabled={isSubmitting}>
+                <Button type="submit" disabled={isSubmitting || downloadState !== null}>
                   {isSubmitting ? <Spinner /> : <QrCode />}
                   {isSubmitting ? "Creating QR codes..." : "Create QR codes"}
                 </Button>
@@ -261,7 +364,21 @@ export function QrBatchCreateForm() {
       {createdItems.length > 0 && (
         <Card>
           <CardHeader>
-            <CardTitle>QR records created</CardTitle>
+            <div className="flex flex-wrap items-start justify-between gap-3">
+              <CardTitle>QR records created</CardTitle>
+              <Button
+                type="button"
+                variant="outline"
+                size="sm"
+                onClick={() => void downloadAllTemplates()}
+                disabled={downloadState !== null}
+              >
+                {downloadState?.kind === "templates" ? <Spinner /> : <FileArchive />}
+                {downloadState?.kind === "templates"
+                  ? `Generating ${downloadState.completed}/${createdItems.length}...`
+                  : "Download all as templates"}
+              </Button>
+            </div>
             <CardDescription>
               {createdItems.length} unclaimed QR{" "}
               {createdItems.length === 1 ? "record is" : "records are"} ready for client-side image
@@ -279,8 +396,40 @@ export function QrBatchCreateForm() {
                     <p className="text-sm font-medium">QR code {index + 1}</p>
                     <p className="truncate text-sm text-muted-foreground">{item.alias}</p>
                   </div>
-                  <div className="flex items-center gap-4">
+                  <div className="flex flex-wrap items-center gap-2">
                     <code className="rounded bg-muted px-2 py-1 text-xs">{item.slug}</code>
+                    <Button
+                      type="button"
+                      variant="outline"
+                      size="sm"
+                      onClick={() => void downloadQrCode(item.slug)}
+                      disabled={downloadState !== null}
+                    >
+                      {downloadState?.kind === "png" && downloadState.slug === item.slug ? (
+                        <Spinner />
+                      ) : (
+                        <Download />
+                      )}
+                      {downloadState?.kind === "png" && downloadState.slug === item.slug
+                        ? "Generating..."
+                        : "Download PNG"}
+                    </Button>
+                    <Button
+                      type="button"
+                      variant="outline"
+                      size="sm"
+                      onClick={() => void downloadTemplate(item.slug)}
+                      disabled={downloadState !== null}
+                    >
+                      {downloadState?.kind === "template" && downloadState.slug === item.slug ? (
+                        <Spinner />
+                      ) : (
+                        <Download />
+                      )}
+                      {downloadState?.kind === "template" && downloadState.slug === item.slug
+                        ? "Generating..."
+                        : "Download template"}
+                    </Button>
                     <a
                       href={`/r/${item.slug}`}
                       target="_blank"
@@ -294,8 +443,13 @@ export function QrBatchCreateForm() {
                 </div>
               ))}
             </div>
+            {downloadError && (
+              <p role="alert" className="mt-4 text-sm text-destructive">
+                {downloadError}
+              </p>
+            )}
             <p className="mt-4 text-sm text-muted-foreground">
-              QR image generation is intentionally left for the client-side follow-up step.
+              QR and template image generation happens entirely in your browser.
             </p>
           </CardContent>
         </Card>

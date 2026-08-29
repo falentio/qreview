@@ -19,7 +19,6 @@ const COLOR_WAVE_HEIGHT = 211
 export type GoogleReviewCardProps = {
   /** The URL encoded in the QR code. */
   qrUrl: string
-  businessName?: string
 }
 
 const columnStyle: CSSProperties = {
@@ -317,7 +316,7 @@ function ActionPanel({ qrUrl }: { qrUrl: string }) {
   )
 }
 
-export function GoogleReviewCard({ businessName = "our business", qrUrl }: GoogleReviewCardProps) {
+export function GoogleReviewCard({ qrUrl }: GoogleReviewCardProps) {
   return (
     <div
       style={{
@@ -411,7 +410,7 @@ export function GoogleReviewCard({ businessName = "our business", qrUrl }: Googl
               width: "100%",
             }}
           >
-            <div>Thank you, {businessName}!</div>
+            <div>Thank you!</div>
           </div>
 
           <div style={{ alignItems: "center", display: "flex", gap: "14px", marginTop: "22px" }}>
