@@ -14,10 +14,13 @@ pnpm version and its runtime uses the pinned Node.js version declared in
 3. Create a local `.dev.vars` file from `.dev.vars.example`.
 4. Replace the D1 placeholder in `wrangler.jsonc` with the ID from
    `vp exec wrangler d1 create qr` before using a remote database.
-5. Generate Worker types with `vp run generate-types`.
-6. Generate the Better Auth schema with `vp run auth:generate`.
-7. Generate Drizzle migrations with `vp run db:generate`.
-8. Apply local migrations with `vp run db:migrate:local`.
+5. Create a KV namespace with `vp exec wrangler kv namespace create PLACES_CACHE`.
+6. Replace the `PLACES_CACHE` placeholder in `wrangler.jsonc` and
+   `wrangler.integration.jsonc` with the returned namespace ID.
+7. Generate Worker types with `vp run generate-types`.
+8. Generate the Better Auth schema with `vp run auth:generate`.
+9. Generate Drizzle migrations with `vp run db:generate`.
+10. Apply local migrations with `vp run db:migrate:local`.
 
 ## Commands
 

@@ -17,6 +17,13 @@
       "migrations_dir": "./drizzle",
     },
   ],
+  "kv_namespaces": [
+    {
+      "binding": "PLACES_CACHE",
+      // Replace this local placeholder with the ID from `wrangler kv namespace create PLACES_CACHE`.
+      "id": "00000000000000000000000000000000",
+    },
+  ],
   "observability": {
     "enabled": true,
   },

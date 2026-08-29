@@ -54,10 +54,7 @@ export class GooglePlacesAdapter implements PlacesAdapter {
   ) {}
 
   async search({ query }: { query: string }): Promise<PlaceCandidate[]> {
-    const normalizedQuery = query.trim()
-    if (!normalizedQuery || normalizedQuery.length > MAX_GOOGLE_MAPS_QUERY_LENGTH) {
-      throw new QrDomainError("INVALID_INPUT", "The Google Maps place query is invalid.")
-    }
+    const normalizedQuery = normalizeGooglePlacesQuery(query)
 
     const response = await this.request("https://places.googleapis.com/v1/places:searchText", {
       method: "POST",
@@ -139,6 +136,14 @@ export class GooglePlacesAdapter implements PlacesAdapter {
       })
     }
   }
+}
+
+export function normalizeGooglePlacesQuery(query: string): string {
+  const normalizedQuery = query.trim()
+  if (!normalizedQuery || normalizedQuery.length > MAX_GOOGLE_MAPS_QUERY_LENGTH) {
+    throw new QrDomainError("INVALID_INPUT", "The Google Maps place query is invalid.")
+  }
+  return normalizedQuery
 }
 
 function throwForResponse(status: number, message: string): never {

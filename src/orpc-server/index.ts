@@ -1,16 +1,21 @@
 import { auth, db } from "@/lib/auth"
-import { env } from "cloudflare:workers"
+import { env, waitUntil } from "cloudflare:workers"
 import { createApiContext as createContext } from "@/orpc-server/context"
 import { implementer } from "@/orpc-server/implementer"
 import { createHealth } from "@/orpc-server/resource/health"
 import { createQr } from "@/orpc-server/resource/qr"
+import { CloudflareKvJsonCache } from "@/orpc-server/resource/qr/cache"
+import { CachedPlacesAdapter } from "@/orpc-server/resource/qr/places-cache"
 import { GooglePlacesAdapter } from "@/orpc-server/resource/qr/places"
 import { createSession } from "@/orpc-server/resource/session"
 
 const healthResource = createHealth({ db })
 const qrResource = createQr({
   db,
-  places: new GooglePlacesAdapter({ apiKey: env.GOOGLE_MAPS_API_KEY }),
+  places: new CachedPlacesAdapter({
+    places: new GooglePlacesAdapter({ apiKey: env.GOOGLE_MAPS_API_KEY }),
+    cache: new CloudflareKvJsonCache({ namespace: env.PLACES_CACHE, waitUntil }),
+  }),
 })
 const sessionResource = createSession({ auth })
 

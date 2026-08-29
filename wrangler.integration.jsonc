@@ -11,4 +11,10 @@
       "migrations_dir": "./drizzle",
     },
   ],
+  "kv_namespaces": [
+    {
+      "binding": "PLACES_CACHE",
+      "id": "00000000000000000000000000000000",
+    },
+  ],
 }
