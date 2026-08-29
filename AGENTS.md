@@ -25,6 +25,7 @@
 - Use subagents to do work with playwright to save our token context window, subagents must output all reusable informations for consequtive playwright subagents, so no redundant explorations.
 - If you feel the approaches are not clean/SOLID, you MUST propose alternative approaches using ask tool, let human decide.
 - Always keep dev server running at background (vp run dev --background)
+- We does not has component testing (neither as unit test nor e2e), so smoke test when you did change page/component using playwright
 
 ## Third-Party Libraries
 

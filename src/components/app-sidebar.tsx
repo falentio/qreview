@@ -56,18 +56,6 @@ export function AppSidebar({ pathname, user, ...props }: AppSidebarProps) {
       isActive: isActivePath(pathname, "/app"),
     },
     {
-      title: "QR codes",
-      url: "/app/qr-codes",
-      icon: QrCode,
-      isActive: isActivePath(pathname, "/app/qr-codes"),
-      items: [
-        { title: "All QR codes", url: "/app/qr-codes" },
-        { title: "Adopt a QR code", url: "/app/qr-codes/adopt" },
-        { title: "Create a QR code", url: "/app/qr-codes/new" },
-        { title: "Archived", url: "/app/qr-codes/archived" },
-      ],
-    },
-    {
       title: "Team",
       url: "/app/team",
       icon: Users,
@@ -89,6 +77,21 @@ export function AppSidebar({ pathname, user, ...props }: AppSidebarProps) {
     },
   ]
 
+  const qrNavigation: NavItem[] = [
+    {
+      title: "QR codes",
+      url: "/app/qr-codes",
+      icon: QrCode,
+      isActive: isActivePath(pathname, "/app/qr-codes"),
+      items: [
+        { title: "All QR codes", url: "/app/qr-codes" },
+        { title: "Adopt a QR code", url: "/app/qr-codes/adopt" },
+        { title: "Create a QR code", url: "/app/qr-codes/new" },
+        { title: "Archived", url: "/app/qr-codes/archived" },
+      ],
+    },
+  ]
+
   const projects = [
     { name: "Google Reviews", url: "/app/qr-codes", icon: Frame },
     { name: "Events", url: "/app/qr-codes", icon: PieChart },
@@ -106,6 +109,7 @@ export function AppSidebar({ pathname, user, ...props }: AppSidebarProps) {
         <OrganizationSwitcher />
       </SidebarHeader>
       <SidebarContent>
+        <NavMain items={qrNavigation} pathname={pathname} label="QR codes" />
         <NavMain items={navMain} pathname={pathname} />
         <NavProjects projects={projects} />
         <NavSecondary items={navSecondary} className="mt-auto" />

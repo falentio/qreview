@@ -1,0 +1,20 @@
+---
+export const prerender = false
+
+import AppLayout from "@/layouts/app-layout.astro"
+import { QrCodeList } from "@/components/app/qr-code-list"
+---
+
+<AppLayout title="Archived QR codes" description="Restore QR codes archived from your business.">
+  <div class="flex flex-1 flex-col gap-6 p-4 pt-0 md:p-6 md:pt-0">
+    <div class="flex flex-col gap-2 pt-2">
+      <p class="text-sm font-medium text-muted-foreground">QR codes</p>
+      <h1 class="text-3xl font-semibold tracking-tight">Archived QR codes</h1>
+      <p class="max-w-2xl text-muted-foreground">
+        Review QR codes archived from your active business and restore them when they are ready to use
+        again.
+      </p>
+    </div>
+    <QrCodeList view="archived" client:only="react" />
+  </div>
+</AppLayout>

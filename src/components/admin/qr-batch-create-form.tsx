@@ -3,7 +3,6 @@
 import { useState } from "react"
 import QRCode from "qrcode"
 import { Download, ExternalLink, FileArchive, MapPin, QrCode, Search } from "lucide-react"
-import { render } from "takumi-js"
 
 import { rpcClient } from "@/orpc-client"
 import { Button } from "@/components/ui/button"
@@ -11,11 +10,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Field, FieldDescription, FieldError, FieldGroup, FieldLabel } from "@/components/ui/field"
 import { Input } from "@/components/ui/input"
 import { Spinner } from "@/components/ui/spinner"
-import {
-  GOOGLE_REVIEW_CARD_FONTS,
-  GOOGLE_REVIEW_CARD_SIZE,
-  GoogleReviewCard,
-} from "@/templates/google-review-card"
+import { renderGoogleReviewTemplate } from "@/lib/qr-template"
 import { createUncompressedTar, getErrorMessage, type TarFile } from "@/lib/utils"
 
 type FormValues = {
@@ -179,10 +174,7 @@ export function QrBatchCreateForm() {
   }
 
   async function generateTemplate(slug: string) {
-    return render(<GoogleReviewCard qrUrl={redirectUrl(slug)} />, {
-      ...GOOGLE_REVIEW_CARD_SIZE,
-      fonts: GOOGLE_REVIEW_CARD_FONTS,
-    })
+    return renderGoogleReviewTemplate(redirectUrl(slug))
   }
 
   async function downloadTemplate(slug: string) {

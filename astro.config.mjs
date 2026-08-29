@@ -15,6 +15,7 @@ export default defineConfig({
     plugins: [tailwindcss()],
     optimizeDeps: {
       include: ["astro/assets/services/noop", "astro/logger/json"],
+      exclude: ["qr-scanner"],
     },
     resolve: {
       dedupe: ["react", "react-dom"],

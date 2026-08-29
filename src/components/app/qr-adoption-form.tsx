@@ -25,7 +25,9 @@ type DialogStep = "scan" | "success"
 type ClaimedQr = Awaited<ReturnType<typeof rpcClient.qr.claim>>
 
 export function QrAdoptionForm() {
+  const { data: organizations } = authClient.useListOrganizations()
   const { data: activeOrganization } = authClient.useActiveOrganization()
+  const selectedOrganization = activeOrganization ?? organizations?.[0]
   const [open, setOpen] = useState(false)
   const [step, setStep] = useState<DialogStep>("scan")
   const [manualSlug, setManualSlug] = useState("")
@@ -77,7 +79,7 @@ export function QrAdoptionForm() {
       return
     }
 
-    if (!activeOrganization) {
+    if (!selectedOrganization) {
       setScanError("Select a business in the sidebar before adopting a QR code.")
       return
     }
@@ -91,7 +93,7 @@ export function QrAdoptionForm() {
 
     try {
       const result = await rpcClient.qr.claim({
-        organizationId: activeOrganization.id,
+        organizationId: selectedOrganization.id,
         slug: nextSlug,
       })
       if (requestId !== claimRequestRef.current) return
@@ -160,8 +162,8 @@ export function QrAdoptionForm() {
             </div>
             <div>
               <p className="text-sm font-medium">
-                {activeOrganization
-                  ? `Assign a code to ${activeOrganization.name}`
+                {selectedOrganization
+                  ? `Assign a code to ${selectedOrganization.name}`
                   : "Select a business first"}
               </p>
               <p className="mt-1 text-sm text-muted-foreground">
@@ -173,7 +175,7 @@ export function QrAdoptionForm() {
             <Button
               type="button"
               onClick={openScanner}
-              disabled={!activeOrganization}
+              disabled={!selectedOrganization}
               className="w-full sm:w-auto"
             >
               <ScanLine aria-hidden="true" />
@@ -183,7 +185,7 @@ export function QrAdoptionForm() {
               type="button"
               variant="outline"
               onClick={openUploader}
-              disabled={!activeOrganization}
+              disabled={!selectedOrganization}
               className="w-full sm:w-auto"
             >
               <Upload aria-hidden="true" />
@@ -206,7 +208,7 @@ export function QrAdoptionForm() {
               </DialogHeader>
               <div className="flex flex-col gap-3">
                 <QrCodeCamera
-                  active={open && !isClaiming && Boolean(activeOrganization)}
+                  active={open && !isClaiming && Boolean(selectedOrganization)}
                   onScan={(value) => void adoptFromQrValue(value)}
                   onError={setCameraError}
                 />
@@ -219,7 +221,7 @@ export function QrAdoptionForm() {
                     Adopting QR code...
                   </p>
                 )}
-                {!activeOrganization && (
+                {!selectedOrganization && (
                   <p role="alert" className="text-sm text-destructive">
                     Select a business in the sidebar before adopting a QR code.
                   </p>
@@ -238,7 +240,7 @@ export function QrAdoptionForm() {
                   type="button"
                   variant="outline"
                   onClick={() => uploadInputRef.current?.click()}
-                  disabled={isUploading || isClaiming || !activeOrganization}
+                  disabled={isUploading || isClaiming || !selectedOrganization}
                   className="w-full"
                 >
                   {isUploading ? <Spinner /> : <Upload />}
@@ -260,13 +262,13 @@ export function QrAdoptionForm() {
                     autoComplete="off"
                     spellCheck={false}
                     aria-label="QR code slug"
-                    disabled={isClaiming || !activeOrganization}
+                    disabled={isClaiming || !selectedOrganization}
                   />
                   <Button
                     type="submit"
                     variant="outline"
                     className="sm:w-auto"
-                    disabled={isClaiming || !activeOrganization}
+                    disabled={isClaiming || !selectedOrganization}
                   >
                     Adopt slug
                   </Button>
@@ -288,7 +290,7 @@ export function QrAdoptionForm() {
                 <DialogDescription>
                   QR code{" "}
                   <code className="rounded bg-muted px-1.5 py-0.5 text-xs">{claimedQr.slug}</code>{" "}
-                  is now assigned to {activeOrganization?.name ?? "your business"}.
+                  is now assigned to {selectedOrganization?.name ?? "your business"}.
                 </DialogDescription>
               </DialogHeader>
               <div className="flex flex-col gap-2 rounded-lg border bg-muted/30 p-3 text-sm">
