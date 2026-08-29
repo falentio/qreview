@@ -15,4 +15,18 @@ describe.skipIf(!apiKey)("Google Places API", () => {
     expect(candidate?.placeId).toMatch(/^ChI/)
     expect(candidate?.name).toBeTruthy()
   }, 30_000)
+
+  it("retrieves the reported place details", async () => {
+    const adapter = new GooglePlacesAdapter({ apiKey })
+    const details = await adapter.getPlaceDetails({
+      placeId: "ChIJw2FfuS6HeC4R7Kah0w7ATVI",
+    })
+
+    expect(details).toMatchObject({
+      placeId: "ChIJw2FfuS6HeC4R7Kah0w7ATVI",
+      canonicalReviewUrl: expect.stringMatching(
+        /^https:\/\/www\.google\.com\/maps\/place\/\/data=/,
+      ),
+    })
+  }, 30_000)
 })

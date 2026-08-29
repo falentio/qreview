@@ -1,6 +1,7 @@
 import { QrDomainError } from "@/orpc-server/resource/qr/errors"
 
 const allowedHosts = new Set(["google.com", "www.google.com", "maps.google.com"])
+const shortUrlHost = "maps.app.goo.gl"
 export const MAX_GOOGLE_MAPS_URL_LENGTH = 2048
 export const MAX_GOOGLE_MAPS_QUERY_LENGTH = 200
 
@@ -19,7 +20,10 @@ function findPlaceId(url: URL): string | null {
   if (isGooglePlaceId(queryPlaceId)) return queryPlaceId
 
   const decodedUrl = decodeUrlPart(url.href)
-  const dataPlaceId = decodedUrl.match(/(?:!1s|place_id:)([A-Za-z0-9_-]{10,})/i)?.[1] ?? null
+  const dataPlaceId =
+    decodedUrl.match(/!1s(ChI[A-Za-z0-9_-]{8,})(?:!|$)/i)?.[1] ??
+    decodedUrl.match(/place_id:([A-Za-z0-9_-]{10,})/i)?.[1] ??
+    null
   if (isGooglePlaceId(dataPlaceId)) return dataPlaceId
 
   const pathPlaceId =
@@ -55,7 +59,12 @@ function decodeUrlPart(value: string): string {
   }
 }
 
-export function parseGoogleMapsUrl(rawValue: string): ParsedGoogleMapsUrl {
+type RawGoogleMapsUrl = {
+  rawUrl: string
+  url: URL
+}
+
+function parseRawGoogleMapsUrl(rawValue: string): RawGoogleMapsUrl {
   const rawUrl = rawValue.trim()
   if (rawUrl.length > MAX_GOOGLE_MAPS_URL_LENGTH) {
     throw new QrDomainError("INVALID_GOOGLE_MAPS_URL", "The Google Maps URL is too long.")
@@ -69,6 +78,61 @@ export function parseGoogleMapsUrl(rawValue: string): ParsedGoogleMapsUrl {
       cause: error,
     })
   }
+
+  return { rawUrl, url }
+}
+
+function isGoogleMapsShortUrlValue(url: URL): boolean {
+  return (
+    url.protocol === "https:" &&
+    url.hostname.toLowerCase() === shortUrlHost &&
+    !url.username &&
+    !url.password &&
+    !url.port &&
+    /^\/[A-Za-z0-9_-]+\/?$/.test(url.pathname)
+  )
+}
+
+export function isGoogleMapsShortUrl(rawValue: string): boolean {
+  try {
+    return isGoogleMapsShortUrlValue(parseRawGoogleMapsUrl(rawValue).url)
+  } catch {
+    return false
+  }
+}
+
+export async function resolveGoogleMapsUrl(
+  rawValue: string,
+  fetcher: typeof fetch = fetch,
+): Promise<ParsedGoogleMapsUrl> {
+  const { rawUrl, url } = parseRawGoogleMapsUrl(rawValue)
+  if (!isGoogleMapsShortUrlValue(url)) return parseGoogleMapsUrl(rawUrl)
+
+  let response: Response
+  try {
+    response = await fetcher(rawUrl, { redirect: "follow" })
+  } catch (error) {
+    throw new QrDomainError(
+      "PLACE_RESOLUTION_FAILED",
+      "The Google Maps short URL could not be resolved.",
+      {
+        cause: error,
+      },
+    )
+  }
+
+  if (!response.ok || !response.url || response.url === rawUrl) {
+    throw new QrDomainError(
+      "PLACE_RESOLUTION_FAILED",
+      "The Google Maps short URL could not be resolved.",
+    )
+  }
+
+  return { ...parseGoogleMapsUrl(response.url), rawUrl }
+}
+
+export function parseGoogleMapsUrl(rawValue: string): ParsedGoogleMapsUrl {
+  const { rawUrl, url } = parseRawGoogleMapsUrl(rawValue)
 
   const hostname = url.hostname.toLowerCase()
   if (
@@ -112,9 +176,9 @@ export function isGoogleCanonicalReviewUrl(value: string): boolean {
 
     return (
       hostname === "www.google.com" &&
-      !url.search &&
       url.pathname.match(/^\/maps\/place\/\/data=!4m3!3m2!1s0x[0-9a-f]+:0x[0-9a-f]+!12e1$/i) !==
-        null
+        null &&
+      (!url.search || (url.searchParams.size === 1 && Boolean(url.searchParams.get("g_mp"))))
     )
   } catch {
     return false

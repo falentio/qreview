@@ -46,6 +46,16 @@ describe("parseGoogleMapsUrl", () => {
       query: null,
     })
     expect(
+      parseGoogleMapsUrl(
+        "https://www.google.com/maps/place/Hadar+Kopi+%26+Jamu/@-7.8840559,112.5184512,17z/data=!3m1!4b1!4m6!3m5!1s0x2e78872eb95f61c3:0x524dc00ed3a1a6ec!8m2!3d-7.8840559!4d112.5184512!16s%2Fg%2F11stf9xb64",
+      ),
+    ).toEqual({
+      rawUrl:
+        "https://www.google.com/maps/place/Hadar+Kopi+%26+Jamu/@-7.8840559,112.5184512,17z/data=!3m1!4b1!4m6!3m5!1s0x2e78872eb95f61c3:0x524dc00ed3a1a6ec!8m2!3d-7.8840559!4d112.5184512!16s%2Fg%2F11stf9xb64",
+      placeId: null,
+      query: "Hadar Kopi & Jamu",
+    })
+    expect(
       parseGoogleMapsUrl("https://www.google.com/maps/search/?q=%20Example%20Cafe%20"),
     ).toEqual({
       rawUrl: "https://www.google.com/maps/search/?q=%20Example%20Cafe%20",

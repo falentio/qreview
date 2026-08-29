@@ -20,6 +20,12 @@ export function createQrRouter({ service }: { service: QrService }) {
         }),
       ),
     ),
+    resolvePlace: implementer.qr.resolvePlace
+      .use(requireAuth)
+      .use(requireGlobalAdmin)
+      .handler(({ context, input }) =>
+        execute(() => service.resolvePlace({ actor: context.user, ...input })),
+      ),
     create: implementer.qr.create.use(requireAuth).handler(({ context, input }) =>
       execute(() =>
         service.create({
@@ -36,6 +42,12 @@ export function createQrRouter({ service }: { service: QrService }) {
       .use(requireGlobalAdmin)
       .handler(({ context, input }) =>
         execute(() => service.batchCreate({ actor: context.user, ...input })),
+      ),
+    batchCreateOrphan: implementer.qr.batchCreateOrphan
+      .use(requireAuth)
+      .use(requireGlobalAdmin)
+      .handler(({ context, input }) =>
+        execute(() => service.batchCreateOrphan({ actor: context.user, ...input })),
       ),
     createOrphan: implementer.qr.createOrphan
       .use(requireAuth)

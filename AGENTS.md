@@ -22,6 +22,9 @@
 - The API module owns one reusable aggregate oRPC implementer for server-supported resources: create it with `implement({ ... }).$context<ApiContext>()`, define resource handlers from its branches, return implemented resource routers from `create<Resource>()`, and let the API composition root assemble those routers.
 - Constructors with dependencies receive one named dependency object with explicit property names rather than positional arguments.
 - Tautological testing are considered harmfull
+- Use subagents to do work with playwright to save our token context window, subagents must output all reusable informations for consequtive playwright subagents, so no redundant explorations.
+- If you feel the approaches are not clean/SOLID, you MUST propose alternative approaches using ask tool, let human decide.
+- Always keep dev server running at background (vp run dev --background)
 
 ## Third-Party Libraries
 

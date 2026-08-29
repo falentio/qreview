@@ -44,6 +44,26 @@ describe("GooglePlacesAdapter.getPlaceDetails", () => {
     })
   })
 
+  it("accepts the Maps review URL returned for a real place", async () => {
+    const reportedPlaceId = "ChIJw2FfuS6HeC4R7Kah0w7ATVI"
+    const mapsReviewUrl =
+      "https://www.google.com/maps/place//data=!4m3!3m2!1s0x2e78872eb95f61c3:0x524dc00ed3a1a6ec!12e1?g_mp=CiVnb29nbGUubWFwcy5wbGFjZXMudjEuUGxhY2VzLkdldFBsYWNlEAIYBCAA"
+    const adapter = new GooglePlacesAdapter({
+      apiKey: "test-key",
+      fetcher: async () =>
+        response(200, {
+          id: reportedPlaceId,
+          displayName: { text: "Reported location" },
+          googleMapsLinks: { writeAReviewUri: mapsReviewUrl },
+        }),
+    })
+
+    await expect(adapter.getPlaceDetails({ placeId: reportedPlaceId })).resolves.toMatchObject({
+      placeId: reportedPlaceId,
+      canonicalReviewUrl: mapsReviewUrl,
+    })
+  })
+
   it("rejects an invalid Place ID before making a request", async () => {
     let requestCount = 0
     const adapter = new GooglePlacesAdapter({

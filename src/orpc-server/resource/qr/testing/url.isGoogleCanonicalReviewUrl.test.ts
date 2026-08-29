@@ -20,6 +20,7 @@ describe("isGoogleCanonicalReviewUrl", () => {
     for (const value of [
       "https://evil.google.com/not-a-review",
       "https://www.google.com/maps/place/Example",
+      "https://search.google.com/local/writereview?placeId=ChIJ123456789",
       "https://search.google.com/local/writereview?placeid=ChIJ123456789&hl=en",
     ]) {
       expect(isGoogleCanonicalReviewUrl(value)).toBe(false)

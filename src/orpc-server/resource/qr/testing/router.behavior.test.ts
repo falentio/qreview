@@ -86,6 +86,26 @@ describe("QrRouter behavior", () => {
     })
   })
 
+  it("resolves a Google Maps URL through the global admin route without an organization", async () => {
+    const { context, places, repository, router } = setup({ role: "admin" })
+    places.search.mockResolvedValue([
+      { placeId: "ChIJ123456789", name: "Example location", address: "1 Example Street" },
+    ])
+
+    await expect(
+      call(
+        router.resolvePlace,
+        { googleMapsUrl: "https://www.google.com/maps/search/?query=Example" },
+        { context },
+      ),
+    ).resolves.toEqual({
+      candidates: [
+        { placeId: "ChIJ123456789", name: "Example location", address: "1 Example Street" },
+      ],
+    })
+    expect(repository.getOrganizationMemberRole.mock.calls).toHaveLength(0)
+  })
+
   it("creates a QR code through the authenticated route", async () => {
     const { context, places, repository, router } = setup()
     places.getPlaceDetails.mockResolvedValue(placeDetails)
@@ -140,6 +160,31 @@ describe("QrRouter behavior", () => {
     expect(repository.create.mock.calls).toHaveLength(2)
   })
 
+  it("batch creates configured orphan QR codes through the global admin route", async () => {
+    const { context, places, repository, router } = setup({ role: "admin" })
+    places.getPlaceDetails.mockResolvedValue(placeDetails)
+    repository.create.mockResolvedValue(createQrRecord({ organizationId: null, alias: "Batch QR" }))
+
+    await expect(
+      call(
+        router.batchCreateOrphan,
+        {
+          alias: "Batch QR",
+          googleMapsUrl: targetUrl,
+          googlePlaceId: placeDetails.placeId,
+          count: 2,
+        },
+        { context },
+      ),
+    ).resolves.toMatchObject({ items: [{ alias: "Batch QR" }, { alias: "Batch QR" }] })
+    expect(places.getPlaceDetails.mock.calls).toHaveLength(1)
+    expect(repository.create.mock.calls).toHaveLength(2)
+    expect(repository.create.mock.calls.map(([input]) => input.organizationId)).toEqual([
+      null,
+      null,
+    ])
+  })
+
   it("updates an orphan map link by slug through the global admin route", async () => {
     const { context, places, repository, router } = setup({ role: "admin" })
     places.getPlaceDetails.mockResolvedValue(placeDetails)
@@ -180,6 +225,21 @@ describe("QrRouter behavior", () => {
         router.batchCreate,
         {
           organizationId: "org-1",
+          alias: "Batch QR",
+          googleMapsUrl: targetUrl,
+          googlePlaceId: placeDetails.placeId,
+          count: 2,
+        },
+        { context },
+      ),
+    ).rejects.toMatchObject({ code: "FORBIDDEN" })
+    await expect(
+      call(router.resolvePlace, { googleMapsUrl: targetUrl }, { context }),
+    ).rejects.toMatchObject({ code: "FORBIDDEN" })
+    await expect(
+      call(
+        router.batchCreateOrphan,
+        {
           alias: "Batch QR",
           googleMapsUrl: targetUrl,
           googlePlaceId: placeDetails.placeId,
@@ -285,6 +345,18 @@ describe("QrRouter behavior", () => {
           router.batchCreate,
           {
             organizationId: "org-1",
+            alias: "QR",
+            googleMapsUrl: targetUrl,
+            googlePlaceId: placeDetails.placeId,
+            count: 2,
+          },
+          { context },
+        ),
+      () => call(router.resolvePlace, { googleMapsUrl: targetUrl }, { context }),
+      () =>
+        call(
+          router.batchCreateOrphan,
+          {
             alias: "QR",
             googleMapsUrl: targetUrl,
             googlePlaceId: placeDetails.placeId,

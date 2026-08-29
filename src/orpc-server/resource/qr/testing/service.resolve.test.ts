@@ -6,12 +6,13 @@ import { owner } from "@/orpc-server/resource/qr/fixtures"
 import type { QrRepository } from "@/orpc-server/resource/qr/repository"
 import { QrService } from "@/orpc-server/resource/qr/service"
 
-function setup() {
+function setup({ fetcher }: { fetcher?: typeof fetch } = {}) {
   const repository = mock<QrRepository>()
   const places = mock<PlacesAdapter>()
   const service = new QrService({
     repository,
     places,
+    fetcher,
     ids: {
       generateId: () => "generated-id",
       generateSlug: () => "generated1a",
@@ -99,5 +100,49 @@ describe("QrService.resolve", () => {
       code: "PLACE_RESOLUTION_FAILED",
       httpCode: "BAD_REQUEST",
     })
+  })
+
+  it("resolves a place for a global admin without an organization", async () => {
+    const { places, repository, service } = setup()
+    places.search.mockResolvedValue([
+      { placeId: "ChIJ123456789", name: "Example location", address: "1 Example Street" },
+    ])
+
+    await expect(
+      service.resolvePlace({
+        actor: { id: "admin-1", role: "admin" },
+        googleMapsUrl: "https://www.google.com/maps/search/?query=Example",
+      }),
+    ).resolves.toEqual({
+      candidates: [
+        { placeId: "ChIJ123456789", name: "Example location", address: "1 Example Street" },
+      ],
+    })
+    expect(repository.getOrganizationMemberRole.mock.calls).toHaveLength(0)
+  })
+
+  it("resolves a place from a Google Maps short URL", async () => {
+    const shortUrl = "https://maps.app.goo.gl/uKP1FgLVcksve8vB8"
+    const redirectedUrl =
+      "https://www.google.com/maps/place/Hadar+Kopi+%26+Jamu/@-7.8840559,112.5184512,17z/data=!3m1!4b1!4m6!3m5!1s0x2e78872eb95f61c3:0x524dc00ed3a1a6ec!8m2!3d-7.8840559!4d112.5184512!16s%2Fg%2F11stf9xb64"
+    const fetcher = async (input: RequestInfo | URL, init?: RequestInit): Promise<Response> => {
+      expect(input).toBe(shortUrl)
+      expect(init).toEqual({ redirect: "follow" })
+      return { ok: true, url: redirectedUrl } as Response
+    }
+    const { places, service } = setup({ fetcher })
+    places.search.mockResolvedValue([
+      { placeId: "ChIJ123456789", name: "Hadar Kopi & Jamu", address: "Malang" },
+    ])
+
+    await expect(
+      service.resolvePlace({
+        actor: { id: "admin-1", role: "admin" },
+        googleMapsUrl: shortUrl,
+      }),
+    ).resolves.toEqual({
+      candidates: [{ placeId: "ChIJ123456789", name: "Hadar Kopi & Jamu", address: "Malang" }],
+    })
+    expect(places.search.mock.calls).toEqual([[{ query: "Hadar Kopi & Jamu" }]])
   })
 })

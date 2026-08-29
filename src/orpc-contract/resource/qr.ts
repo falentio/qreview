@@ -43,6 +43,7 @@ export const resolveInput = v.object(
 export const resolveOutput = v.object({
   candidates: v.array(placeCandidate),
 })
+export const resolvePlaceInput = v.pick(targetInput, ["googleMapsUrl"])
 export const createInput = v.object(
   v.entriesFromObjects([organizationInput, v.pick(qrCode, ["alias"]), targetInput]),
 )
@@ -54,6 +55,13 @@ export const batchCreateInput = v.object(
   ]),
 )
 export const batchCreateOutput = v.object({ items: v.array(qrCode) })
+export const batchCreateOrphanInput = v.object(
+  v.entriesFromObjects([
+    v.pick(qrCode, ["alias"]),
+    targetInput,
+    v.object({ count: v.pipe(v.number(), v.integer(), v.minValue(1), v.maxValue(100)) }),
+  ]),
+)
 export const createOrphanInput = v.object(
   v.entriesFromObjects([v.pick(qrCode, ["alias"]), v.partial(targetInput)]),
 )
@@ -93,8 +101,10 @@ export const restoreOutput = qrCode
 
 export const qrContract = {
   resolve: oc.input(resolveInput).output(resolveOutput),
+  resolvePlace: oc.input(resolvePlaceInput).output(resolveOutput),
   create: oc.input(createInput).output(createOutput),
   batchCreate: oc.input(batchCreateInput).output(batchCreateOutput),
+  batchCreateOrphan: oc.input(batchCreateOrphanInput).output(batchCreateOutput),
   createOrphan: oc.input(createOrphanInput).output(createOrphanOutput),
   claim: oc.input(claimInput).output(claimOutput),
   list: oc.input(listInput).output(listOutput),

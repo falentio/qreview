@@ -107,12 +107,12 @@ export class GooglePlacesAdapter implements PlacesAdapter {
     const candidate = candidateFromJson(body)
     const links =
       isJsonObject(body) && isJsonObject(body.googleMapsLinks) ? body.googleMapsLinks : null
-    const canonicalReviewUrl = links ? stringValue(links.writeAReviewUri) : null
+    const writeAReviewUri = links ? stringValue(links.writeAReviewUri) : null
     if (
       !candidate ||
       candidate.placeId !== placeId ||
-      !canonicalReviewUrl ||
-      !isGoogleCanonicalReviewUrlForPlace(canonicalReviewUrl, placeId)
+      !writeAReviewUri ||
+      !isGoogleCanonicalReviewUrlForPlace(writeAReviewUri, placeId)
     ) {
       throw new QrDomainError(
         "PLACE_RESOLUTION_FAILED",
@@ -120,7 +120,7 @@ export class GooglePlacesAdapter implements PlacesAdapter {
       )
     }
 
-    return { ...candidate, canonicalReviewUrl }
+    return { ...candidate, canonicalReviewUrl: writeAReviewUri }
   }
 
   private async request(input: RequestInfo | URL, init: RequestInit): Promise<Response> {

@@ -7,6 +7,9 @@ import { createQrRecord } from "@/orpc-server/resource/qr/fixtures"
 import type { QrRecord, QrRepository } from "@/orpc-server/resource/qr/repository"
 import { QrService } from "@/orpc-server/resource/qr/service"
 
+const reviewUrl =
+  "https://www.google.com/maps/place//data=!4m3!3m2!1s0x2e78872eb95f61c3:0x524dc00ed3a1a6ec!12e1?g_mp=CiVnb29nbGUubWFwcy5wbGFjZXMudjEuUGxhY2VzLkdldFBsYWNlEAIYBCAA"
+
 function setup(record: QrRecord | null) {
   const repository = mock<QrRepository>()
   const places = mock<PlacesAdapter>()
@@ -35,9 +38,26 @@ describe("createQrPublicResponse", () => {
     expect(response.headers.get("Cache-Control")).toBe("no-store")
   })
 
-  it("returns a neutral setup response for orphan or incomplete QR codes", async () => {
+  it("redirects a configured orphan QR code", async () => {
+    const publicResponse = setup(
+      createQrRecord({ organizationId: null, canonicalReviewUrl: reviewUrl }),
+    )
+
+    const response = await publicResponse({ slug: "abc123def4" })
+
+    expect(response.status).toBe(307)
+    expect(response.headers.get("Location")).toBe(reviewUrl)
+    expect(response.headers.get("Cache-Control")).toBe("no-store")
+  })
+
+  it("returns a neutral setup response for incomplete QR codes", async () => {
     for (const record of [
-      createQrRecord({ organizationId: null }),
+      createQrRecord({
+        organizationId: null,
+        rawGoogleMapsUrl: null,
+        googlePlaceId: null,
+        canonicalReviewUrl: null,
+      }),
       createQrRecord({ rawGoogleMapsUrl: null }),
     ]) {
       const publicResponse = setup(record)

@@ -1,0 +1,20 @@
+---
+export const prerender = false
+
+import { QrBatchCreateForm } from "@/components/admin/qr-batch-create-form"
+import AdminLayout from "@/layouts/admin-layout.astro"
+---
+
+<AdminLayout title="Create QR batch" description="Create unclaimed QR records for later assignment.">
+  <div class="flex flex-1 flex-col gap-6 p-4 pt-0 md:p-6 md:pt-0">
+    <div class="flex flex-col gap-2 pt-2">
+      <p class="text-sm font-medium text-muted-foreground">QR codes</p>
+      <h1 class="text-3xl font-semibold tracking-tight">Create a QR batch</h1>
+      <p class="max-w-2xl text-muted-foreground">
+        Create unclaimed QR records without assigning an organization. Each returned record can be
+        turned into an image in the browser afterward.
+      </p>
+    </div>
+    <QrBatchCreateForm client:load />
+  </div>
+</AdminLayout>

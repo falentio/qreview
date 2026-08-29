@@ -1,9 +1,11 @@
 import type { PlacesAdapter, PlaceCandidate } from "@/orpc-server/resource/qr/places"
 import { QrDomainError } from "@/orpc-server/resource/qr/errors"
 import {
+  isGoogleMapsShortUrl,
   isGoogleCanonicalReviewUrlForPlace,
   isGooglePlaceId,
   parseGoogleMapsUrl,
+  resolveGoogleMapsUrl,
 } from "@/orpc-server/resource/qr/url"
 import type {
   NewQrRecord,
@@ -57,6 +59,7 @@ export class QrService {
         | "restoreById"
       >
       places: PlacesAdapter
+      fetcher?: typeof fetch
       clock?: { now(): Date }
       ids: { generateId(): string; generateSlug(): string }
     },
@@ -72,7 +75,22 @@ export class QrService {
     googleMapsUrl: string
   }): Promise<QrResolveResponse> {
     await this.requireMember({ actor, organizationId })
-    const parsed = parseGoogleMapsUrl(googleMapsUrl)
+    return this.resolvePlaceCandidates(googleMapsUrl)
+  }
+
+  async resolvePlace({
+    actor,
+    googleMapsUrl,
+  }: {
+    actor: QrActor
+    googleMapsUrl: string
+  }): Promise<QrResolveResponse> {
+    this.requireGlobalAdmin(actor)
+    return this.resolvePlaceCandidates(googleMapsUrl)
+  }
+
+  private async resolvePlaceCandidates(googleMapsUrl: string): Promise<QrResolveResponse> {
+    const parsed = await resolveGoogleMapsUrl(googleMapsUrl, this.dependencies.fetcher)
 
     if (parsed.placeId) {
       const details = await this.dependencies.places.getPlaceDetails({ placeId: parsed.placeId })
@@ -145,6 +163,40 @@ export class QrService {
         await this.createRecord({
           alias: normalizedAlias,
           organizationId,
+          createdById: actor.id,
+          target,
+        }),
+      )
+    }
+    return { items }
+  }
+
+  async batchCreateOrphan({
+    actor,
+    alias,
+    googleMapsUrl,
+    googlePlaceId,
+    count,
+  }: {
+    actor: QrActor
+    alias: string
+    googleMapsUrl: string
+    googlePlaceId: string
+    count: number
+  }): Promise<{ items: QrResponse[] }> {
+    this.requireGlobalAdmin(actor)
+    if (!Number.isInteger(count) || count < 1 || count > 100) {
+      throw new QrDomainError("INVALID_INPUT", "QR batch count must be between 1 and 100.")
+    }
+
+    const normalizedAlias = normalizeAlias(alias)
+    const target = await this.resolveTarget({ googleMapsUrl, googlePlaceId })
+    const items: QrResponse[] = []
+    for (let index = 0; index < count; index += 1) {
+      items.push(
+        await this.createRecord({
+          alias: normalizedAlias,
+          organizationId: null,
           createdById: actor.id,
           target,
         }),
@@ -363,7 +415,7 @@ export class QrService {
     const record = await this.dependencies.repository.findBySlug({ slug })
     if (!record || record.deletedAt) throw this.notFound()
     const canonicalReviewUrl = record.canonicalReviewUrl
-    if (!isQrReady(record) || !record.organizationId || !canonicalReviewUrl) {
+    if (!isQrReady(record) || !canonicalReviewUrl) {
       return { kind: "setup" }
     }
     return { kind: "redirect", canonicalReviewUrl }
@@ -434,7 +486,7 @@ export class QrService {
     if (!isGooglePlaceId(googlePlaceId)) {
       throw new QrDomainError("PLACE_RESOLUTION_FAILED", "The Google Place ID is invalid.")
     }
-    const parsed = parseGoogleMapsUrl(googleMapsUrl)
+    const parsed = await resolveGoogleMapsUrl(googleMapsUrl, this.dependencies.fetcher)
     if (parsed.placeId && parsed.placeId !== googlePlaceId) {
       throw new QrDomainError(
         "PLACE_RESOLUTION_FAILED",
@@ -560,6 +612,8 @@ function isQrReady(record: QrRecord): boolean {
   ) {
     return false
   }
+
+  if (isGoogleMapsShortUrl(record.rawGoogleMapsUrl)) return true
 
   try {
     const parsed = parseGoogleMapsUrl(record.rawGoogleMapsUrl)
