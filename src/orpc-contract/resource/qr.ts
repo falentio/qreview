@@ -78,6 +78,8 @@ export const getInput = v.object(
   v.entriesFromObjects([organizationInput, v.partial(v.pick(qrCode, ["id", "slug"]))]),
 )
 export const getOutput = qrCode
+export const verifyBySlugInput = v.pick(qrCode, ["slug"])
+export const verifyBySlugOutput = v.pick(qrCode, ["slug"])
 export const updateInput = v.object(
   v.entriesFromObjects([
     organizationInput,
@@ -109,6 +111,7 @@ export const qrContract = {
   claim: oc.input(claimInput).output(claimOutput),
   list: oc.input(listInput).output(listOutput),
   get: oc.input(getInput).output(getOutput),
+  verifyBySlug: oc.input(verifyBySlugInput).output(verifyBySlugOutput),
   update: oc.input(updateInput).output(updateOutput),
   updateMapBySlug: oc.input(updateMapBySlugInput).output(updateMapBySlugOutput),
   archive: oc.input(archiveInput).output(archiveOutput),

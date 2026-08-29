@@ -73,6 +73,12 @@ export function createQrRouter({ service }: { service: QrService }) {
       .handler(({ context, input }) =>
         execute(() => service.get({ actor: context.user, ...input })),
       ),
+    verifyBySlug: implementer.qr.verifyBySlug
+      .use(requireAuth)
+      .use(requireGlobalAdmin)
+      .handler(({ context, input }) =>
+        execute(() => service.verifyBySlug({ actor: context.user, ...input })),
+      ),
     update: implementer.qr.update
       .use(requireAuth)
       .use(requireOrgsAdmin)

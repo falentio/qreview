@@ -62,6 +62,7 @@ export function AppSidebar({ pathname, user, ...props }: AppSidebarProps) {
       isActive: isActivePath(pathname, "/app/qr-codes"),
       items: [
         { title: "All QR codes", url: "/app/qr-codes" },
+        { title: "Adopt a QR code", url: "/app/qr-codes/adopt" },
         { title: "Create a QR code", url: "/app/qr-codes/new" },
         { title: "Archived", url: "/app/qr-codes/archived" },
       ],

@@ -13,6 +13,9 @@ export default defineConfig({
 
   vite: {
     plugins: [tailwindcss()],
+    optimizeDeps: {
+      include: ["astro/assets/services/noop", "astro/logger/json"],
+    },
     resolve: {
       dedupe: ["react", "react-dom"],
     },

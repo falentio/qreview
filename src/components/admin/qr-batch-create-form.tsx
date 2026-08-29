@@ -16,7 +16,7 @@ import {
   GOOGLE_REVIEW_CARD_SIZE,
   GoogleReviewCard,
 } from "@/templates/google-review-card"
-import { createUncompressedTar, type TarFile } from "@/lib/utils"
+import { createUncompressedTar, getErrorMessage, type TarFile } from "@/lib/utils"
 
 type FormValues = {
   alias: string
@@ -58,10 +58,6 @@ function validate(values: FormValues, selectedPlaceId: string): FormErrors {
   }
 
   return errors
-}
-
-function getErrorMessage(error: unknown, fallback: string) {
-  return error instanceof Error && error.message ? error.message : fallback
 }
 
 export function QrBatchCreateForm() {

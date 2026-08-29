@@ -106,6 +106,15 @@ describe("QrRouter behavior", () => {
     expect(repository.getOrganizationMemberRole.mock.calls).toHaveLength(0)
   })
 
+  it("verifies an active QR code through the global admin route", async () => {
+    const { context, repository, router } = setup({ role: "admin" })
+    repository.findBySlug.mockResolvedValue(createQrRecord({ slug: "abc123def4" }))
+
+    await expect(call(router.verifyBySlug, { slug: "abc123def4" }, { context })).resolves.toEqual({
+      slug: "abc123def4",
+    })
+  })
+
   it("creates a QR code through the authenticated route", async () => {
     const { context, places, repository, router } = setup()
     places.getPlaceDetails.mockResolvedValue(placeDetails)
@@ -237,6 +246,9 @@ describe("QrRouter behavior", () => {
       call(router.resolvePlace, { googleMapsUrl: targetUrl }, { context }),
     ).rejects.toMatchObject({ code: "FORBIDDEN" })
     await expect(
+      call(router.verifyBySlug, { slug: "abc123def4" }, { context }),
+    ).rejects.toMatchObject({ code: "FORBIDDEN" })
+    await expect(
       call(
         router.batchCreateOrphan,
         {
@@ -284,6 +296,14 @@ describe("QrRouter behavior", () => {
     await expect(
       call(router.claim, { organizationId: "org-1", slug: "abc123def4" }, { context }),
     ).resolves.toMatchObject({ organizationId: "org-1", claimable: false })
+  })
+
+  it("rejects QR adoption for non-admin organization members", async () => {
+    const { context, router } = setup({ organizationRole: "member" })
+
+    await expect(
+      call(router.claim, { organizationId: "org-1", slug: "abc123def4" }, { context }),
+    ).rejects.toMatchObject({ code: "FORBIDDEN" })
   })
 
   it("lists, gets, updates, archives, and restores organization QR codes", async () => {
@@ -353,6 +373,7 @@ describe("QrRouter behavior", () => {
           { context },
         ),
       () => call(router.resolvePlace, { googleMapsUrl: targetUrl }, { context }),
+      () => call(router.verifyBySlug, { slug: "abc123def4" }, { context }),
       () =>
         call(
           router.batchCreateOrphan,

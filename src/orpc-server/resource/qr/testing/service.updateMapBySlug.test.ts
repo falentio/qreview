@@ -115,3 +115,23 @@ describe("QrService.updateMapBySlug", () => {
     expect(repository.updateMapBySlug.mock.calls).toHaveLength(0)
   })
 })
+
+describe("QrService.verifyBySlug", () => {
+  it("confirms an active QR code for a global admin", async () => {
+    const { repository, service } = setup()
+    repository.findBySlug.mockResolvedValue(createQrRecord({ slug: "abc123def4" }))
+
+    await expect(service.verifyBySlug({ actor: globalAdmin, slug: "abc123def4" })).resolves.toEqual(
+      { slug: "abc123def4" },
+    )
+  })
+
+  it("rejects archived QR codes", async () => {
+    const { repository, service } = setup()
+    repository.findBySlug.mockResolvedValue(createQrRecord({ deletedAt: new Date() }))
+
+    await expect(
+      service.verifyBySlug({ actor: globalAdmin, slug: "abc123def4" }),
+    ).rejects.toMatchObject({ code: "NOT_FOUND" } satisfies Partial<QrDomainError>)
+  })
+})

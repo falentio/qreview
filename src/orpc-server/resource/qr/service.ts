@@ -305,6 +305,19 @@ export class QrService {
     return toResponse(record)
   }
 
+  async verifyBySlug({
+    actor,
+    slug,
+  }: {
+    actor: QrActor
+    slug: string
+  }): Promise<Pick<QrResponse, "slug">> {
+    this.requireGlobalAdmin(actor)
+    const record = await this.dependencies.repository.findBySlug({ slug })
+    if (!record || record.deletedAt) throw this.notFound()
+    return { slug: record.slug }
+  }
+
   async update({
     actor,
     organizationId,

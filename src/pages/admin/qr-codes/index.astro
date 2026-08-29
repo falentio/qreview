@@ -2,6 +2,7 @@
 export const prerender = false
 
 import AdminLayout from "@/layouts/admin-layout.astro"
+import { QrMapUpdate } from "@/components/admin/qr-map-update"
 ---
 
 <AdminLayout title="QR codes" description="Create and manage platform QR codes.">
@@ -22,6 +23,8 @@ import AdminLayout from "@/layouts/admin-layout.astro"
         Create QR batch
       </a>
     </div>
+
+    <QrMapUpdate client:only="react" />
 
     <section class="flex min-h-72 flex-1 flex-col items-center justify-center rounded-xl border border-dashed bg-muted/20 p-8 text-center">
       <div class="flex size-12 items-center justify-center rounded-xl bg-primary/10 text-primary">
