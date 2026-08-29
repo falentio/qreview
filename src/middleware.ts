@@ -3,6 +3,9 @@ import { defineMiddleware } from "astro:middleware"
 import { auth } from "@/lib/auth"
 
 export const onRequest = defineMiddleware(async (context, next) => {
+  const isQrRoute = context.url.pathname === "/r" || context.url.pathname.startsWith("/r/")
+  if (isQrRoute) return next()
+
   const currentSession = await auth.api.getSession({
     headers: context.request.headers,
   })

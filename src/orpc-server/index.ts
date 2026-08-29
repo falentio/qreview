@@ -6,6 +6,7 @@ import { createAnalytics } from "@/orpc-server/resource/analytics"
 import { createHealth } from "@/orpc-server/resource/health"
 import { createQr } from "@/orpc-server/resource/qr"
 import { CloudflareKvJsonCache } from "@/orpc-server/resource/qr/cache"
+import { CloudflareQrPublicProjectionCache } from "@/orpc-server/resource/qr/public-cache"
 import { CachedPlacesAdapter } from "@/orpc-server/resource/qr/places-cache"
 import { GooglePlacesAdapter } from "@/orpc-server/resource/qr/places"
 import { DrizzleQrRepository } from "@/orpc-server/resource/qr/repository.drizzle"
@@ -19,6 +20,10 @@ const qrResource = createQr({
   places: new CachedPlacesAdapter({
     places: new GooglePlacesAdapter({ apiKey: env.GOOGLE_MAPS_API_KEY }),
     cache: new CloudflareKvJsonCache({ namespace: env.PLACES_CACHE, waitUntil }),
+  }),
+  publicProjection: new CloudflareQrPublicProjectionCache({
+    namespace: env.QR_PUBLIC_PROJECTION,
+    waitUntil,
   }),
   onQrRedirected: analyticsResource.listener,
   repository: qrRepository,

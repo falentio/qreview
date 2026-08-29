@@ -23,6 +23,11 @@
       // Replace this local placeholder with the ID from `wrangler kv namespace create PLACES_CACHE`.
       "id": "00000000000000000000000000000000",
     },
+    {
+      "binding": "QR_PUBLIC_PROJECTION",
+      // Replace this local placeholder with the ID from `wrangler kv namespace create QR_PUBLIC_PROJECTION`.
+      "id": "11111111111111111111111111111111",
+    },
   ],
   "observability": {
     "enabled": true,

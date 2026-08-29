@@ -1,10 +1,14 @@
 import type { PlacesAdapter, PlaceCandidate } from "@/orpc-server/resource/qr/places"
 import { QrDomainError } from "@/orpc-server/resource/qr/errors"
 import {
-  isGoogleMapsShortUrl,
+  createQrPublicProjection,
+  isQrReady,
+  type QrPublicProjection,
+  type QrPublicProjectionStore,
+} from "@/orpc-server/resource/qr/public-cache"
+import {
   isGoogleCanonicalReviewUrlForPlace,
   isGooglePlaceId,
-  parseGoogleMapsUrl,
   resolveGoogleMapsUrl,
 } from "@/orpc-server/resource/qr/url"
 import type {
@@ -61,6 +65,7 @@ export class QrService {
         | "restoreById"
       >
       places: PlacesAdapter
+      publicProjection?: QrPublicProjectionStore
       fetcher?: typeof fetch
       clock?: { now(): Date }
       ids: { generateId(): string; generateSlug(): string }
@@ -354,6 +359,7 @@ export class QrService {
       updatedAt: this.now(),
     })
     if (!updated) throw this.notFound()
+    this.publishPublicProjection(createQrPublicProjection(updated))
     return toResponse(updated)
   }
 
@@ -381,6 +387,7 @@ export class QrService {
       updatedAt: this.now(),
     })
     if (!updated) throw this.notFound()
+    this.publishPublicProjection(createQrPublicProjection(updated))
     return toResponse(updated)
   }
 
@@ -403,6 +410,7 @@ export class QrService {
       updatedAt: now,
     })
     if (!archived) throw this.notFound()
+    this.publishPublicProjection(createQrPublicProjection(archived))
     return toResponse(archived)
   }
 
@@ -423,17 +431,28 @@ export class QrService {
       updatedAt: this.now(),
     })
     if (!restored) throw this.notFound()
+    this.publishPublicProjection(createQrPublicProjection(restored))
     return toResponse(restored)
   }
 
   async resolvePublic({ slug }: { slug: string }): Promise<PublicQrResponse> {
-    const record = await this.dependencies.repository.findBySlug({ slug })
-    if (!record || record.deletedAt) throw this.notFound()
-    const canonicalReviewUrl = record.canonicalReviewUrl
-    if (!isQrReady(record) || !canonicalReviewUrl) {
-      return { kind: "setup" }
+    const cached = await this.dependencies.publicProjection?.get({ slug })
+    if (cached) return this.resolvePublicProjection(cached)
+
+    let record: QrRecord | null
+    try {
+      record = await this.dependencies.repository.findBySlug({ slug })
+    } catch (error) {
+      throw new QrDomainError("PUBLIC_UNAVAILABLE", "QR redirects are temporarily unavailable.", {
+        cause: error,
+      })
     }
-    return { kind: "redirect", canonicalReviewUrl, qrCodeId: record.id }
+
+    if (!record) throw this.notFound()
+
+    const projection = createQrPublicProjection(record)
+    this.publishPublicProjection(projection)
+    return this.resolvePublicProjection(projection)
   }
 
   private async createRecord({
@@ -464,7 +483,9 @@ export class QrService {
         target,
       }
       try {
-        return toResponse(await this.dependencies.repository.create(input))
+        const created = await this.dependencies.repository.create(input)
+        this.publishPublicProjection(createQrPublicProjection(created))
+        return toResponse(created)
       } catch (error) {
         if (!(error instanceof QrDomainError) || error.code !== "SLUG_CONFLICT" || attempt === 4) {
           throw error
@@ -579,6 +600,29 @@ export class QrService {
     return record
   }
 
+  private resolvePublicProjection(projection: QrPublicProjection): PublicQrResponse {
+    if (projection.state === "active") {
+      return {
+        kind: "redirect",
+        canonicalReviewUrl: projection.canonicalReviewUrl,
+        qrCodeId: projection.qrCodeId,
+      }
+    }
+    if (projection.state === "setup") return { kind: "setup" }
+    throw this.notFound()
+  }
+
+  private publishPublicProjection(projection: QrPublicProjection): void {
+    try {
+      this.dependencies.publicProjection?.set(projection)
+    } catch (error) {
+      console.warn("QR public projection publication failed.", {
+        slug: projection.slug,
+        error,
+      })
+    }
+  }
+
   private now(): Date {
     return this.dependencies.clock?.now() ?? new Date()
   }
@@ -614,27 +658,6 @@ function toResponse(record: QrRecord): QrResponse {
     createdAt: record.createdAt.toISOString(),
     updatedAt: record.updatedAt.toISOString(),
     deletedAt: record.deletedAt?.toISOString() ?? null,
-  }
-}
-
-function isQrReady(record: QrRecord): boolean {
-  if (
-    !record.rawGoogleMapsUrl ||
-    !record.googlePlaceId ||
-    !isGooglePlaceId(record.googlePlaceId) ||
-    !record.canonicalReviewUrl ||
-    !isGoogleCanonicalReviewUrlForPlace(record.canonicalReviewUrl, record.googlePlaceId)
-  ) {
-    return false
-  }
-
-  if (isGoogleMapsShortUrl(record.rawGoogleMapsUrl)) return true
-
-  try {
-    const parsed = parseGoogleMapsUrl(record.rawGoogleMapsUrl)
-    return parsed.placeId === null || parsed.placeId === record.googlePlaceId
-  } catch {
-    return false
   }
 }
 

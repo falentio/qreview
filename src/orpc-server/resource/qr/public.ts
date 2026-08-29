@@ -62,6 +62,9 @@ export function createQrPublicResponse({
       if (error instanceof QrDomainError && error.code === "NOT_FOUND") {
         return createQrNotFoundResponse()
       }
+      if (error instanceof QrDomainError && error.code === "PUBLIC_UNAVAILABLE") {
+        return createQrUnavailableResponse()
+      }
       throw error
     }
   }
@@ -71,5 +74,15 @@ export function createQrNotFoundResponse(): Response {
   return new Response("Not found", {
     status: 404,
     headers: { "Cache-Control": "no-store" },
+  })
+}
+
+export function createQrUnavailableResponse(): Response {
+  return new Response("Temporarily unavailable", {
+    status: 503,
+    headers: {
+      "Cache-Control": "no-store",
+      "Retry-After": "60",
+    },
   })
 }

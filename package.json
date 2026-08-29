@@ -7,6 +7,7 @@
     "build": "astro build",
     "preview": "astro preview",
     "astro": "astro",
+    "backfill-qr-public-projection": "vp exec tsx scripts/backfill-qr-public-projection.ts",
     "generate-types": "wrangler types",
     "auth:generate": "auth generate --adapter drizzle --dialect sqlite --output ./src/db/auth-schema.ts --yes",
     "db:generate": "drizzle-kit generate",

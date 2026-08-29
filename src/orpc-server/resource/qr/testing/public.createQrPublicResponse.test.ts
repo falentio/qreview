@@ -2,6 +2,7 @@ import { describe, expect, it, vi } from "vite-plus/test"
 import { mock } from "vitest-mock-extended"
 
 import type { QrRedirectedEvent } from "@/orpc-server/events"
+import { QrDomainError } from "@/orpc-server/resource/qr/errors"
 import { createQrPublicResponse } from "@/orpc-server/resource/qr/public"
 import type { PlacesAdapter } from "@/orpc-server/resource/qr/places"
 import { createQrRecord } from "@/orpc-server/resource/qr/fixtures"
@@ -180,5 +181,18 @@ describe("createQrPublicResponse", () => {
       expect(response.status).toBe(404)
       expect(response.headers.get("Cache-Control")).toBe("no-store")
     }
+  })
+
+  it("returns a temporary unavailable response when public resolution cannot use either store", async () => {
+    const service = {
+      resolvePublic: vi.fn(async () => {
+        throw new QrDomainError("PUBLIC_UNAVAILABLE", "QR redirects are temporarily unavailable.")
+      }),
+    }
+
+    const response = await createQrPublicResponse({ service })({ slug: "abc123def4" })
+
+    expect(response.status).toBe(503)
+    expect(response.headers.get("Cache-Control")).toBe("no-store")
   })
 })
