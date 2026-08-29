@@ -12,7 +12,8 @@ export const GOOGLE_REVIEW_CARD_FONTS = googleFonts([
   { name: GOOGLE_REVIEW_CARD_FONT_FAMILY, weight: "100..900" },
 ])
 
-const QR_RENDER_SIZE = 312
+const QR_RENDER_SIZE = 343
+const ACTION_ART_STAGE_SIZE = 395
 const COLOR_WAVE_HEIGHT = 211
 
 export type GoogleReviewCardProps = {
@@ -26,6 +27,33 @@ const columnStyle: CSSProperties = {
   flexDirection: "column",
   alignItems: "center",
   fontFamily: GOOGLE_REVIEW_CARD_FONT_FAMILY,
+}
+
+const actionLabelStyle: CSSProperties = {
+  alignItems: "center",
+  bottom: "30px",
+  boxSizing: "border-box",
+  display: "flex",
+  fontFamily: GOOGLE_REVIEW_CARD_FONT_FAMILY,
+  fontSize: "36px",
+  fontWeight: 600,
+  height: "36px",
+  justifyContent: "center",
+  left: 0,
+  lineHeight: 1,
+  position: "absolute",
+  width: "100%",
+  whiteSpace: "nowrap",
+}
+
+const actionColumnStyle: CSSProperties = {
+  ...columnStyle,
+  boxSizing: "border-box",
+  flex: 1,
+  height: "100%",
+  justifyContent: "center",
+  padding: "30px 30px 66px",
+  position: "relative",
 }
 
 function GoogleWordmark() {
@@ -213,40 +241,26 @@ function ActionPanel({ qrUrl }: { qrUrl: string }) {
           width: "100%",
         }}
       >
-        <div
-          style={{
-            ...columnStyle,
-            backgroundColor: "#162235",
-            boxSizing: "border-box",
-            flex: 1,
-            height: "100%",
-            justifyContent: "center",
-            padding: "30px",
-          }}
-        >
-          <NfcTapIcon color="#ffffff" />
+        <div style={{ ...actionColumnStyle, backgroundColor: "#162235" }}>
           <div
             style={{
-              color: "#ffffff",
-              fontFamily: GOOGLE_REVIEW_CARD_FONT_FAMILY,
-              fontSize: "38px",
-              fontWeight: 600,
-              lineHeight: 1,
-              marginTop: "4px",
+              alignItems: "center",
+              display: "flex",
+              flexShrink: 0,
+              height: `${ACTION_ART_STAGE_SIZE}px`,
+              justifyContent: "center",
+              width: `${ACTION_ART_STAGE_SIZE}px`,
             }}
           >
-            Tap to review
+            <NfcTapIcon color="#ffffff" />
           </div>
           <div
             style={{
-              color: "#b8c6dc",
-              fontFamily: GOOGLE_REVIEW_CARD_FONT_FAMILY,
-              fontSize: "32px",
-              lineHeight: 1.2,
-              marginTop: "12px",
+              ...actionLabelStyle,
+              color: "#ffffff",
             }}
           >
-            Hold your phone here
+            Tap to review
           </div>
         </div>
 
@@ -273,17 +287,7 @@ function ActionPanel({ qrUrl }: { qrUrl: string }) {
           OR
         </div>
 
-        <div
-          style={{
-            ...columnStyle,
-            backgroundColor: "#ffffff",
-            boxSizing: "border-box",
-            flex: 1,
-            height: "100%",
-            justifyContent: "center",
-            padding: "30px",
-          }}
-        >
+        <div style={{ ...actionColumnStyle, backgroundColor: "#ffffff" }}>
           <div
             style={{
               alignItems: "center",
@@ -291,36 +295,21 @@ function ActionPanel({ qrUrl }: { qrUrl: string }) {
               borderRadius: "17px",
               boxSizing: "border-box",
               display: "flex",
-              height: "370px",
+              height: `${ACTION_ART_STAGE_SIZE}px`,
               justifyContent: "center",
               padding: "26px",
-              width: "370px",
+              width: `${ACTION_ART_STAGE_SIZE}px`,
             }}
           >
             <QrCode qrUrl={qrUrl} />
           </div>
           <div
             style={{
+              ...actionLabelStyle,
               color: "#162235",
-              fontFamily: GOOGLE_REVIEW_CARD_FONT_FAMILY,
-              fontSize: "36px",
-              fontWeight: 600,
-              lineHeight: 1,
-              marginTop: "12px",
             }}
           >
             Scan to review
-          </div>
-          <div
-            style={{
-              color: "#4f5f75",
-              fontFamily: GOOGLE_REVIEW_CARD_FONT_FAMILY,
-              fontSize: "32px",
-              lineHeight: 1.2,
-              marginTop: "12px",
-            }}
-          >
-            Use your camera
           </div>
         </div>
       </div>
