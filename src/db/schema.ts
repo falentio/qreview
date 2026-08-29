@@ -1,5 +1,5 @@
 import * as authSchema from "@/db/auth-schema"
-import { integer, index, sqliteTable, text, uniqueIndex } from "drizzle-orm/sqlite-core"
+import { integer, index, primaryKey, sqliteTable, text, uniqueIndex } from "drizzle-orm/sqlite-core"
 
 export const qrCodes = sqliteTable(
   "qr_codes",
@@ -32,8 +32,24 @@ export const qrCodeLegacyContent = sqliteTable("qr_code_legacy_content", {
   content: text("content").notNull(),
 })
 
+export const qrAnalyticsHourly = sqliteTable(
+  "qr_analytics_hourly",
+  {
+    qrCodeId: text("qr_code_id")
+      .notNull()
+      .references(() => qrCodes.id, { onDelete: "cascade" }),
+    bucketStart: integer("bucket_start", { mode: "timestamp_ms" }).notNull(),
+    redirectAttempts: integer("redirect_attempts").notNull().default(0),
+  },
+  (table) => [
+    primaryKey({ columns: [table.qrCodeId, table.bucketStart] }),
+    index("qr_analytics_hourly_bucket_start_idx").on(table.bucketStart),
+  ],
+)
+
 export const schema = {
   ...authSchema,
   qrCodes,
   qrCodeLegacyContent,
+  qrAnalyticsHourly,
 }

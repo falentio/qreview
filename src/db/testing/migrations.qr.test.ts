@@ -192,4 +192,45 @@ describe("QR migrations", () => {
     }).toEqual(beforeRerun)
     db.close()
   })
+
+  it("creates the hourly QR analytics aggregate table", () => {
+    const db = createPreQrMigrationDatabase()
+
+    applyMigrations(db, [
+      "0003_qr_resource.sql",
+      "0004_preserve_legacy_qr_content.sql",
+      "0005_mature_selene.sql",
+      "0006_mushy_sally_floyd.sql",
+    ])
+
+    const columns = db.prepare("PRAGMA table_info(qr_analytics_hourly)").all() as Array<{
+      name: string
+      notnull: number
+    }>
+    expect(columns.map(({ name }) => name)).toEqual([
+      "qr_code_id",
+      "bucket_start",
+      "redirect_attempts",
+    ])
+    expect(columns.every(({ notnull }) => notnull === 1)).toBe(true)
+    const indexes = db.prepare("PRAGMA index_list(qr_analytics_hourly)").all() as Array<{
+      name: string
+    }>
+    expect(indexes.map(({ name }) => name)).toContain("qr_analytics_hourly_bucket_start_idx")
+    const foreignKeys = db.prepare("PRAGMA foreign_key_list(qr_analytics_hourly)").all() as Array<{
+      table: string
+      from: string
+      to: string
+      on_delete: string
+    }>
+    expect(foreignKeys).toContainEqual(
+      expect.objectContaining({
+        table: "qr_codes",
+        from: "qr_code_id",
+        to: "id",
+        on_delete: "CASCADE",
+      }),
+    )
+    db.close()
+  })
 })

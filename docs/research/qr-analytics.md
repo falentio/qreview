@@ -11,6 +11,21 @@ The public QR endpoint currently resolves a slug in D1 and returns either a setu
 
 The initial product should call the metric **redirect attempts** or **link visits**, not human scans or unique visitors. A unique-visitor metric requires an identifier and creates a materially different privacy and consent decision.
 
+## Confirmed Product Decisions
+
+Confirmed on 2026-08-29. These decisions define the implementation scope.
+
+- Emit one typed `QrRedirected` event for each request that resolves an active QR to the existing `307` redirect. Repeated requests count separately.
+- Carry only `qrCodeId` and the event timestamp. Do not collect IP addresses, cookies, user-agent strings, referrers, country, device class, or visitor identifiers.
+- Use a typed in-process event listener scheduled through the Worker execution context. Analytics is best effort and must never change the redirect response.
+- Store hourly aggregate counts in D1 using UTC buckets.
+- Expose a top-level analytics resource with an authenticated per-QR hourly read API and a global-admin-only cleanup mutation.
+- Authorize reads with `organizationId` and `qrCodeId`. Organization admins can read owned QR history and global admins can read all history.
+- Preserve analytics history when an orphan QR is claimed and when a QR is archived. Orphan history is global-admin-only until claim.
+- Require an explicit UTC hour-aligned `[from, to)` range, reject ranges longer than 60 days, and return a complete zero-filled hourly series.
+- Enforce the 60-day window in reads. Physical deletion is lazy and manual: a global admin deletes all stored buckets older than 60 days, and the mutation returns the deleted bucket count.
+- Limit the first slice to ingestion, the read API, and the cleanup mutation. Do not add a dashboard or UI yet.
+
 ## Current Codebase
 
 ### Public redirect flow

@@ -40,7 +40,9 @@ export type QrResponse = {
 
 export type QrResolveResponse = { candidates: PlaceCandidate[] }
 
-export type PublicQrResponse = { kind: "setup" } | { kind: "redirect"; canonicalReviewUrl: string }
+export type PublicQrResponse =
+  | { kind: "setup" }
+  | { kind: "redirect"; canonicalReviewUrl: string; qrCodeId: string }
 
 export class QrService {
   constructor(
@@ -431,7 +433,7 @@ export class QrService {
     if (!isQrReady(record) || !canonicalReviewUrl) {
       return { kind: "setup" }
     }
-    return { kind: "redirect", canonicalReviewUrl }
+    return { kind: "redirect", canonicalReviewUrl, qrCodeId: record.id }
   }
 
   private async createRecord({

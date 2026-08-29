@@ -1,6 +1,7 @@
-import { describe, expect, it } from "vite-plus/test"
+import { describe, expect, it, vi } from "vite-plus/test"
 import { mock } from "vitest-mock-extended"
 
+import type { QrRedirectedEvent } from "@/orpc-server/events"
 import { createQrPublicResponse } from "@/orpc-server/resource/qr/public"
 import type { PlacesAdapter } from "@/orpc-server/resource/qr/places"
 import { createQrRecord } from "@/orpc-server/resource/qr/fixtures"
@@ -10,7 +11,7 @@ import { QrService } from "@/orpc-server/resource/qr/service"
 const reviewUrl =
   "https://www.google.com/maps/place//data=!4m3!3m2!1s0x2e78872eb95f61c3:0x524dc00ed3a1a6ec!12e1?g_mp=CiVnb29nbGUubWFwcy5wbGFjZXMudjEuUGxhY2VzLkdldFBsYWNlEAIYBCAA"
 
-function setup(record: QrRecord | null) {
+function setup(record: QrRecord | null, onQrRedirected?: (event: QrRedirectedEvent) => void) {
   const repository = mock<QrRepository>()
   const places = mock<PlacesAdapter>()
   repository.findBySlug.mockResolvedValue(record)
@@ -22,10 +23,81 @@ function setup(record: QrRecord | null) {
       generateSlug: () => "generated1a",
     },
   })
-  return createQrPublicResponse({ service })
+  return createQrPublicResponse({ service, onQrRedirected })
 }
 
 describe("createQrPublicResponse", () => {
+  it("emits an active redirect event through the request execution context", async () => {
+    const events: QrRedirectedEvent[] = []
+    const pending: Promise<unknown>[] = []
+    const publicResponse = setup(createQrRecord(), (event) => events.push(event))
+
+    const response = await publicResponse({
+      slug: "abc123def4",
+      waitUntil: (promise) => pending.push(promise),
+    })
+    await Promise.all(pending)
+
+    expect(response.status).toBe(307)
+    expect(events).toHaveLength(1)
+    expect(events[0]).toMatchObject({ type: "qr.redirected", qrCodeId: "qr-1" })
+    expect(events[0]?.occurredAt).toBeInstanceOf(Date)
+  })
+
+  it("keeps the redirect successful when the event listener fails", async () => {
+    const pending: Promise<unknown>[] = []
+    const error = vi.spyOn(console, "error").mockImplementation(() => {})
+    const publicResponse = setup(createQrRecord(), () => {
+      throw new Error("analytics unavailable")
+    })
+
+    const response = await publicResponse({
+      slug: "abc123def4",
+      waitUntil: (promise) => pending.push(promise),
+    })
+    await Promise.all(pending)
+
+    expect(response.status).toBe(307)
+    expect(error).toHaveBeenCalledWith("QR redirect analytics failed", expect.any(Error))
+    error.mockRestore()
+  })
+
+  it("keeps the redirect successful when event scheduling fails", async () => {
+    const error = vi.spyOn(console, "error").mockImplementation(() => {})
+    const events: QrRedirectedEvent[] = []
+    const publicResponse = setup(createQrRecord(), (event) => events.push(event))
+
+    const response = await publicResponse({
+      slug: "abc123def4",
+      waitUntil: () => {
+        throw new Error("execution context unavailable")
+      },
+    })
+
+    await new Promise<void>((resolve) => queueMicrotask(resolve))
+    expect(response.status).toBe(307)
+    expect(events).toHaveLength(1)
+    expect(error).toHaveBeenCalledWith("QR redirect analytics scheduling failed", expect.any(Error))
+    error.mockRestore()
+  })
+
+  it("does not emit redirect events for setup responses", async () => {
+    const events: QrRedirectedEvent[] = []
+    const publicResponse = setup(
+      createQrRecord({
+        rawGoogleMapsUrl: null,
+        googlePlaceId: null,
+        canonicalReviewUrl: null,
+      }),
+      (event) => events.push(event),
+    )
+
+    const response = await publicResponse({ slug: "abc123def4" })
+
+    expect(response.status).toBe(200)
+    expect(events).toHaveLength(0)
+  })
+
   it("redirects active QR codes without allowing the redirect to be cached", async () => {
     const publicResponse = setup(createQrRecord())
 
