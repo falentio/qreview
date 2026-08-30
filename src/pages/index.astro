@@ -1,9 +1,5 @@
 ---
-import AuthLayout from "@/layouts/auth-layout.astro"
----
+export const prerender = false
 
-<AuthLayout
-  mode="login"
-  title="Log in | QR"
-  description="Log in to your QR account."
-/>
+return Astro.redirect("/app")
+---
