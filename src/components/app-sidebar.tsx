@@ -2,14 +2,18 @@
 
 import * as React from "react"
 import {
+  Archive,
   Command,
   Frame,
   LifeBuoy,
+  List,
   PieChart,
+  Plus,
   QrCode,
   ShieldCheck,
   Settings2,
   Users,
+  UserPlus,
   type LucideIcon,
 } from "lucide-react"
 
@@ -79,16 +83,28 @@ export function AppSidebar({ pathname, user, ...props }: AppSidebarProps) {
 
   const qrNavigation: NavItem[] = [
     {
-      title: "QR codes",
+      title: "All QR codes",
       url: "/app/qr-codes",
-      icon: QrCode,
-      isActive: isActivePath(pathname, "/app/qr-codes"),
-      items: [
-        { title: "All QR codes", url: "/app/qr-codes" },
-        { title: "Adopt a QR code", url: "/app/qr-codes/adopt" },
-        { title: "Create a QR code", url: "/app/qr-codes/new" },
-        { title: "Archived", url: "/app/qr-codes/archived" },
-      ],
+      icon: List,
+      isActive: pathname === "/app/qr-codes",
+    },
+    {
+      title: "Adopt a QR code",
+      url: "/app/qr-codes/adopt",
+      icon: UserPlus,
+      isActive: pathname === "/app/qr-codes/adopt",
+    },
+    {
+      title: "Create a QR code",
+      url: "/app/qr-codes/new",
+      icon: Plus,
+      isActive: pathname === "/app/qr-codes/new",
+    },
+    {
+      title: "Archived",
+      url: "/app/qr-codes/archived",
+      icon: Archive,
+      isActive: pathname === "/app/qr-codes/archived",
     },
   ]
 
