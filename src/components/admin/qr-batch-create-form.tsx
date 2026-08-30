@@ -11,12 +11,18 @@ import { Field, FieldDescription, FieldError, FieldGroup, FieldLabel } from "@/c
 import { Input } from "@/components/ui/input"
 import { Spinner } from "@/components/ui/spinner"
 import { renderGoogleReviewTemplate } from "@/lib/qr-template"
-import { createUncompressedTar, getErrorMessage, type TarFile } from "@/lib/utils"
+import {
+  createUncompressedTar,
+  dateInputToExpiry,
+  getErrorMessage,
+  type TarFile,
+} from "@/lib/utils"
 
 type FormValues = {
   alias: string
   googleMapsUrl: string
   count: string
+  expiresOn: string
 }
 
 type FormErrors = Partial<Record<keyof FormValues, string>> & { place?: string }
@@ -32,6 +38,7 @@ const initialValues: FormValues = {
   alias: "QR code",
   googleMapsUrl: "",
   count: "1",
+  expiresOn: "",
 }
 
 function validate(values: FormValues, selectedPlaceId: string): FormErrors {
@@ -50,6 +57,10 @@ function validate(values: FormValues, selectedPlaceId: string): FormErrors {
   const count = Number(values.count)
   if (!Number.isInteger(count) || count < 1 || count > 100) {
     errors.count = "Batch size must be a whole number between 1 and 100"
+  }
+
+  if (values.expiresOn && !dateInputToExpiry(values.expiresOn)) {
+    errors.expiresOn = "Enter a valid expiry date"
   }
 
   return errors
@@ -122,6 +133,7 @@ export function QrBatchCreateForm() {
         googleMapsUrl: values.googleMapsUrl.trim(),
         googlePlaceId: selectedPlaceId,
         count: Number(values.count),
+        expiresAt: dateInputToExpiry(values.expiresOn),
       })
       setCreatedItems(result.items)
     } catch (error) {
@@ -330,6 +342,26 @@ export function QrBatchCreateForm() {
                   aria-invalid={Boolean(errors.count)}
                 />
                 {errors.count && <FieldError>{errors.count}</FieldError>}
+              </Field>
+
+              <Field data-invalid={Boolean(errors.expiresOn)} className="sm:max-w-56">
+                <FieldLabel htmlFor="expiresOn">Expiry date</FieldLabel>
+                <Input
+                  id="expiresOn"
+                  name="expiresOn"
+                  type="date"
+                  value={values.expiresOn}
+                  onChange={(event) => updateValue("expiresOn", event.target.value)}
+                  aria-invalid={Boolean(errors.expiresOn)}
+                />
+                {errors.expiresOn ? (
+                  <FieldError>{errors.expiresOn}</FieldError>
+                ) : (
+                  <FieldDescription>
+                    Leave blank for a QR code that never expires. Expiry begins at the start of the
+                    next UTC day.
+                  </FieldDescription>
+                )}
               </Field>
 
               {requestError && (

@@ -50,6 +50,13 @@
       "when": 1788015031162,
       "tag": "0006_mushy_sally_floyd",
       "breakpoints": true
+    },
+    {
+      "idx": 7,
+      "version": "6",
+      "when": 1788033308226,
+      "tag": "0007_outgoing_pandemic",
+      "breakpoints": true
     }
   ]
 }

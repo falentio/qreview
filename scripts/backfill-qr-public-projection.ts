@@ -20,7 +20,7 @@ if (!process.argv.includes("--local") && !process.argv.includes("--remote")) {
 }
 
 const query = [
-  "SELECT id, slug, raw_google_maps_url, google_place_id, canonical_review_url, updated_at, deleted_at",
+  "SELECT id, slug, raw_google_maps_url, google_place_id, canonical_review_url, expires_at, updated_at, deleted_at",
   "FROM qr_codes",
   "ORDER BY slug",
 ].join(" ")
@@ -76,6 +76,7 @@ function toProjectionSource(row: D1Row): QrPublicProjectionSource {
     rawGoogleMapsUrl: row.raw_google_maps_url,
     googlePlaceId: row.google_place_id,
     canonicalReviewUrl: row.canonical_review_url,
+    expiresAt: row.expires_at === null ? null : toDate(row.expires_at),
     updatedAt,
     deletedAt: row.deleted_at === null ? null : toDate(row.deleted_at),
   }
@@ -106,6 +107,7 @@ type D1Row = {
   raw_google_maps_url: string | null
   google_place_id: string | null
   canonical_review_url: string | null
+  expires_at: number | string | null
   updated_at: number | string
   deleted_at: number | string | null
 }

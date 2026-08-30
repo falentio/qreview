@@ -91,6 +91,12 @@ export function createQrRouter({ service }: { service: QrService }) {
       .handler(({ context, input }) =>
         execute(() => service.updateMapBySlug({ actor: context.user, ...input })),
       ),
+    setExpirationBySlug: implementer.qr.setExpirationBySlug
+      .use(requireAuth)
+      .use(requireGlobalAdmin)
+      .handler(({ context, input }) =>
+        execute(() => service.setExpirationBySlug({ actor: context.user, ...input })),
+      ),
     archive: implementer.qr.archive
       .use(requireAuth)
       .use(requireOrgsAdmin)

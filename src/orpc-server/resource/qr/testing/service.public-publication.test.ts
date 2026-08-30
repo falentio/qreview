@@ -2,7 +2,7 @@ import { afterEach, describe, expect, it, vi } from "vite-plus/test"
 import { mock } from "vitest-mock-extended"
 
 import type { PlacesAdapter } from "@/orpc-server/resource/qr/places"
-import { createQrRecord, owner } from "@/orpc-server/resource/qr/fixtures"
+import { createQrRecord, globalAdmin, owner } from "@/orpc-server/resource/qr/fixtures"
 import type { QrPublicProjectionStore } from "@/orpc-server/resource/qr/public-cache"
 import type { QrRepository } from "@/orpc-server/resource/qr/repository"
 import { QrService } from "@/orpc-server/resource/qr/service"
@@ -40,12 +40,13 @@ describe("QrService public projection publication", () => {
     expect(publicProjection.set.mock.calls).toEqual([
       [
         {
-          schemaVersion: 1,
+          schemaVersion: 2,
           slug: created.slug,
           qrCodeId: created.id,
           state: "active",
           googlePlaceId: created.googlePlaceId,
           canonicalReviewUrl: created.canonicalReviewUrl,
+          expiresAt: created.expiresAt?.toISOString() ?? null,
           updatedAt: created.updatedAt.toISOString(),
         },
       ],
@@ -77,6 +78,34 @@ describe("QrService public projection publication", () => {
     ])
   })
 
+  it("publishes the projection after updating expiry", async () => {
+    const { publicProjection, repository, service } = setup()
+    const existing = createQrRecord()
+    const updated = createQrRecord({ expiresAt: new Date("2030-02-01T00:00:00.000Z") })
+    repository.findBySlug.mockResolvedValue(existing)
+    repository.setExpirationBySlug.mockResolvedValue(updated)
+    const setAndWait = vi.fn(async () => undefined)
+    publicProjection.setAndWait = setAndWait
+
+    await service.setExpirationBySlug({
+      actor: globalAdmin,
+      slug: existing.slug,
+      expiresAt: "2030-02-01T00:00:00.000Z",
+    })
+
+    expect(setAndWait.mock.calls).toEqual([
+      [
+        expect.objectContaining({
+          slug: updated.slug,
+          qrCodeId: updated.id,
+          state: "active",
+          expiresAt: "2030-02-01T00:00:00.000Z",
+        }),
+      ],
+    ])
+    expect(publicProjection.set.mock.calls).toHaveLength(0)
+  })
+
   it("publishes an archived tombstone after archiving a QR code", async () => {
     const { publicProjection, repository, service } = setup()
     const archived = createQrRecord({ deletedAt: new Date("2030-01-01T00:00:00.000Z") })
@@ -88,10 +117,11 @@ describe("QrService public projection publication", () => {
     expect(publicProjection.set.mock.calls).toEqual([
       [
         {
-          schemaVersion: 1,
+          schemaVersion: 2,
           slug: archived.slug,
           qrCodeId: archived.id,
           state: "archived",
+          expiresAt: archived.expiresAt?.toISOString() ?? null,
           updatedAt: archived.updatedAt.toISOString(),
         },
       ],

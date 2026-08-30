@@ -37,6 +37,7 @@ export type QrResponse = {
   createdById: string
   claimedById: string | null
   claimedAt: string | null
+  expiresAt: string | null
   createdAt: string
   updatedAt: string
   deletedAt: string | null
@@ -46,6 +47,7 @@ export type QrResolveResponse = { candidates: PlaceCandidate[] }
 
 export type PublicQrResponse =
   | { kind: "setup" }
+  | { kind: "expired" }
   | { kind: "redirect"; canonicalReviewUrl: string; qrCodeId: string }
 
 export class QrService {
@@ -63,6 +65,7 @@ export class QrService {
         | "updateById"
         | "archiveById"
         | "restoreById"
+        | "setExpirationBySlug"
       >
       places: PlacesAdapter
       publicProjection?: QrPublicProjectionStore
@@ -149,6 +152,7 @@ export class QrService {
     googleMapsUrl,
     googlePlaceId,
     count,
+    expiresAt,
   }: {
     actor: QrActor
     organizationId: string
@@ -156,6 +160,7 @@ export class QrService {
     googleMapsUrl: string
     googlePlaceId: string
     count: number
+    expiresAt?: string | null
   }): Promise<{ items: QrResponse[] }> {
     this.requireGlobalAdmin(actor)
     if (!Number.isInteger(count) || count < 1 || count > 100) {
@@ -163,6 +168,7 @@ export class QrService {
     }
 
     const normalizedAlias = normalizeAlias(alias)
+    const normalizedExpiresAt = parseExpiration(expiresAt)
     const target = await this.resolveTarget({ googleMapsUrl, googlePlaceId })
     const items: QrResponse[] = []
     for (let index = 0; index < count; index += 1) {
@@ -172,6 +178,7 @@ export class QrService {
           organizationId,
           createdById: actor.id,
           target,
+          expiresAt: normalizedExpiresAt,
         }),
       )
     }
@@ -184,12 +191,14 @@ export class QrService {
     googleMapsUrl,
     googlePlaceId,
     count,
+    expiresAt,
   }: {
     actor: QrActor
     alias: string
     googleMapsUrl: string
     googlePlaceId: string
     count: number
+    expiresAt?: string | null
   }): Promise<{ items: QrResponse[] }> {
     this.requireGlobalAdmin(actor)
     if (!Number.isInteger(count) || count < 1 || count > 100) {
@@ -197,6 +206,7 @@ export class QrService {
     }
 
     const normalizedAlias = normalizeAlias(alias)
+    const normalizedExpiresAt = parseExpiration(expiresAt)
     const target = await this.resolveTarget({ googleMapsUrl, googlePlaceId })
     const items: QrResponse[] = []
     for (let index = 0; index < count; index += 1) {
@@ -206,6 +216,7 @@ export class QrService {
           organizationId: null,
           createdById: actor.id,
           target,
+          expiresAt: normalizedExpiresAt,
         }),
       )
     }
@@ -217,20 +228,24 @@ export class QrService {
     alias,
     googleMapsUrl,
     googlePlaceId,
+    expiresAt,
   }: {
     actor: QrActor
     alias: string
     googleMapsUrl?: string
     googlePlaceId?: string
+    expiresAt?: string | null
   }): Promise<QrResponse> {
     this.requireGlobalAdmin(actor)
     const normalizedAlias = normalizeAlias(alias)
+    const normalizedExpiresAt = parseExpiration(expiresAt)
     const target = await this.resolveOptionalTarget({ googleMapsUrl, googlePlaceId })
     return this.createRecord({
       alias: normalizedAlias,
       organizationId: null,
       createdById: actor.id,
       target,
+      expiresAt: normalizedExpiresAt,
     })
   }
 
@@ -318,11 +333,60 @@ export class QrService {
   }: {
     actor: QrActor
     slug: string
-  }): Promise<Pick<QrResponse, "slug">> {
+  }): Promise<Pick<QrResponse, "slug" | "expiresAt">> {
     this.requireGlobalAdmin(actor)
     const record = await this.dependencies.repository.findBySlug({ slug })
     if (!record || record.deletedAt) throw this.notFound()
-    return { slug: record.slug }
+    return { slug: record.slug, expiresAt: record.expiresAt?.toISOString() ?? null }
+  }
+
+  async setExpirationBySlug({
+    actor,
+    slug,
+    expiresAt,
+  }: {
+    actor: QrActor
+    slug: string
+    expiresAt: string | null
+  }): Promise<QrResponse> {
+    this.requireGlobalAdmin(actor)
+    const normalizedExpiresAt = parseExpiration(expiresAt)
+    const existing = await this.dependencies.repository.findBySlug({ slug })
+    if (!existing) throw this.notFound()
+    if (existing.deletedAt)
+      throw new QrDomainError("ARCHIVED", "Archived QR codes must be restored first.")
+
+    const updatedAt = this.now()
+    const projectedRecord = {
+      ...existing,
+      expiresAt: normalizedExpiresAt,
+      updatedAt,
+    }
+    const publicationWasAwaited = await this.publishPublicProjectionAndWait(
+      createQrPublicProjection(projectedRecord),
+    )
+
+    let updated: QrRecord | null
+    try {
+      updated = await this.dependencies.repository.setExpirationBySlug({
+        slug,
+        expiresAt: normalizedExpiresAt,
+        updatedAt,
+      })
+    } catch (error) {
+      if (publicationWasAwaited) {
+        await this.restorePublicProjection(existing)
+      }
+      throw error
+    }
+    if (!updated) {
+      if (publicationWasAwaited) {
+        await this.restorePublicProjection(existing)
+      }
+      throw this.notFound()
+    }
+    if (!publicationWasAwaited) this.publishPublicProjection(createQrPublicProjection(updated))
+    return toResponse(updated)
   }
 
   async update({
@@ -460,11 +524,13 @@ export class QrService {
     organizationId,
     createdById,
     target,
+    expiresAt,
   }: {
     alias: string
     organizationId: string | null
     createdById: string
     target?: QrTarget
+    expiresAt?: Date | null
   }): Promise<QrResponse> {
     for (let attempt = 0; attempt < 5; attempt += 1) {
       const now = this.now()
@@ -477,6 +543,7 @@ export class QrService {
         claimedById: null,
         claimedAt: null,
         claimable: organizationId === null,
+        expiresAt: expiresAt ?? null,
         createdAt: now,
         updatedAt: now,
         deletedAt: null,
@@ -601,6 +668,10 @@ export class QrService {
   }
 
   private resolvePublicProjection(projection: QrPublicProjection): PublicQrResponse {
+    if (projection.state === "archived") throw this.notFound()
+    if (projection.expiresAt && this.now() >= new Date(projection.expiresAt)) {
+      return { kind: "expired" }
+    }
     if (projection.state === "active") {
       return {
         kind: "redirect",
@@ -608,8 +679,7 @@ export class QrService {
         qrCodeId: projection.qrCodeId,
       }
     }
-    if (projection.state === "setup") return { kind: "setup" }
-    throw this.notFound()
+    return { kind: "setup" }
   }
 
   private publishPublicProjection(projection: QrPublicProjection): void {
@@ -617,6 +687,31 @@ export class QrService {
       this.dependencies.publicProjection?.set(projection)
     } catch (error) {
       console.warn("QR public projection publication failed.", {
+        slug: projection.slug,
+        error,
+      })
+    }
+  }
+
+  private async publishPublicProjectionAndWait(projection: QrPublicProjection): Promise<boolean> {
+    const publicProjection = this.dependencies.publicProjection
+    if (!publicProjection?.setAndWait) return false
+    await publicProjection.setAndWait(projection)
+    return true
+  }
+
+  private async restorePublicProjection(record: QrRecord): Promise<void> {
+    const projection = createQrPublicProjection(record)
+    const publicProjection = this.dependencies.publicProjection
+    if (!publicProjection?.setAndWait) {
+      this.publishPublicProjection(projection)
+      return
+    }
+
+    try {
+      await publicProjection.setAndWait(projection)
+    } catch (error) {
+      console.warn("QR public projection restoration failed.", {
         slug: projection.slug,
         error,
       })
@@ -655,10 +750,33 @@ function toResponse(record: QrRecord): QrResponse {
     createdById: record.createdById,
     claimedById: record.claimedById,
     claimedAt: record.claimedAt?.toISOString() ?? null,
+    expiresAt: record.expiresAt?.toISOString() ?? null,
     createdAt: record.createdAt.toISOString(),
     updatedAt: record.updatedAt.toISOString(),
     deletedAt: record.deletedAt?.toISOString() ?? null,
   }
+}
+
+function parseExpiration(value: string | null | undefined): Date | null {
+  if (value === undefined || value === null) return null
+  if (/^\d{4}-\d{2}-\d{2}$/.test(value)) {
+    const dateOnly = new Date(`${value}T00:00:00.000Z`)
+    if (Number.isNaN(dateOnly.getTime()) || dateOnly.toISOString().slice(0, 10) !== value) {
+      throw new QrDomainError("INVALID_INPUT", "Expiry date must be a valid ISO date.")
+    }
+    dateOnly.setUTCDate(dateOnly.getUTCDate() + 1)
+    return dateOnly
+  }
+
+  if (!/^\d{4}-\d{2}-\d{2}T00:00:00\.000Z$/.test(value)) {
+    throw new QrDomainError("INVALID_INPUT", "Expiry date must be a UTC calendar date.")
+  }
+
+  const parsed = new Date(value)
+  if (Number.isNaN(parsed.getTime()) || parsed.toISOString() !== value) {
+    throw new QrDomainError("INVALID_INPUT", "Expiry date must be a valid ISO date.")
+  }
+  return parsed
 }
 
 function toCandidate(place: PlaceCandidate): PlaceCandidate {

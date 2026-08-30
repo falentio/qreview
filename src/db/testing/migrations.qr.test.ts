@@ -233,4 +233,25 @@ describe("QR migrations", () => {
     )
     db.close()
   })
+
+  it("adds an optional expiry to QR codes", () => {
+    const db = createPreQrMigrationDatabase()
+
+    applyMigrations(db, [
+      "0003_qr_resource.sql",
+      "0004_preserve_legacy_qr_content.sql",
+      "0005_mature_selene.sql",
+      "0006_mushy_sally_floyd.sql",
+      "0007_outgoing_pandemic.sql",
+    ])
+
+    const column = db
+      .prepare("PRAGMA table_info(qr_codes)")
+      .all()
+      .find((value) => (value as { name: string }).name === "expires_at") as
+      | { name: string; type: string; notnull: number }
+      | undefined
+    expect(column).toMatchObject({ name: "expires_at", type: "INTEGER", notnull: 0 })
+    db.close()
+  })
 })

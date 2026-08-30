@@ -15,12 +15,18 @@ export const qrCode = v.object({
   createdById: v.string(),
   claimedById: v.nullable(v.string()),
   claimedAt: v.nullable(v.string()),
+  expiresAt: v.nullable(v.string()),
   createdAt: v.string(),
   updatedAt: v.string(),
   deletedAt: v.nullable(v.string()),
 })
 
 const qrTargetFields = v.pick(qrCode, ["rawGoogleMapsUrl", "googlePlaceId"])
+const expirationValue = v.pipe(
+  v.string(),
+  v.regex(/^\d{4}-\d{2}-\d{2}(?:T00:00:00\.000Z)?$/, "Expiry must be a UTC calendar date."),
+)
+const expirationInput = v.object({ expiresAt: v.optional(v.nullable(expirationValue)) })
 
 export const organizationInput = v.object({
   organizationId: v.nonNullable(v.pick(qrCode, ["organizationId"]).entries.organizationId),
@@ -52,6 +58,7 @@ export const batchCreateInput = v.object(
   v.entriesFromObjects([
     createInput,
     v.object({ count: v.pipe(v.number(), v.integer(), v.minValue(1), v.maxValue(100)) }),
+    expirationInput,
   ]),
 )
 export const batchCreateOutput = v.object({ items: v.array(qrCode) })
@@ -60,10 +67,11 @@ export const batchCreateOrphanInput = v.object(
     v.pick(qrCode, ["alias"]),
     targetInput,
     v.object({ count: v.pipe(v.number(), v.integer(), v.minValue(1), v.maxValue(100)) }),
+    expirationInput,
   ]),
 )
 export const createOrphanInput = v.object(
-  v.entriesFromObjects([v.pick(qrCode, ["alias"]), v.partial(targetInput)]),
+  v.entriesFromObjects([v.pick(qrCode, ["alias"]), v.partial(targetInput), expirationInput]),
 )
 export const createOrphanOutput = qrCode
 export const claimInput = v.object(
@@ -79,7 +87,7 @@ export const getInput = v.object(
 )
 export const getOutput = qrCode
 export const verifyBySlugInput = v.pick(qrCode, ["slug"])
-export const verifyBySlugOutput = v.pick(qrCode, ["slug"])
+export const verifyBySlugOutput = v.pick(qrCode, ["slug", "expiresAt"])
 export const updateInput = v.object(
   v.entriesFromObjects([
     organizationInput,
@@ -92,6 +100,13 @@ export const updateMapBySlugInput = v.object(
   v.entriesFromObjects([v.pick(qrCode, ["slug"]), targetInput]),
 )
 export const updateMapBySlugOutput = qrCode
+export const setExpirationBySlugInput = v.object(
+  v.entriesFromObjects([
+    v.pick(qrCode, ["slug"]),
+    v.object({ expiresAt: v.nullable(expirationValue) }),
+  ]),
+)
+export const setExpirationBySlugOutput = qrCode
 export const archiveInput = v.object(
   v.entriesFromObjects([organizationInput, v.pick(qrCode, ["id"])]),
 )
@@ -114,6 +129,7 @@ export const qrContract = {
   verifyBySlug: oc.input(verifyBySlugInput).output(verifyBySlugOutput),
   update: oc.input(updateInput).output(updateOutput),
   updateMapBySlug: oc.input(updateMapBySlugInput).output(updateMapBySlugOutput),
+  setExpirationBySlug: oc.input(setExpirationBySlugInput).output(setExpirationBySlugOutput),
   archive: oc.input(archiveInput).output(archiveOutput),
   restore: oc.input(restoreInput).output(restoreOutput),
 }

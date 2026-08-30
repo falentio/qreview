@@ -122,7 +122,7 @@ describe("QrService.verifyBySlug", () => {
     repository.findBySlug.mockResolvedValue(createQrRecord({ slug: "abc123def4" }))
 
     await expect(service.verifyBySlug({ actor: globalAdmin, slug: "abc123def4" })).resolves.toEqual(
-      { slug: "abc123def4" },
+      { slug: "abc123def4", expiresAt: null },
     )
   })
 

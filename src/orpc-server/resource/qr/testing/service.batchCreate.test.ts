@@ -41,9 +41,24 @@ describe("QrService.batchCreate", () => {
   it("creates identical configured QR codes for a global admin", async () => {
     const { places, repository, service } = setup()
     const created = [
-      createQrRecord({ id: "qr-1", slug: "abc123def4", alias: "Batch QR 1" }),
-      createQrRecord({ id: "qr-2", slug: "abc123def5", alias: "Batch QR 2" }),
-      createQrRecord({ id: "qr-3", slug: "abc123def6", alias: "Batch QR 3" }),
+      createQrRecord({
+        id: "qr-1",
+        slug: "abc123def4",
+        alias: "Batch QR 1",
+        expiresAt: new Date("2030-02-01T00:00:00.000Z"),
+      }),
+      createQrRecord({
+        id: "qr-2",
+        slug: "abc123def5",
+        alias: "Batch QR 2",
+        expiresAt: new Date("2030-02-01T00:00:00.000Z"),
+      }),
+      createQrRecord({
+        id: "qr-3",
+        slug: "abc123def6",
+        alias: "Batch QR 3",
+        expiresAt: new Date("2030-02-01T00:00:00.000Z"),
+      }),
     ]
     let createdIndex = 0
     repository.create.mockImplementation(async () => created[createdIndex++]!)
@@ -55,6 +70,7 @@ describe("QrService.batchCreate", () => {
       googleMapsUrl: targetUrl,
       googlePlaceId: placeDetails.placeId,
       count: 3,
+      expiresAt: "2030-02-01T00:00:00.000Z",
     })
 
     expect(result.items).toHaveLength(3)
@@ -67,6 +83,7 @@ describe("QrService.batchCreate", () => {
         organizationId: "org-1",
         createdById: globalAdmin.id,
         claimable: false,
+        expiresAt: new Date("2030-02-01T00:00:00.000Z"),
         target: {
           rawGoogleMapsUrl: targetUrl,
           googlePlaceId: placeDetails.placeId,
@@ -98,8 +115,18 @@ describe("QrService.batchCreate", () => {
   it("creates configured orphan QR codes without an organization", async () => {
     const { places, repository, service } = setup()
     const created = [
-      createQrRecord({ id: "qr-1", slug: "abc123def4", organizationId: null }),
-      createQrRecord({ id: "qr-2", slug: "abc123def5", organizationId: null }),
+      createQrRecord({
+        id: "qr-1",
+        slug: "abc123def4",
+        organizationId: null,
+        expiresAt: new Date("2030-02-01T00:00:00.000Z"),
+      }),
+      createQrRecord({
+        id: "qr-2",
+        slug: "abc123def5",
+        organizationId: null,
+        expiresAt: new Date("2030-02-01T00:00:00.000Z"),
+      }),
     ]
     let createdIndex = 0
     repository.create.mockImplementation(async () => created[createdIndex++]!)
@@ -110,6 +137,7 @@ describe("QrService.batchCreate", () => {
       googleMapsUrl: targetUrl,
       googlePlaceId: placeDetails.placeId,
       count: 2,
+      expiresAt: "2030-02-01T00:00:00.000Z",
     })
 
     expect(result.items).toMatchObject([
@@ -117,6 +145,7 @@ describe("QrService.batchCreate", () => {
         ownershipState: "orphan",
         configurationState: "active",
         claimable: true,
+        expiresAt: "2030-02-01T00:00:00.000Z",
       },
       {
         ownershipState: "orphan",

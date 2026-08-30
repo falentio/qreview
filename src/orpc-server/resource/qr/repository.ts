@@ -68,6 +68,15 @@ export interface QrRepository {
     target: QrTarget
     updatedAt: Date
   }): Promise<QrRecord | null>
+  setExpirationBySlug({
+    slug,
+    expiresAt,
+    updatedAt,
+  }: {
+    slug: string
+    expiresAt: Date | null
+    updatedAt: Date
+  }): Promise<QrRecord | null>
   archiveById({
     id,
     organizationId,

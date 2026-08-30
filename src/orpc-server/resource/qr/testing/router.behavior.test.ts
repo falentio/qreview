@@ -112,6 +112,7 @@ describe("QrRouter behavior", () => {
 
     await expect(call(router.verifyBySlug, { slug: "abc123def4" }, { context })).resolves.toEqual({
       slug: "abc123def4",
+      expiresAt: null,
     })
   })
 
@@ -225,6 +226,34 @@ describe("QrRouter behavior", () => {
     expect(repository.updateMapBySlug.mock.calls).toHaveLength(1)
   })
 
+  it("updates QR expiry through the global admin route", async () => {
+    const { context, repository, router } = setup({ role: "admin" })
+    repository.findBySlug.mockResolvedValue(createQrRecord({ organizationId: null }))
+    repository.setExpirationBySlug.mockResolvedValue(
+      createQrRecord({
+        organizationId: null,
+        expiresAt: new Date("2030-02-01T00:00:00.000Z"),
+      }),
+    )
+
+    await expect(
+      call(
+        router.setExpirationBySlug,
+        { slug: "abc123def4", expiresAt: "2030-02-01T00:00:00.000Z" },
+        { context },
+      ),
+    ).resolves.toMatchObject({ expiresAt: "2030-02-01T00:00:00.000Z" })
+    expect(repository.setExpirationBySlug.mock.calls).toEqual([
+      [
+        {
+          slug: "abc123def4",
+          expiresAt: new Date("2030-02-01T00:00:00.000Z"),
+          updatedAt: expect.any(Date),
+        },
+      ],
+    ])
+  })
+
   it("rejects global-admin QR operations for regular users", async () => {
     const { context, places, repository, router } = setup()
     places.getPlaceDetails.mockResolvedValue(placeDetails)
@@ -268,6 +297,13 @@ describe("QrRouter behavior", () => {
           googleMapsUrl: targetUrl,
           googlePlaceId: placeDetails.placeId,
         },
+        { context },
+      ),
+    ).rejects.toMatchObject({ code: "FORBIDDEN" })
+    await expect(
+      call(
+        router.setExpirationBySlug,
+        { slug: "abc123def4", expiresAt: "2030-02-01T00:00:00.000Z" },
         { context },
       ),
     ).rejects.toMatchObject({ code: "FORBIDDEN" })
@@ -400,6 +436,7 @@ describe("QrRouter behavior", () => {
           },
           { context },
         ),
+      () => call(router.setExpirationBySlug, { slug: "abc123def4", expiresAt: null }, { context }),
       () => call(router.archive, { organizationId: "org-1", id: "qr-1" }, { context }),
       () => call(router.restore, { organizationId: "org-1", id: "qr-1" }, { context }),
     ]

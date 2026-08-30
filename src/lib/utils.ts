@@ -9,6 +9,22 @@ export function getErrorMessage(error: unknown, fallback: string) {
   return error instanceof Error && error.message ? error.message : fallback
 }
 
+export function dateInputToExpiry(value: string): string | null {
+  if (!value) return null
+  const date = new Date(`${value}T00:00:00.000Z`)
+  if (Number.isNaN(date.getTime())) return null
+  date.setUTCDate(date.getUTCDate() + 1)
+  return date.toISOString()
+}
+
+export function expiryToDateInput(value: string | null): string {
+  if (!value) return ""
+  const date = new Date(value)
+  if (Number.isNaN(date.getTime())) return ""
+  date.setUTCDate(date.getUTCDate() - 1)
+  return date.toISOString().slice(0, 10)
+}
+
 export type TarFile = {
   name: string
   data: Uint8Array

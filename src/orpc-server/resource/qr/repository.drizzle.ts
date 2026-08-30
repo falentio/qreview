@@ -30,6 +30,7 @@ export class DrizzleQrRepository implements QrRepository {
           claimedById: input.claimedById,
           claimedAt: input.claimedAt,
           claimable: input.claimable,
+          expiresAt: input.expiresAt,
           createdAt: input.createdAt,
           updatedAt: input.updatedAt,
           deletedAt: input.deletedAt,
@@ -181,6 +182,23 @@ export class DrizzleQrRepository implements QrRepository {
         canonicalReviewUrl: target.canonicalReviewUrl,
         updatedAt,
       })
+      .where(and(eq(qrCodes.slug, slug), isNull(qrCodes.deletedAt)))
+      .returning()
+    return rows[0] ?? null
+  }
+
+  async setExpirationBySlug({
+    slug,
+    expiresAt,
+    updatedAt,
+  }: {
+    slug: string
+    expiresAt: Date | null
+    updatedAt: Date
+  }): Promise<QrRecord | null> {
+    const rows = await this.dependencies.db
+      .update(qrCodes)
+      .set({ expiresAt, updatedAt })
       .where(and(eq(qrCodes.slug, slug), isNull(qrCodes.deletedAt)))
       .returning()
     return rows[0] ?? null

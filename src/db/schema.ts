@@ -17,6 +17,7 @@ export const qrCodes = sqliteTable(
     claimedById: text("claimed_by_id"),
     claimedAt: integer("claimed_at", { mode: "timestamp_ms" }),
     claimable: integer("claimable", { mode: "boolean" }).notNull().default(true),
+    expiresAt: integer("expires_at", { mode: "timestamp_ms" }),
     createdAt: integer("created_at", { mode: "timestamp_ms" }).notNull(),
     updatedAt: integer("updated_at", { mode: "timestamp_ms" }).notNull(),
     deletedAt: integer("deleted_at", { mode: "timestamp_ms" }),

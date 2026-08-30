@@ -19,6 +19,7 @@ function setup(record: QrRecord | null, onQrRedirected?: (event: QrRedirectedEve
   const service = new QrService({
     repository,
     places,
+    clock: { now: () => new Date("2030-01-02T00:00:00.000Z") },
     ids: {
       generateId: () => "generated-id",
       generateSlug: () => "generated1a",
@@ -142,6 +143,36 @@ describe("createQrPublicResponse", () => {
       expect(response.headers.get("Cache-Control")).toBe("no-store")
       expect(response.headers.get("Location")).toBeNull()
     }
+  })
+
+  it("returns 410 for expired QR codes without emitting redirect events", async () => {
+    const events: QrRedirectedEvent[] = []
+    const publicResponse = setup(
+      createQrRecord({ expiresAt: new Date("2030-01-02T00:00:00.000Z") }),
+      (event) => events.push(event),
+    )
+
+    const response = await publicResponse({ slug: "abc123def4" })
+
+    expect(response.status).toBe(410)
+    expect(await response.text()).toContain("expired")
+    expect(response.headers.get("Cache-Control")).toBe("no-store")
+    expect(events).toHaveLength(0)
+  })
+
+  it("returns 410 before setup handling for an expired incomplete QR code", async () => {
+    const publicResponse = setup(
+      createQrRecord({
+        rawGoogleMapsUrl: null,
+        googlePlaceId: null,
+        canonicalReviewUrl: null,
+        expiresAt: new Date("2030-01-02T00:00:00.000Z"),
+      }),
+    )
+
+    const response = await publicResponse({ slug: "abc123def4" })
+
+    expect(response.status).toBe(410)
   })
 
   it("does not redirect to an invalid stored canonical URL", async () => {

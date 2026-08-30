@@ -18,6 +18,7 @@ export function createQrRecord(overrides: Partial<QrRecord> = {}): QrRecord {
     createdById: "user-1",
     claimedById: null,
     claimedAt: null,
+    expiresAt: null,
     createdAt: timestamp,
     updatedAt: timestamp,
     deletedAt: null,

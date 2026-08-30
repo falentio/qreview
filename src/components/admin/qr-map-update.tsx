@@ -19,12 +19,13 @@ import { Field, FieldDescription, FieldError, FieldGroup, FieldLabel } from "@/c
 import { Input } from "@/components/ui/input"
 import { Spinner } from "@/components/ui/spinner"
 import { getSlugFromQrValue } from "@/lib/qr-code"
-import { getErrorMessage } from "@/lib/utils"
+import { dateInputToExpiry, expiryToDateInput, getErrorMessage } from "@/lib/utils"
 
 type DialogStep = "scan" | "edit" | "success"
+type UpdateKind = "map" | "expiration"
 type PlaceCandidate = Awaited<ReturnType<typeof rpcClient.qr.resolvePlace>>["candidates"][number]
 type UpdatedQr = Awaited<ReturnType<typeof rpcClient.qr.updateMapBySlug>>
-type FormErrors = { googleMapsUrl?: string; place?: string }
+type FormErrors = { googleMapsUrl?: string; place?: string; expiresOn?: string }
 
 export function QrMapUpdate() {
   const [open, setOpen] = useState(false)
@@ -38,12 +39,15 @@ export function QrMapUpdate() {
   const [googleMapsUrl, setGoogleMapsUrl] = useState("")
   const [candidates, setCandidates] = useState<PlaceCandidate[]>([])
   const [selectedPlaceId, setSelectedPlaceId] = useState("")
+  const [expiresOn, setExpiresOn] = useState("")
   const [errors, setErrors] = useState<FormErrors>({})
   const [resolveError, setResolveError] = useState<string | null>(null)
   const [requestError, setRequestError] = useState<string | null>(null)
   const [isResolving, setIsResolving] = useState(false)
   const [isSubmitting, setIsSubmitting] = useState(false)
+  const [pendingAction, setPendingAction] = useState<UpdateKind | null>(null)
   const [updatedQr, setUpdatedQr] = useState<UpdatedQr | null>(null)
+  const [updateKind, setUpdateKind] = useState<UpdateKind>("map")
   const resolveRequestRef = useRef(0)
   const verifyRequestRef = useRef(0)
   const verifyInFlightRef = useRef(false)
@@ -65,12 +69,15 @@ export function QrMapUpdate() {
     setGoogleMapsUrl("")
     setCandidates([])
     setSelectedPlaceId("")
+    setExpiresOn("")
     setErrors({})
     setResolveError(null)
     setRequestError(null)
     setIsResolving(false)
     setIsSubmitting(false)
+    setPendingAction(null)
     setUpdatedQr(null)
+    setUpdateKind("map")
   }
 
   function handleOpenChange(nextOpen: boolean) {
@@ -108,13 +115,14 @@ export function QrMapUpdate() {
     verifyRequestRef.current = requestId
 
     try {
-      await rpcClient.qr.verifyBySlug({ slug: nextSlug })
+      const verified = await rpcClient.qr.verifyBySlug({ slug: nextSlug })
       if (requestId !== verifyRequestRef.current) return
 
       setIsVerifying(false)
       setGoogleMapsUrl("")
       setCandidates([])
       setSelectedPlaceId("")
+      setExpiresOn(expiryToDateInput(verified.expiresAt))
       setErrors({})
       setResolveError(null)
       setRequestError(null)
@@ -214,6 +222,7 @@ export function QrMapUpdate() {
     if (Object.keys(nextErrors).length > 0) return
 
     setIsSubmitting(true)
+    setPendingAction("map")
     const requestId = updateRequestRef.current + 1
     updateRequestRef.current = requestId
     try {
@@ -224,12 +233,45 @@ export function QrMapUpdate() {
       })
       if (requestId !== updateRequestRef.current) return
       setUpdatedQr(result)
+      setUpdateKind("map")
       setStep("success")
     } catch (error) {
       if (requestId !== updateRequestRef.current) return
       setRequestError(getErrorMessage(error, "Could not update this QR code. Please try again."))
     } finally {
-      if (requestId === updateRequestRef.current) setIsSubmitting(false)
+      if (requestId === updateRequestRef.current) {
+        setIsSubmitting(false)
+        setPendingAction(null)
+      }
+    }
+  }
+
+  async function submitExpiration() {
+    const nextErrors: FormErrors = {}
+    const expiration = dateInputToExpiry(expiresOn)
+    if (expiresOn && !expiration) nextErrors.expiresOn = "Enter a valid expiry date"
+    setErrors((current) => ({ ...current, expiresOn: nextErrors.expiresOn }))
+    setRequestError(null)
+    if (Object.keys(nextErrors).length > 0) return
+
+    setIsSubmitting(true)
+    setPendingAction("expiration")
+    const requestId = updateRequestRef.current + 1
+    updateRequestRef.current = requestId
+    try {
+      const result = await rpcClient.qr.setExpirationBySlug({ slug, expiresAt: expiration })
+      if (requestId !== updateRequestRef.current) return
+      setUpdatedQr(result)
+      setUpdateKind("expiration")
+      setStep("success")
+    } catch (error) {
+      if (requestId !== updateRequestRef.current) return
+      setRequestError(getErrorMessage(error, "Could not update this QR code. Please try again."))
+    } finally {
+      if (requestId === updateRequestRef.current) {
+        setIsSubmitting(false)
+        setPendingAction(null)
+      }
     }
   }
 
@@ -254,8 +296,8 @@ export function QrMapUpdate() {
             Update a QR code
           </CardTitle>
           <CardDescription>
-            Scan a printed QR code to replace its Google Maps destination. This tool is available to
-            global admins only.
+            Scan a printed QR code to replace its Google Maps destination or expiry date. This tool
+            is available to global admins only.
           </CardDescription>
         </CardHeader>
         <CardContent className="flex flex-col gap-4 pt-5 sm:flex-row sm:items-center sm:justify-between">
@@ -264,7 +306,7 @@ export function QrMapUpdate() {
               <MapPin className="size-5" aria-hidden="true" />
             </div>
             <div>
-              <p className="text-sm font-medium">Change where an existing code sends customers</p>
+              <p className="text-sm font-medium">Change where or how long a code works</p>
               <p className="mt-1 text-sm text-muted-foreground">
                 The QR image and slug stay the same.
               </p>
@@ -296,7 +338,7 @@ export function QrMapUpdate() {
                 <DialogTitle>Scan a QR code</DialogTitle>
                 <DialogDescription>
                   Scan the QR code printed for this app. Once the slug is recognized, you can update
-                  its map destination.
+                  its map destination or expiry date.
                 </DialogDescription>
               </DialogHeader>
               <div className="flex flex-col gap-3">
@@ -365,10 +407,10 @@ export function QrMapUpdate() {
           {step === "edit" && (
             <>
               <DialogHeader>
-                <DialogTitle>Update map destination</DialogTitle>
+                <DialogTitle>Update QR code</DialogTitle>
                 <DialogDescription>
                   QR code <code className="rounded bg-muted px-1.5 py-0.5 text-xs">{slug}</code> is
-                  ready. Enter a Google Maps URL and choose the matching place.
+                  ready. Change its destination or expiry date.
                 </DialogDescription>
               </DialogHeader>
               <form className="flex flex-col gap-5" onSubmit={(event) => void submitUpdate(event)}>
@@ -445,6 +487,28 @@ export function QrMapUpdate() {
                       {errors.place}
                     </p>
                   )}
+                  <Field data-invalid={Boolean(errors.expiresOn)}>
+                    <FieldLabel htmlFor="update-expires-on">Expiry date</FieldLabel>
+                    <Input
+                      id="update-expires-on"
+                      type="date"
+                      value={expiresOn}
+                      onChange={(event) => {
+                        setExpiresOn(event.target.value)
+                        setErrors((current) => ({ ...current, expiresOn: undefined }))
+                        setRequestError(null)
+                      }}
+                      aria-invalid={Boolean(errors.expiresOn)}
+                    />
+                    {errors.expiresOn ? (
+                      <FieldError>{errors.expiresOn}</FieldError>
+                    ) : (
+                      <FieldDescription>
+                        Leave blank for a QR code that never expires. Expiry begins at the start of
+                        the next UTC day.
+                      </FieldDescription>
+                    )}
+                  </Field>
                   {requestError && (
                     <p role="alert" className="text-sm text-destructive">
                       {requestError}
@@ -460,10 +524,21 @@ export function QrMapUpdate() {
                   >
                     Scan a different code
                   </Button>
-                  <Button type="submit" disabled={isSubmitting || isResolving}>
-                    {isSubmitting ? <Spinner /> : <MapPin />}
-                    {isSubmitting ? "Updating..." : "Update map destination"}
-                  </Button>
+                  <div className="flex flex-col gap-2 sm:flex-row">
+                    <Button
+                      type="button"
+                      variant="outline"
+                      onClick={() => void submitExpiration()}
+                      disabled={isSubmitting || isResolving}
+                    >
+                      {pendingAction === "expiration" ? <Spinner /> : <CheckCircle2 />}
+                      {pendingAction === "expiration" ? "Saving..." : "Save expiry"}
+                    </Button>
+                    <Button type="submit" disabled={isSubmitting || isResolving}>
+                      {pendingAction === "map" ? <Spinner /> : <MapPin />}
+                      {pendingAction === "map" ? "Updating..." : "Update map destination"}
+                    </Button>
+                  </div>
                 </div>
               </form>
             </>
@@ -475,24 +550,37 @@ export function QrMapUpdate() {
                 <div className="mb-1 flex size-11 items-center justify-center rounded-full bg-emerald-500/10 text-emerald-600">
                   <CheckCircle2 className="size-6" aria-hidden="true" />
                 </div>
-                <DialogTitle>Map destination updated</DialogTitle>
+                <DialogTitle>
+                  {updateKind === "expiration" ? "Expiry updated" : "Map destination updated"}
+                </DialogTitle>
                 <DialogDescription>
                   QR code{" "}
                   <code className="rounded bg-muted px-1.5 py-0.5 text-xs">{updatedQr.slug}</code>{" "}
-                  now points to the selected Google place. The printed QR code does not need to be
-                  replaced.
+                  {updateKind === "expiration"
+                    ? " now has the updated expiry setting."
+                    : " now points to the selected Google place. The printed QR code does not need to be replaced."}
                 </DialogDescription>
               </DialogHeader>
               <div className="flex flex-col gap-2 rounded-lg border bg-muted/30 p-3 text-sm">
+                {updateKind === "map" && (
+                  <>
+                    <div className="flex items-center justify-between gap-3">
+                      <span className="text-muted-foreground">Place ID</span>
+                      <code className="max-w-[65%] truncate text-xs">
+                        {updatedQr.googlePlaceId}
+                      </code>
+                    </div>
+                    <div className="flex items-start justify-between gap-3">
+                      <span className="text-muted-foreground">Maps URL</span>
+                      <span className="max-w-[65%] truncate text-right text-xs">
+                        {updatedQr.rawGoogleMapsUrl}
+                      </span>
+                    </div>
+                  </>
+                )}
                 <div className="flex items-center justify-between gap-3">
-                  <span className="text-muted-foreground">Place ID</span>
-                  <code className="max-w-[65%] truncate text-xs">{updatedQr.googlePlaceId}</code>
-                </div>
-                <div className="flex items-start justify-between gap-3">
-                  <span className="text-muted-foreground">Maps URL</span>
-                  <span className="max-w-[65%] truncate text-right text-xs">
-                    {updatedQr.rawGoogleMapsUrl}
-                  </span>
+                  <span className="text-muted-foreground">Expiry date</span>
+                  <span>{expiryToDateInput(updatedQr.expiresAt) || "Never"}</span>
                 </div>
               </div>
               <div className="flex flex-col-reverse gap-2 sm:flex-row sm:justify-end">

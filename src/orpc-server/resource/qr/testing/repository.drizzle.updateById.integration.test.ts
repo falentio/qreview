@@ -45,4 +45,23 @@ describe("DrizzleQrRepository.updateById against D1", () => {
 
     expect(updated).toMatchObject({ alias: "Updated location", googlePlaceId: "ChIJ987654321" })
   })
+
+  it("updates expiry only for a non-archived QR code", async () => {
+    await createOrganization({ id: "repo-test-org-1", userId: "repo-test-user-1" })
+    await repository.create(
+      record({
+        id: "repo-test-qr-expiry",
+        slug: "repoexpiry1",
+        organizationId: "repo-test-org-1",
+      }),
+    )
+
+    const updated = await repository.setExpirationBySlug({
+      slug: "repoexpiry1",
+      expiresAt: new Date("2030-02-01T00:00:00.000Z"),
+      updatedAt: new Date("2030-01-02T00:00:00.000Z"),
+    })
+
+    expect(updated?.expiresAt).toEqual(new Date("2030-02-01T00:00:00.000Z"))
+  })
 })

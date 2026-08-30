@@ -41,16 +41,22 @@ describe("QrService.createOrphan", () => {
         rawGoogleMapsUrl: null,
         googlePlaceId: null,
         canonicalReviewUrl: null,
+        expiresAt: new Date("2030-02-01T00:00:00.000Z"),
       }),
     )
 
-    const result = await service.createOrphan({ actor: globalAdmin, alias: "  Unclaimed sign  " })
+    const result = await service.createOrphan({
+      actor: globalAdmin,
+      alias: "  Unclaimed sign  ",
+      expiresAt: "2030-02-01T00:00:00.000Z",
+    })
 
     expect(result).toMatchObject({
       alias: "Unclaimed sign",
       ownershipState: "orphan",
       configurationState: "incomplete",
       claimable: true,
+      expiresAt: "2030-02-01T00:00:00.000Z",
     })
     expect(repository.create.mock.calls[0]?.[0]).toMatchObject({
       id: "generated-id",
@@ -99,5 +105,18 @@ describe("QrService.createOrphan", () => {
       googlePlaceId: "ChIJ123456789",
       canonicalReviewUrl: placeDetails.canonicalReviewUrl,
     })
+  })
+
+  it("rejects invalid expiry dates before resolving or persisting", async () => {
+    const { repository, service } = setup()
+
+    await expect(
+      service.createOrphan({
+        actor: globalAdmin,
+        alias: "Invalid expiry",
+        expiresAt: "not-a-date",
+      }),
+    ).rejects.toMatchObject({ code: "INVALID_INPUT" })
+    expect(repository.create.mock.calls).toHaveLength(0)
   })
 })

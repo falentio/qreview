@@ -18,6 +18,9 @@ export function createQrPublicResponse({
   }): Promise<Response> {
     try {
       const result = await service.resolvePublic({ slug })
+      if (result.kind === "expired") {
+        return createQrExpiredResponse()
+      }
       if (result.kind === "setup") {
         return new Response("This QR code is not configured yet.", {
           status: 200,
@@ -73,6 +76,13 @@ export function createQrPublicResponse({
 export function createQrNotFoundResponse(): Response {
   return new Response("Not found", {
     status: 404,
+    headers: { "Cache-Control": "no-store" },
+  })
+}
+
+export function createQrExpiredResponse(): Response {
+  return new Response("This QR code has expired.", {
+    status: 410,
     headers: { "Cache-Control": "no-store" },
   })
 }

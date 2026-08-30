@@ -74,6 +74,7 @@ export function record({
   claimedById = null,
   claimedAt = null,
   target,
+  expiresAt = null,
 }: Partial<NewQrRecord> & Pick<NewQrRecord, "id" | "slug" | "organizationId">): NewQrRecord {
   return {
     id,
@@ -84,6 +85,7 @@ export function record({
     claimedById,
     claimedAt,
     claimable,
+    expiresAt,
     createdAt,
     updatedAt,
     deletedAt,

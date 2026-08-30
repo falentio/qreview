@@ -7,18 +7,19 @@ import {
 import type { KvStore } from "@/orpc-server/resource/qr/cache"
 
 const activeProjection: QrPublicProjection = {
-  schemaVersion: 1,
+  schemaVersion: 2,
   slug: "abc123def4",
   qrCodeId: "qr-1",
   state: "active",
   googlePlaceId: "ChIJ123456789",
   canonicalReviewUrl: "https://search.google.com/local/writereview?placeid=ChIJ123456789",
+  expiresAt: null,
   updatedAt: "2030-01-01T00:00:00.000Z",
 }
 
 function createNamespace(initialValue: string | null = null) {
   const values = new Map<string, string>()
-  if (initialValue !== null) values.set("qr-public:v1:abc123def4", initialValue)
+  if (initialValue !== null) values.set("qr-public:v2:abc123def4", initialValue)
   const get = vi.fn(async (key: string) => values.get(key) ?? null)
   const put = vi.fn(async (key: string, value: string) => {
     values.set(key, value)
@@ -35,7 +36,7 @@ describe("CloudflareQrPublicProjectionCache", () => {
     })
 
     await expect(cache.get({ slug: activeProjection.slug })).resolves.toEqual(activeProjection)
-    expect(get).toHaveBeenCalledWith("qr-public:v1:abc123def4", "text")
+    expect(get).toHaveBeenCalledWith("qr-public:v2:abc123def4", "text")
   })
 
   it("treats malformed and invalid projections as cache misses", async () => {
@@ -90,7 +91,21 @@ describe("CloudflareQrPublicProjectionCache", () => {
     cache.set(activeProjection)
     await Promise.all(writes)
 
-    expect(put).toHaveBeenCalledWith("qr-public:v1:abc123def4", JSON.stringify(activeProjection), {
+    expect(put).toHaveBeenCalledWith("qr-public:v2:abc123def4", JSON.stringify(activeProjection), {
+      expirationTtl: 604_800,
+    })
+  })
+
+  it("awaits projection writes when requested", async () => {
+    const { namespace, put } = createNamespace()
+    const cache = new CloudflareQrPublicProjectionCache({
+      namespace,
+      waitUntil: () => undefined,
+    })
+
+    await cache.setAndWait?.(activeProjection)
+
+    expect(put).toHaveBeenCalledWith("qr-public:v2:abc123def4", JSON.stringify(activeProjection), {
       expirationTtl: 604_800,
     })
   })

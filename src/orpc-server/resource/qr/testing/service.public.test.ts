@@ -16,6 +16,7 @@ function setup() {
     repository,
     places,
     publicProjection,
+    clock: { now: () => new Date("2030-01-02T00:00:00.000Z") },
     ids: {
       generateId: () => "generated-id",
       generateSlug: () => "generated1a",
@@ -28,12 +29,13 @@ describe("QrService.resolvePublic", () => {
   it("serves an active KV projection without querying D1", async () => {
     const { publicProjection, repository, service } = setup()
     publicProjection.get.mockResolvedValue({
-      schemaVersion: 1,
+      schemaVersion: 2,
       slug: "abc123def4",
       qrCodeId: "qr-1",
       state: "active",
       googlePlaceId: "ChIJ123456789",
       canonicalReviewUrl: "https://search.google.com/local/writereview?placeid=ChIJ123456789",
+      expiresAt: null,
       updatedAt: "2030-01-01T00:00:00.000Z",
     })
 
@@ -49,25 +51,46 @@ describe("QrService.resolvePublic", () => {
     const { publicProjection, repository, service } = setup()
 
     publicProjection.get.mockResolvedValueOnce({
-      schemaVersion: 1,
+      schemaVersion: 2,
       slug: "abc123def4",
       qrCodeId: "qr-1",
       state: "setup",
+      expiresAt: null,
       updatedAt: "2030-01-01T00:00:00.000Z",
     })
     await expect(service.resolvePublic({ slug: "abc123def4" })).resolves.toEqual({ kind: "setup" })
 
     publicProjection.get.mockResolvedValueOnce({
-      schemaVersion: 1,
+      schemaVersion: 2,
       slug: "abc123def4",
       qrCodeId: "qr-1",
       state: "archived",
+      expiresAt: null,
       updatedAt: "2030-01-01T00:00:00.000Z",
     })
     await expect(service.resolvePublic({ slug: "abc123def4" })).rejects.toMatchObject({
       code: "NOT_FOUND",
     })
 
+    expect(repository.findBySlug.mock.calls).toHaveLength(0)
+  })
+
+  it("returns expired for an expired KV projection without querying D1", async () => {
+    const { publicProjection, repository, service } = setup()
+    publicProjection.get.mockResolvedValue({
+      schemaVersion: 2,
+      slug: "abc123def4",
+      qrCodeId: "qr-1",
+      state: "active",
+      googlePlaceId: "ChIJ123456789",
+      canonicalReviewUrl: "https://search.google.com/local/writereview?placeid=ChIJ123456789",
+      expiresAt: "2030-01-02T00:00:00.000Z",
+      updatedAt: "2030-01-01T00:00:00.000Z",
+    })
+
+    await expect(service.resolvePublic({ slug: "abc123def4" })).resolves.toEqual({
+      kind: "expired",
+    })
     expect(repository.findBySlug.mock.calls).toHaveLength(0)
   })
 
@@ -84,12 +107,13 @@ describe("QrService.resolvePublic", () => {
     expect(publicProjection.set.mock.calls).toEqual([
       [
         {
-          schemaVersion: 1,
+          schemaVersion: 2,
           slug: record.slug,
           qrCodeId: record.id,
           state: "active",
           googlePlaceId: record.googlePlaceId,
           canonicalReviewUrl: record.canonicalReviewUrl,
+          expiresAt: null,
           updatedAt: record.updatedAt.toISOString(),
         },
       ],
@@ -130,12 +154,32 @@ describe("QrService.resolvePublic", () => {
     expect(publicProjection.set.mock.calls).toEqual([
       [
         {
-          schemaVersion: 1,
+          schemaVersion: 2,
           slug: record.slug,
           qrCodeId: record.id,
           state: "archived",
+          expiresAt: record.expiresAt?.toISOString() ?? null,
           updatedAt: record.updatedAt.toISOString(),
         },
+      ],
+    ])
+  })
+
+  it("returns expired for a D1 record and publishes its expiry", async () => {
+    const { publicProjection, repository, service } = setup()
+    const record = createQrRecord({ expiresAt: new Date("2030-01-02T00:00:00.000Z") })
+    publicProjection.get.mockResolvedValue(null)
+    repository.findBySlug.mockResolvedValue(record)
+
+    await expect(service.resolvePublic({ slug: record.slug })).resolves.toEqual({
+      kind: "expired",
+    })
+    expect(publicProjection.set.mock.calls).toEqual([
+      [
+        expect.objectContaining({
+          state: "active",
+          expiresAt: "2030-01-02T00:00:00.000Z",
+        }),
       ],
     ])
   })

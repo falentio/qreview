@@ -27,6 +27,8 @@ Before relying on KV during a production D1 outage, backfill existing records wi
 `vp run backfill-qr-public-projection -- --remote`. This requires authenticated
 Wrangler access and writes active, setup, and archived projections in batches with
 a seven-day expiration.
+Run this backfill again after applying a public projection schema change so existing records receive
+the current projection version and expiry data.
 
 ## Commands
 

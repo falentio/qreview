@@ -49,6 +49,13 @@ function formatDate(value: string) {
   return new Intl.DateTimeFormat(undefined, { dateStyle: "medium" }).format(new Date(value))
 }
 
+function formatExpiry(value: string | null) {
+  if (!value) return "Never"
+  const date = new Date(value)
+  date.setUTCDate(date.getUTCDate() - 1)
+  return new Intl.DateTimeFormat(undefined, { dateStyle: "medium", timeZone: "UTC" }).format(date)
+}
+
 export function QrCodeList({ view = "active" }: { view?: "active" | "archived" }) {
   const isArchivedView = view === "archived"
   const {
@@ -303,103 +310,123 @@ export function QrCodeList({ view = "active" }: { view?: "active" | "archived" }
                   <TableHead>Status</TableHead>
                   <TableHead className="min-w-64">Destination</TableHead>
                   <TableHead>{isArchivedView ? "Archived" : "Added"}</TableHead>
+                  <TableHead>Expires</TableHead>
                   <TableHead className="text-right">Actions</TableHead>
                 </TableRow>
               </TableHeader>
               <TableBody>
-                {items.map((item) => (
-                  <TableRow key={item.id}>
-                    <TableCell className="px-4 md:px-6">
-                      <div className="flex items-start gap-3">
-                        <div className="mt-0.5 flex size-8 shrink-0 items-center justify-center rounded-md bg-primary/10 text-primary">
-                          <QrCode className="size-4" aria-hidden="true" />
+                {items.map((item) => {
+                  const isExpired =
+                    item.expiresAt !== null && Date.now() >= new Date(item.expiresAt).getTime()
+                  return (
+                    <TableRow key={item.id}>
+                      <TableCell className="px-4 md:px-6">
+                        <div className="flex items-start gap-3">
+                          <div className="mt-0.5 flex size-8 shrink-0 items-center justify-center rounded-md bg-primary/10 text-primary">
+                            <QrCode className="size-4" aria-hidden="true" />
+                          </div>
+                          <div className="min-w-0">
+                            <p className="truncate font-medium">{item.alias}</p>
+                            <code className="text-xs text-muted-foreground">{item.slug}</code>
+                          </div>
                         </div>
-                        <div className="min-w-0">
-                          <p className="truncate font-medium">{item.alias}</p>
-                          <code className="text-xs text-muted-foreground">{item.slug}</code>
-                        </div>
-                      </div>
-                    </TableCell>
-                    <TableCell>
-                      {isArchivedView ? (
-                        <Badge variant="outline">Archived</Badge>
-                      ) : (
-                        <Badge
-                          variant={item.configurationState === "active" ? "default" : "outline"}
-                        >
-                          {item.configurationState === "active" ? "Active" : "Needs setup"}
-                        </Badge>
-                      )}
-                    </TableCell>
-                    <TableCell className="max-w-80 whitespace-normal">
-                      {item.rawGoogleMapsUrl ? (
-                        <a
-                          href={item.rawGoogleMapsUrl}
-                          target="_blank"
-                          rel="noreferrer"
-                          className="group flex items-start gap-2 text-sm hover:text-primary"
-                        >
-                          <MapPin
-                            className="mt-0.5 size-4 shrink-0 text-muted-foreground group-hover:text-primary"
-                            aria-hidden="true"
-                          />
-                          <span className="line-clamp-2 break-all">{item.rawGoogleMapsUrl}</span>
-                          <ExternalLink
-                            className="mt-0.5 size-3.5 shrink-0 text-muted-foreground"
-                            aria-hidden="true"
-                          />
-                        </a>
-                      ) : (
-                        <span className="text-sm text-muted-foreground">Not configured</span>
-                      )}
-                    </TableCell>
-                    <TableCell className="text-sm text-muted-foreground">
-                      {formatDate(isArchivedView ? item.deletedAt! : item.createdAt)}
-                    </TableCell>
-                    <TableCell className="text-right">
-                      {isArchivedView ? (
-                        <Button
-                          type="button"
-                          variant="outline"
-                          size="sm"
-                          onClick={() => openRestoreDialog(item)}
-                          disabled={isRestoring}
-                        >
-                          <RotateCcw />
-                          Restore
-                        </Button>
-                      ) : (
-                        <div className="flex justify-end gap-2">
+                      </TableCell>
+                      <TableCell>
+                        {isArchivedView ? (
+                          <Badge variant="outline">Archived</Badge>
+                        ) : (
+                          <Badge
+                            variant={
+                              isExpired
+                                ? "destructive"
+                                : item.configurationState === "active"
+                                  ? "default"
+                                  : "outline"
+                            }
+                          >
+                            {isExpired
+                              ? "Expired"
+                              : item.configurationState === "active"
+                                ? "Active"
+                                : "Needs setup"}
+                          </Badge>
+                        )}
+                      </TableCell>
+                      <TableCell className="max-w-80 whitespace-normal">
+                        {item.rawGoogleMapsUrl ? (
+                          <a
+                            href={item.rawGoogleMapsUrl}
+                            target="_blank"
+                            rel="noreferrer"
+                            className="group flex items-start gap-2 text-sm hover:text-primary"
+                          >
+                            <MapPin
+                              className="mt-0.5 size-4 shrink-0 text-muted-foreground group-hover:text-primary"
+                              aria-hidden="true"
+                            />
+                            <span className="line-clamp-2 break-all">{item.rawGoogleMapsUrl}</span>
+                            <ExternalLink
+                              className="mt-0.5 size-3.5 shrink-0 text-muted-foreground"
+                              aria-hidden="true"
+                            />
+                          </a>
+                        ) : (
+                          <span className="text-sm text-muted-foreground">Not configured</span>
+                        )}
+                      </TableCell>
+                      <TableCell className="text-sm text-muted-foreground">
+                        {formatDate(isArchivedView ? item.deletedAt! : item.createdAt)}
+                      </TableCell>
+                      <TableCell className="text-sm text-muted-foreground">
+                        {formatExpiry(item.expiresAt)}
+                      </TableCell>
+                      <TableCell className="text-right">
+                        {isArchivedView ? (
                           <Button
                             type="button"
                             variant="outline"
                             size="sm"
-                            onClick={() => void createTemplate(item.slug)}
-                            disabled={templateState !== null}
+                            onClick={() => openRestoreDialog(item)}
+                            disabled={isRestoring}
                           >
-                            {templateState?.slug === item.slug ? (
-                              <Download className="animate-pulse" />
-                            ) : (
-                              <FileImage />
-                            )}
-                            {templateState?.slug === item.slug ? "Creating..." : "Create template"}
+                            <RotateCcw />
+                            Restore
                           </Button>
-                          <Button
-                            type="button"
-                            variant="outline"
-                            size="sm"
-                            onClick={() => openArchiveDialog(item)}
-                            disabled={templateState !== null}
-                            className="text-destructive hover:text-destructive"
-                          >
-                            <Archive />
-                            Archive
-                          </Button>
-                        </div>
-                      )}
-                    </TableCell>
-                  </TableRow>
-                ))}
+                        ) : (
+                          <div className="flex justify-end gap-2">
+                            <Button
+                              type="button"
+                              variant="outline"
+                              size="sm"
+                              onClick={() => void createTemplate(item.slug)}
+                              disabled={templateState !== null}
+                            >
+                              {templateState?.slug === item.slug ? (
+                                <Download className="animate-pulse" />
+                              ) : (
+                                <FileImage />
+                              )}
+                              {templateState?.slug === item.slug
+                                ? "Creating..."
+                                : "Create template"}
+                            </Button>
+                            <Button
+                              type="button"
+                              variant="outline"
+                              size="sm"
+                              onClick={() => openArchiveDialog(item)}
+                              disabled={templateState !== null}
+                              className="text-destructive hover:text-destructive"
+                            >
+                              <Archive />
+                              Archive
+                            </Button>
+                          </div>
+                        )}
+                      </TableCell>
+                    </TableRow>
+                  )
+                })}
               </TableBody>
             </Table>
           )}
