@@ -1,4 +1,4 @@
-import * as authSchema from "@/db/auth-schema"
+import * as authSchema from "./auth-schema"
 import { integer, index, primaryKey, sqliteTable, text, uniqueIndex } from "drizzle-orm/sqlite-core"
 
 export const qrCodes = sqliteTable(

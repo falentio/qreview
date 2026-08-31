@@ -6,6 +6,8 @@ import type { QrActor } from "@/orpc-server/resource/qr/service"
 
 const HOUR_MS = 60 * 60 * 1000
 const RETENTION_MS = 60 * 24 * HOUR_MS
+const MAX_FILL_RANGE_MS = 30 * 24 * HOUR_MS
+const MAX_REDIRECT_ATTEMPTS = 1_000_000
 
 export type QrHourlyAnalyticsResponse = {
   items: Array<{
@@ -19,9 +21,13 @@ export class AnalyticsService {
     private readonly dependencies: {
       repository: Pick<
         QrAnalyticsRepository,
-        "incrementRedirectAttempts" | "listHourly" | "deleteOlderThan"
+        | "incrementRedirectAttempts"
+        | "listHourly"
+        | "listOrganizationHourly"
+        | "fillHourly"
+        | "deleteOlderThan"
       >
-      qrRepository: Pick<QrRepository, "findById" | "getOrganizationMemberRole">
+      qrRepository: Pick<QrRepository, "findById" | "findBySlug" | "getOrganizationMemberRole">
       clock?: { now(): Date }
     },
   ) {}
@@ -53,21 +59,72 @@ export class AnalyticsService {
       from: range.fromBucket,
       to: range.toBucket,
     })
-    const counts = new Map(
-      records.map((record) => [record.bucketStart.getTime(), record.redirectAttempts]),
-    )
-    const items: QrHourlyAnalyticsResponse["items"] = []
-    for (
-      let bucket = range.fromBucket.getTime();
-      bucket < range.toBucket.getTime();
-      bucket += HOUR_MS
-    ) {
-      items.push({
-        hour: new Date(bucket).toISOString(),
-        redirectAttempts: counts.get(bucket) ?? 0,
-      })
+    return { items: toHourlyItems(range, records) }
+  }
+
+  async getOrganizationHourly({
+    actor,
+    organizationId,
+    from,
+    to,
+  }: {
+    actor: QrActor
+    organizationId: string
+    from: string
+    to: string
+  }): Promise<QrHourlyAnalyticsResponse> {
+    await this.requireOrganizationAccess({ actor, organizationId })
+    const range = this.parseRange({ from, to })
+    const records = await this.dependencies.repository.listOrganizationHourly({
+      organizationId,
+      from: range.fromBucket,
+      to: range.toBucket,
+    })
+    return { items: toHourlyItems(range, records) }
+  }
+
+  async fillQrHourly({
+    actor,
+    slug,
+    from,
+    to,
+    redirectAttempts,
+  }: {
+    actor: QrActor
+    slug: string
+    from: string
+    to: string
+    redirectAttempts: number
+  }): Promise<{ slug: string; bucketsFilled: number }> {
+    this.requireGlobalAdmin(actor)
+    const record = await this.dependencies.qrRepository.findBySlug({ slug })
+    if (!record) throw this.notFound()
+
+    const range = this.parseRange({ from, to })
+    if (range.toBucket.getTime() - range.fromBucket.getTime() > MAX_FILL_RANGE_MS) {
+      throw new AnalyticsDomainError(
+        "INVALID_INPUT",
+        "Analytics fill range cannot be longer than 30 days.",
+      )
     }
-    return { items }
+    if (
+      !Number.isInteger(redirectAttempts) ||
+      redirectAttempts < 0 ||
+      redirectAttempts > MAX_REDIRECT_ATTEMPTS
+    ) {
+      throw new AnalyticsDomainError(
+        "INVALID_INPUT",
+        "Redirect attempts must be a whole number between 0 and 1,000,000.",
+      )
+    }
+
+    const bucketsFilled = await this.dependencies.repository.fillHourly({
+      qrCodeId: record.id,
+      from: range.fromBucket,
+      to: range.toBucket,
+      redirectAttempts,
+    })
+    return { slug, bucketsFilled }
   }
 
   async deleteExpired({ actor }: { actor: QrActor }): Promise<{ deletedBuckets: number }> {
@@ -100,6 +157,21 @@ export class AnalyticsService {
     if (!record) throw this.notFound()
     if (!isGlobalAdmin && record.organizationId !== organizationId) throw this.notFound()
     return record
+  }
+
+  private async requireOrganizationAccess({
+    actor,
+    organizationId,
+  }: {
+    actor: QrActor
+    organizationId: string
+  }): Promise<void> {
+    if (actor.role === "admin") return
+    const role = await this.dependencies.qrRepository.getOrganizationMemberRole({
+      organizationId,
+      userId: actor.id,
+    })
+    if (!role || !isOrganizationAdmin(role)) throw this.forbidden()
   }
 
   private parseRange({ from, to }: { from: string; to: string }) {
@@ -200,4 +272,25 @@ function isUtcHourBoundary(value: Date): boolean {
   return (
     value.getUTCMinutes() === 0 && value.getUTCSeconds() === 0 && value.getUTCMilliseconds() === 0
   )
+}
+
+function toHourlyItems(
+  range: { fromBucket: Date; toBucket: Date },
+  records: Array<{ bucketStart: Date; redirectAttempts: number }>,
+): QrHourlyAnalyticsResponse["items"] {
+  const counts = new Map(
+    records.map((record) => [record.bucketStart.getTime(), record.redirectAttempts]),
+  )
+  const items: QrHourlyAnalyticsResponse["items"] = []
+  for (
+    let bucket = range.fromBucket.getTime();
+    bucket < range.toBucket.getTime();
+    bucket += HOUR_MS
+  ) {
+    items.push({
+      hour: new Date(bucket).toISOString(),
+      redirectAttempts: counts.get(bucket) ?? 0,
+    })
+  }
+  return items
 }

@@ -5,9 +5,10 @@ import { defineConfig } from "vite-plus"
 const ignoredPaths = [
   "dist/**",
   ".astro/**",
-  ".wrangler/**",
+  ".alchemy/**",
   ".playwright-mcp/**",
   "drizzle/meta/**",
+  "drizzle/**/snapshot.json",
   "src/db/auth-schema.ts",
   "worker-configuration.d.ts",
 ]
@@ -46,18 +47,17 @@ export default defineConfig({
       unit: {
         command: "vp test",
       },
-      "astro-build": {
-        command: "astro build",
+      "alchemy-plan": {
+        command: "alchemy plan",
         input: [
           "src/**",
           "public/**",
           "astro.config.mjs",
           "tsconfig.json",
-          "wrangler.jsonc",
+          "alchemy.run.ts",
           "package.json",
           "pnpm-lock.yaml",
         ],
-        output: ["dist/**"],
       },
     },
   },

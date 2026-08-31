@@ -5,6 +5,17 @@ import { describe, expect, it } from "vite-plus/test"
 
 const migrationsDirectory = new URL("../../../drizzle/", import.meta.url)
 
+const migrations = {
+  initial: "20260827000000_melodic_morgan_stark/migration.sql",
+  auth: "20260827010000_friendly_galactus/migration.sql",
+  qrBase: "20260827020000_icy_ego/migration.sql",
+  qrResource: "20260827030000_qr_resource/migration.sql",
+  legacyContent: "20260827040000_preserve_legacy_qr_content/migration.sql",
+  claimability: "20260827050000_mature_selene/migration.sql",
+  analytics: "20260827060000_mushy_sally_floyd/migration.sql",
+  expiry: "20260827070000_outgoing_pandemic/migration.sql",
+} as const
+
 function applyMigrations(db: DatabaseSync, names: string[]) {
   for (const name of names) {
     const sql = readFileSync(new URL(name, migrationsDirectory), "utf8")
@@ -19,11 +30,7 @@ function applyMigrations(db: DatabaseSync, names: string[]) {
 
 function createPreQrMigrationDatabase() {
   const db = new DatabaseSync(":memory:")
-  applyMigrations(db, [
-    "0000_melodic_morgan_stark.sql",
-    "0001_friendly_galactus.sql",
-    "0002_icy_ego.sql",
-  ])
+  applyMigrations(db, [migrations.initial, migrations.auth, migrations.qrBase])
   return db
 }
 
@@ -61,7 +68,7 @@ describe("QR migrations", () => {
     const db = createPreQrMigrationDatabase()
     insertLegacyQrCodes(db)
 
-    applyMigrations(db, ["0003_qr_resource.sql", "0004_preserve_legacy_qr_content.sql"])
+    applyMigrations(db, [migrations.qrResource, migrations.legacyContent])
 
     expect(readLegacyContent(db)).toEqual([
       { qrCodeId: "empty", content: "" },
@@ -78,7 +85,7 @@ describe("QR migrations", () => {
     const db = createPreQrMigrationDatabase()
     insertLegacyQrCodeBatch(db, 256)
 
-    applyMigrations(db, ["0003_qr_resource.sql"])
+    applyMigrations(db, [migrations.qrResource])
 
     const slugs = db.prepare("SELECT slug FROM qr_codes").all() as Array<{ slug: string }>
     expect(slugs).toHaveLength(256)
@@ -91,7 +98,7 @@ describe("QR migrations", () => {
     const db = createPreQrMigrationDatabase()
     insertLegacyQrCodes(db)
 
-    applyMigrations(db, ["0003_qr_resource.sql", "0004_preserve_legacy_qr_content.sql"])
+    applyMigrations(db, [migrations.qrResource, migrations.legacyContent])
 
     db.exec(`
       INSERT INTO organization (id, name, slug, created_at)
@@ -101,7 +108,7 @@ describe("QR migrations", () => {
       ) VALUES ('owned', 'Owned', 'ownedslug', 'org-1', 'owner', 4000, 4000);
     `)
 
-    applyMigrations(db, ["0005_mature_selene.sql"])
+    applyMigrations(db, [migrations.claimability])
 
     expect(readClaimability(db)).toEqual([
       { id: "empty", claimable: 1 },
@@ -167,7 +174,7 @@ describe("QR migrations", () => {
       ) VALUES ('owned', 'Owned', 'ownedslug', 'org-1', 'owner', 4000, 4000);
     `)
 
-    applyMigrations(db, ["0004_preserve_legacy_qr_content.sql", "0005_mature_selene.sql"])
+    applyMigrations(db, [migrations.legacyContent, migrations.claimability])
 
     expect(readLegacyContent(db)).toEqual([
       {
@@ -185,7 +192,7 @@ describe("QR migrations", () => {
       legacyContent: readLegacyContent(db),
       claimability: readClaimability(db),
     }
-    expect(() => applyMigrations(db, ["0004_preserve_legacy_qr_content.sql"])).not.toThrow()
+    expect(() => applyMigrations(db, [migrations.legacyContent])).not.toThrow()
     expect({
       legacyContent: readLegacyContent(db),
       claimability: readClaimability(db),
@@ -197,10 +204,10 @@ describe("QR migrations", () => {
     const db = createPreQrMigrationDatabase()
 
     applyMigrations(db, [
-      "0003_qr_resource.sql",
-      "0004_preserve_legacy_qr_content.sql",
-      "0005_mature_selene.sql",
-      "0006_mushy_sally_floyd.sql",
+      migrations.qrResource,
+      migrations.legacyContent,
+      migrations.claimability,
+      migrations.analytics,
     ])
 
     const columns = db.prepare("PRAGMA table_info(qr_analytics_hourly)").all() as Array<{
@@ -238,11 +245,11 @@ describe("QR migrations", () => {
     const db = createPreQrMigrationDatabase()
 
     applyMigrations(db, [
-      "0003_qr_resource.sql",
-      "0004_preserve_legacy_qr_content.sql",
-      "0005_mature_selene.sql",
-      "0006_mushy_sally_floyd.sql",
-      "0007_outgoing_pandemic.sql",
+      migrations.qrResource,
+      migrations.legacyContent,
+      migrations.claimability,
+      migrations.analytics,
+      migrations.expiry,
     ])
 
     const column = db

@@ -2,6 +2,7 @@
 dist/
 # generated types
 .astro/
+.alchemy/
 .wrangler/
 worker-configuration.d.ts
 

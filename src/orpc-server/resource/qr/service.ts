@@ -195,8 +195,8 @@ export class QrService {
   }: {
     actor: QrActor
     alias: string
-    googleMapsUrl: string
-    googlePlaceId: string
+    googleMapsUrl?: string
+    googlePlaceId?: string
     count: number
     expiresAt?: string | null
   }): Promise<{ items: QrResponse[] }> {
@@ -207,7 +207,7 @@ export class QrService {
 
     const normalizedAlias = normalizeAlias(alias)
     const normalizedExpiresAt = parseExpiration(expiresAt)
-    const target = await this.resolveTarget({ googleMapsUrl, googlePlaceId })
+    const target = await this.resolveOptionalTarget({ googleMapsUrl, googlePlaceId })
     const items: QrResponse[] = []
     for (let index = 0; index < count; index += 1) {
       items.push(
@@ -500,7 +500,12 @@ export class QrService {
   }
 
   async resolvePublic({ slug }: { slug: string }): Promise<PublicQrResponse> {
-    const cached = await this.dependencies.publicProjection?.get({ slug })
+    let cached: QrPublicProjection | null = null
+    try {
+      cached = (await this.dependencies.publicProjection?.get({ slug })) ?? null
+    } catch (error) {
+      console.warn("QR public projection read failed.", { slug, error })
+    }
     if (cached) return this.resolvePublicProjection(cached)
 
     let record: QrRecord | null

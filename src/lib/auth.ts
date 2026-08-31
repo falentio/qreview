@@ -6,8 +6,8 @@ import { admin, customSession, organization } from "better-auth/plugins"
 import { env } from "cloudflare:workers"
 import { eq } from "drizzle-orm"
 
-import { createDb } from "@/db/client"
-import { schema } from "@/db/schema"
+import { createDb } from "../db/client"
+import { schema } from "../db/schema"
 
 export const db = createDb(env.DB)
 

@@ -1,0 +1,54 @@
+{
+  "dialect": "sqlite",
+  "id": "f4c063b1-8606-4861-8505-f074b213fcca",
+  "prevIds": [
+    "00000000-0000-0000-0000-000000000000"
+  ],
+  "version": "7",
+  "ddl": [
+    {
+      "name": "qr_codes",
+      "entityType": "tables"
+    },
+    {
+      "type": "text",
+      "notNull": false,
+      "autoincrement": false,
+      "default": null,
+      "generated": null,
+      "name": "id",
+      "table": "qr_codes",
+      "entityType": "columns"
+    },
+    {
+      "columns": [
+        "id"
+      ],
+      "nameExplicit": false,
+      "name": "qr_codes_pk",
+      "table": "qr_codes",
+      "entityType": "pks"
+    },
+    {
+      "type": "text",
+      "notNull": true,
+      "autoincrement": false,
+      "default": null,
+      "generated": null,
+      "name": "content",
+      "table": "qr_codes",
+      "entityType": "columns"
+    },
+    {
+      "type": "integer",
+      "notNull": true,
+      "autoincrement": false,
+      "default": null,
+      "generated": null,
+      "name": "created_at",
+      "table": "qr_codes",
+      "entityType": "columns"
+    }
+  ],
+  "renames": []
+}

@@ -195,6 +195,32 @@ describe("QrRouter behavior", () => {
     ])
   })
 
+  it("batch creates incomplete orphan QR codes without a target", async () => {
+    const { context, places, repository, router } = setup({ role: "admin" })
+    repository.create.mockResolvedValue(
+      createQrRecord({
+        organizationId: null,
+        rawGoogleMapsUrl: null,
+        googlePlaceId: null,
+        canonicalReviewUrl: null,
+      }),
+    )
+
+    await expect(
+      call(router.batchCreateOrphan, { alias: "Batch QR", count: 2 }, { context }),
+    ).resolves.toMatchObject({
+      items: [
+        { ownershipState: "orphan", configurationState: "incomplete" },
+        { ownershipState: "orphan", configurationState: "incomplete" },
+      ],
+    })
+    expect(places.getPlaceDetails.mock.calls).toHaveLength(0)
+    expect(repository.create.mock.calls.map(([input]) => input.target)).toEqual([
+      undefined,
+      undefined,
+    ])
+  })
+
   it("updates an orphan map link by slug through the global admin route", async () => {
     const { context, places, repository, router } = setup({ role: "admin" })
     places.getPlaceDetails.mockResolvedValue(placeDetails)

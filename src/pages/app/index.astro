@@ -2,49 +2,19 @@
 export const prerender = false
 
 import AppLayout from "@/layouts/app-layout.astro"
+import { QrAnalyticsDashboard } from "@/components/app/qr-analytics-dashboard"
 
-const user = Astro.locals.user
 ---
 
-<AppLayout title="Overview" description="Manage your QR codes and workspace.">
+<AppLayout title="Overview" description="Understand redirect activity across your QR codes.">
   <div class="flex flex-1 flex-col gap-6 p-4 pt-0 md:p-6 md:pt-0">
     <div class="flex flex-col gap-2 pt-2">
       <p class="text-sm font-medium text-muted-foreground">Your workspace</p>
-      <h1 class="text-3xl font-semibold tracking-tight">Welcome back, {user?.name}</h1>
+      <h1 class="text-3xl font-semibold tracking-tight">Overview</h1>
       <p class="max-w-2xl text-muted-foreground">
-        Create and manage QR codes that send customers to the right place.
+        See how often your QR codes send customers to the right place.
       </p>
     </div>
-    <div class="grid gap-4 md:grid-cols-3">
-      <section class="rounded-xl border bg-card p-5 shadow-xs">
-        <p class="text-sm text-muted-foreground">Total QR codes</p>
-        <p class="mt-2 text-3xl font-semibold">0</p>
-      </section>
-      <section class="rounded-xl border bg-card p-5 shadow-xs">
-        <p class="text-sm text-muted-foreground">Active redirects</p>
-        <p class="mt-2 text-3xl font-semibold">0</p>
-      </section>
-      <section class="rounded-xl border bg-card p-5 shadow-xs">
-        <p class="text-sm text-muted-foreground">Scans this month</p>
-        <p class="mt-2 text-3xl font-semibold">0</p>
-      </section>
-    </div>
-    <section class="flex min-h-72 flex-1 flex-col items-center justify-center rounded-xl border border-dashed bg-muted/20 p-8 text-center">
-      <div class="flex size-12 items-center justify-center rounded-xl bg-primary/10 text-primary">
-        <svg viewBox="0 0 24 24" class="size-6" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true">
-          <path d="M3 3h6v6H3zM15 3h6v6h-6zM3 15h6v6H3zM15 15h2v2h-2zM19 15h2v6h-6v-2h4zM11 11h2v2h-2zM15 11h2v2h-2zM11 15h2v6h-2z" />
-        </svg>
-      </div>
-      <h2 class="mt-4 text-lg font-semibold">Create your first QR code</h2>
-      <p class="mt-1 max-w-md text-sm text-muted-foreground">
-        Generate a QR code for a Google review link and start sharing it with your customers.
-      </p>
-      <a
-        href="/app/qr-codes/new"
-        class="mt-5 inline-flex h-9 items-center justify-center rounded-lg bg-primary px-4 text-sm font-medium text-primary-foreground transition-colors hover:bg-primary/80"
-      >
-        Create QR code
-      </a>
-    </section>
+    <QrAnalyticsDashboard client:only="react" />
   </div>
 </AppLayout>

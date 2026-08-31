@@ -2,13 +2,12 @@
 
 import * as React from "react"
 import {
-  Building2,
   Command,
+  DatabaseZap,
   LayoutDashboard,
-  LifeBuoy,
+  Plus,
   QrCode,
   ShieldCheck,
-  Users,
   type LucideIcon,
 } from "lucide-react"
 
@@ -56,34 +55,37 @@ export function AdminSidebar({ pathname, user, ...props }: AdminSidebarProps) {
       title: "QR codes",
       url: "/admin/qr-codes",
       icon: QrCode,
-      isActive: isActivePath(pathname, "/admin/qr-codes"),
+      isActive: pathname === "/admin/qr-codes",
       prefetch: true,
     },
     {
-      title: "Organizations",
-      url: "/admin/organizations",
-      icon: Building2,
-      isActive: isActivePath(pathname, "/admin/organizations"),
+      title: "Create QR batch",
+      url: "/admin/qr-codes/new",
+      icon: Plus,
+      isActive: pathname === "/admin/qr-codes/new",
+      prefetch: true,
     },
     {
-      title: "Users",
-      url: "/admin/users",
-      icon: Users,
-      isActive: isActivePath(pathname, "/admin/users"),
+      title: "Analytics data",
+      url: "/admin/analytics",
+      icon: DatabaseZap,
+      isActive: isActivePath(pathname, "/admin/analytics"),
+      prefetch: true,
     },
   ]
 
-  const navSecondary = [
-    { title: "App", url: "/app", icon: LayoutDashboard },
-    { title: "Support", url: "/app", icon: LifeBuoy },
-  ]
+  const navSecondary = [{ title: "App", url: "/app", icon: LayoutDashboard }]
 
   return (
     <Sidebar variant="inset" {...props}>
       <SidebarHeader>
         <SidebarMenu>
           <SidebarMenuItem>
-            <SidebarMenuButton size="lg" tooltip="QR Admin" render={<a href="/admin" />}>
+            <SidebarMenuButton
+              size="lg"
+              tooltip="QR Admin"
+              render={<a href="/admin" data-astro-prefetch="viewport" />}
+            >
               <div className="flex aspect-square size-8 items-center justify-center rounded-lg bg-sidebar-primary text-sidebar-primary-foreground">
                 <ShieldCheck className="size-4" aria-hidden="true" />
               </div>

@@ -11,7 +11,7 @@ export function createAnalytics({
   clock,
 }: {
   db: Database
-  qrRepository: Pick<QrRepository, "findById" | "getOrganizationMemberRole">
+  qrRepository: Pick<QrRepository, "findById" | "findBySlug" | "getOrganizationMemberRole">
   clock?: { now(): Date }
 }) {
   const repository = new DrizzleQrAnalyticsRepository({ db })

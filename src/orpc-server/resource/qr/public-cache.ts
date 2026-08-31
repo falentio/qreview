@@ -6,7 +6,7 @@ import {
   isGoogleMapsShortUrl,
   isGooglePlaceId,
   parseGoogleMapsUrl,
-} from "@/orpc-server/resource/qr/url"
+} from "./url.ts"
 
 export type QrPublicProjection =
   | {
@@ -51,13 +51,19 @@ export type QrPublicProjectionSource = Pick<
 type ProjectionLogger = Pick<Console, "warn">
 
 export class CloudflareQrPublicProjectionCache implements QrPublicProjectionStore {
-  constructor(
-    private readonly dependencies: {
-      namespace: KvStore
-      waitUntil: WaitUntil
-      logger?: ProjectionLogger
-    },
-  ) {}
+  private readonly dependencies: {
+    namespace: KvStore
+    waitUntil: WaitUntil
+    logger?: ProjectionLogger
+  }
+
+  constructor(dependencies: {
+    namespace: KvStore
+    waitUntil: WaitUntil
+    logger?: ProjectionLogger
+  }) {
+    this.dependencies = dependencies
+  }
 
   async get({ slug }: { slug: string }): Promise<QrPublicProjection | null> {
     try {

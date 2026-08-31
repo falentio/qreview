@@ -32,14 +32,12 @@ const orpcCodeForQrError: Record<QrErrorCode, QrOrpcErrorCode> = {
 
 export class QrDomainError extends Error {
   readonly name = "QrDomainError"
+  readonly code: QrErrorCode
   readonly httpCode: QrOrpcErrorCode
 
-  constructor(
-    readonly code: QrErrorCode,
-    message: string,
-    options?: ErrorOptions,
-  ) {
+  constructor(code: QrErrorCode, message: string, options?: ErrorOptions) {
     super(message, options)
+    this.code = code
     this.httpCode = orpcCodeForQrError[code]
   }
 }

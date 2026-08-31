@@ -169,6 +169,45 @@ describe("QrService.batchCreate", () => {
     ])
   })
 
+  it("creates incomplete orphan QR codes without a target", async () => {
+    const { places, repository, service } = setup()
+    repository.create.mockResolvedValue(
+      createQrRecord({
+        alias: "Unconfigured QR",
+        organizationId: null,
+        rawGoogleMapsUrl: null,
+        googlePlaceId: null,
+        canonicalReviewUrl: null,
+      }),
+    )
+
+    const result = await service.batchCreateOrphan({
+      actor: globalAdmin,
+      alias: "  Unconfigured QR  ",
+      count: 2,
+    })
+
+    expect(result.items).toMatchObject([
+      {
+        alias: "Unconfigured QR",
+        ownershipState: "orphan",
+        configurationState: "incomplete",
+        claimable: true,
+      },
+      {
+        alias: "Unconfigured QR",
+        ownershipState: "orphan",
+        configurationState: "incomplete",
+        claimable: true,
+      },
+    ])
+    expect(places.getPlaceDetails.mock.calls).toHaveLength(0)
+    expect(repository.create.mock.calls.map(([input]) => input.target)).toEqual([
+      undefined,
+      undefined,
+    ])
+  })
+
   it("rejects non-admins and invalid counts before resolving or persisting", async () => {
     const { places, repository, service } = setup()
 

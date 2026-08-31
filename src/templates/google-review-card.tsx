@@ -259,7 +259,7 @@ function ActionPanel({ qrUrl }: { qrUrl: string }) {
               color: "#ffffff",
             }}
           >
-            Tap to review
+            NFC tap to review
           </div>
         </div>
 

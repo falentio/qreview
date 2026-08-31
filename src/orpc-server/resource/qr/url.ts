@@ -1,4 +1,4 @@
-import { QrDomainError } from "@/orpc-server/resource/qr/errors"
+import { QrDomainError } from "./errors.ts"
 
 const allowedHosts = new Set(["google.com", "www.google.com", "maps.google.com"])
 const shortUrlHost = "maps.app.goo.gl"

@@ -83,4 +83,50 @@ describe("AnalyticsRouter", () => {
     ).rejects.toMatchObject({ code: "UNAUTHORIZED" })
     expect(service.getQrHourly.mock.calls).toHaveLength(0)
   })
+
+  it("reads organization analytics and protects the fill mutation", async () => {
+    const service = mock<AnalyticsService>()
+    service.getOrganizationHourly.mockResolvedValue({
+      items: [{ hour: "2030-01-01T00:00:00.000Z", redirectAttempts: 3 }],
+    })
+    service.fillQrHourly.mockResolvedValue({ slug: "abc123def4", bucketsFilled: 1 })
+    const router = createAnalyticsRouter({ service })
+    const range = {
+      organizationId: "org-1",
+      from: "2030-01-01T00:00:00.000Z",
+      to: "2030-01-01T01:00:00.000Z",
+    }
+
+    await expect(
+      call(router.organization.hourly, range, { context: createContext() }),
+    ).resolves.toEqual({
+      items: [{ hour: "2030-01-01T00:00:00.000Z", redirectAttempts: 3 }],
+    })
+    await expect(
+      call(
+        router.qr.fill,
+        {
+          slug: "abc123def4",
+          from: range.from,
+          to: range.to,
+          redirectAttempts: 7,
+        },
+        { context: createContext({ role: "user" }) },
+      ),
+    ).rejects.toMatchObject({ code: "FORBIDDEN" })
+    await expect(
+      call(
+        router.qr.fill,
+        {
+          slug: "abc123def4",
+          from: range.from,
+          to: range.to,
+          redirectAttempts: 7,
+        },
+        { context: createContext({ role: "admin" }) },
+      ),
+    ).resolves.toEqual({ slug: "abc123def4", bucketsFilled: 1 })
+    expect(service.getOrganizationHourly.mock.calls).toHaveLength(1)
+    expect(service.fillQrHourly.mock.calls).toHaveLength(1)
+  })
 })

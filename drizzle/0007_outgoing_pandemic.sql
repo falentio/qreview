@@ -1,1 +1,0 @@
-ALTER TABLE `qr_codes` ADD `expires_at` integer;

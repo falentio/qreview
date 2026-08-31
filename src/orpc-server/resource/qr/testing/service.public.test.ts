@@ -38,6 +38,7 @@ describe("QrService.resolvePublic", () => {
       expiresAt: null,
       updatedAt: "2030-01-01T00:00:00.000Z",
     })
+    repository.findBySlug.mockRejectedValue(new Error("D1 unavailable"))
 
     await expect(service.resolvePublic({ slug: "abc123def4" })).resolves.toEqual({
       kind: "redirect",
@@ -45,6 +46,19 @@ describe("QrService.resolvePublic", () => {
       canonicalReviewUrl: "https://search.google.com/local/writereview?placeid=ChIJ123456789",
     })
     expect(repository.findBySlug.mock.calls).toHaveLength(0)
+  })
+
+  it("falls back to D1 when the projection store read fails", async () => {
+    const { publicProjection, repository, service } = setup()
+    const record = createQrRecord()
+    publicProjection.get.mockRejectedValue(new Error("KV unavailable"))
+    repository.findBySlug.mockResolvedValue(record)
+
+    await expect(service.resolvePublic({ slug: record.slug })).resolves.toMatchObject({
+      kind: "redirect",
+      qrCodeId: record.id,
+    })
+    expect(repository.findBySlug.mock.calls).toHaveLength(1)
   })
 
   it("serves setup and archived states from KV without querying D1", async () => {

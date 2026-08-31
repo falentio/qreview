@@ -51,8 +51,9 @@ function validate(values: FormValues, selectedPlaceId: string): FormErrors {
     errors.alias = "Alias must be at most 120 characters"
   }
 
-  if (!values.googleMapsUrl.trim()) errors.googleMapsUrl = "Google Maps URL is required"
-  if (!selectedPlaceId) errors.place = "Find and select a Google place before creating QR codes"
+  if (values.googleMapsUrl.trim() && !selectedPlaceId) {
+    errors.place = "Find and select a Google place before creating QR codes"
+  }
 
   const count = Number(values.count)
   if (!Number.isInteger(count) || count < 1 || count > 100) {
@@ -93,7 +94,6 @@ export function QrBatchCreateForm() {
   async function resolvePlace() {
     const googleMapsUrl = values.googleMapsUrl.trim()
     if (!googleMapsUrl) {
-      setErrors((current) => ({ ...current, googleMapsUrl: "Google Maps URL is required" }))
       return
     }
 
@@ -128,10 +128,11 @@ export function QrBatchCreateForm() {
     setCreatedItems([])
 
     try {
+      const googleMapsUrl = values.googleMapsUrl.trim()
+      const target = googleMapsUrl ? { googleMapsUrl, googlePlaceId: selectedPlaceId } : {}
       const result = await rpcClient.qr.batchCreateOrphan({
         alias: values.alias.trim(),
-        googleMapsUrl: values.googleMapsUrl.trim(),
-        googlePlaceId: selectedPlaceId,
+        ...target,
         count: Number(values.count),
         expiresAt: dateInputToExpiry(values.expiresOn),
       })
@@ -255,7 +256,7 @@ export function QrBatchCreateForm() {
               </Field>
 
               <Field data-invalid={Boolean(errors.googleMapsUrl)}>
-                <FieldLabel htmlFor="googleMapsUrl">Google Maps URL</FieldLabel>
+                <FieldLabel htmlFor="googleMapsUrl">Google Maps URL (optional)</FieldLabel>
                 <div className="flex flex-col gap-2 sm:flex-row">
                   <Input
                     id="googleMapsUrl"
@@ -270,7 +271,7 @@ export function QrBatchCreateForm() {
                     type="button"
                     variant="outline"
                     onClick={() => void resolvePlace()}
-                    disabled={isResolving}
+                    disabled={isResolving || !values.googleMapsUrl.trim()}
                   >
                     {isResolving ? <Spinner /> : <Search />}
                     {isResolving ? "Finding place..." : "Find place"}
@@ -278,8 +279,9 @@ export function QrBatchCreateForm() {
                 </div>
                 {errors.googleMapsUrl && <FieldError>{errors.googleMapsUrl}</FieldError>}
                 <FieldDescription>
-                  Paste a Google Maps URL. Google Places will find the Place ID for you; if there
-                  are multiple matches, choose the correct place below.
+                  Optionally paste a Google Maps URL. Google Places will find the Place ID for you;
+                  if there are multiple matches, choose the correct place below. Leave it blank to
+                  create an unconfigured QR code.
                 </FieldDescription>
                 {resolveError && <FieldError>{resolveError}</FieldError>}
               </Field>

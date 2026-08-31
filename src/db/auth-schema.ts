@@ -1,4 +1,4 @@
-import { relations, sql } from "drizzle-orm";
+import { sql } from "drizzle-orm";
 import {
   sqliteTable,
   text,
@@ -10,7 +10,7 @@ import {
 export const user = sqliteTable("user", {
   id: text("id").primaryKey(),
   name: text("name").notNull(),
-  email: text("email").notNull().unique(),
+  email: text("email").notNull(),
   emailVerified: integer("email_verified", { mode: "boolean" })
     .default(false)
     .notNull(),
@@ -26,14 +26,14 @@ export const user = sqliteTable("user", {
   banned: integer("banned", { mode: "boolean" }).default(false),
   banReason: text("ban_reason"),
   banExpires: integer("ban_expires", { mode: "timestamp_ms" }),
-});
+}, (table) => [uniqueIndex("user_email_unique").on(table.email)]);
 
 export const session = sqliteTable(
   "session",
   {
     id: text("id").primaryKey(),
     expiresAt: integer("expires_at", { mode: "timestamp_ms" }).notNull(),
-    token: text("token").notNull().unique(),
+    token: text("token").notNull(),
     createdAt: integer("created_at", { mode: "timestamp_ms" })
       .default(sql`(cast(unixepoch('subsecond') * 1000 as integer))`)
       .notNull(),
@@ -48,7 +48,10 @@ export const session = sqliteTable(
     activeOrganizationId: text("active_organization_id"),
     impersonatedBy: text("impersonated_by"),
   },
-  (table) => [index("session_userId_idx").on(table.userId)],
+  (table) => [
+    uniqueIndex("session_token_unique").on(table.token),
+    index("session_userId_idx").on(table.userId),
+  ],
 );
 
 export const account = sqliteTable(
@@ -109,11 +112,11 @@ export const verification = sqliteTable(
 export const organization = sqliteTable("organization", {
   id: text("id").primaryKey(),
   name: text("name").notNull(),
-  slug: text("slug").notNull().unique(),
+  slug: text("slug").notNull(),
   logo: text("logo"),
   createdAt: integer("created_at", { mode: "timestamp_ms" }).notNull(),
   metadata: text("metadata"),
-});
+}, (table) => [uniqueIndex("organization_slug_unique").on(table.slug)]);
 
 export const member = sqliteTable(
   "member",
@@ -157,51 +160,3 @@ export const invitation = sqliteTable(
     index("invitation_email_idx").on(table.email),
   ],
 );
-
-export const userRelations = relations(user, ({ many }) => ({
-  sessions: many(session),
-  accounts: many(account),
-  members: many(member),
-  invitations: many(invitation),
-}));
-
-export const sessionRelations = relations(session, ({ one }) => ({
-  user: one(user, {
-    fields: [session.userId],
-    references: [user.id],
-  }),
-}));
-
-export const accountRelations = relations(account, ({ one }) => ({
-  user: one(user, {
-    fields: [account.userId],
-    references: [user.id],
-  }),
-}));
-
-export const organizationRelations = relations(organization, ({ many }) => ({
-  members: many(member),
-  invitations: many(invitation),
-}));
-
-export const memberRelations = relations(member, ({ one }) => ({
-  organization: one(organization, {
-    fields: [member.organizationId],
-    references: [organization.id],
-  }),
-  user: one(user, {
-    fields: [member.userId],
-    references: [user.id],
-  }),
-}));
-
-export const invitationRelations = relations(invitation, ({ one }) => ({
-  organization: one(organization, {
-    fields: [invitation.organizationId],
-    references: [organization.id],
-  }),
-  user: one(user, {
-    fields: [invitation.inviterId],
-    references: [user.id],
-  }),
-}));

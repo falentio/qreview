@@ -12,6 +12,19 @@ export function createAnalyticsRouter({ service }: { service: AnalyticsService }
         .handler(({ context, input }) =>
           execute(() => service.getQrHourly({ actor: context.user, ...input })),
         ),
+      fill: implementer.analytics.qr.fill
+        .use(requireAuth)
+        .use(requireGlobalAdmin)
+        .handler(({ context, input }) =>
+          execute(() => service.fillQrHourly({ actor: context.user, ...input })),
+        ),
+    },
+    organization: {
+      hourly: implementer.analytics.organization.hourly
+        .use(requireAuth)
+        .handler(({ context, input }) =>
+          execute(() => service.getOrganizationHourly({ actor: context.user, ...input })),
+        ),
     },
     cleanup: implementer.analytics.cleanup
       .use(requireAuth)

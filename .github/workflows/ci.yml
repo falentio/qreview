@@ -22,7 +22,6 @@ jobs:
 
       # Keep CI reproducible while the checked-in lockfile ages past Vite+'s local policy.
       - run: vp install --frozen-lockfile -- --config.minimum-release-age=0
-      - run: vp run astro-build
       - run: vp check
       - run: vp test
       - run: vp run test:integration

@@ -88,4 +88,50 @@ describe("DrizzleQrAnalyticsRepository against D1", () => {
       },
     ])
   })
+
+  it("fills exact hourly values and aggregates all QR codes in an organization", async () => {
+    await createOrganization({ id: "repo-test-org-1", userId: "repo-test-user-1" })
+    await qrRepository.create(
+      record({
+        id: "repo-test-qr-analytics-one",
+        slug: "repoanaly2",
+        organizationId: "repo-test-org-1",
+      }),
+    )
+    await qrRepository.create(
+      record({
+        id: "repo-test-qr-analytics-two",
+        slug: "repoanaly3",
+        organizationId: "repo-test-org-1",
+      }),
+    )
+
+    await expect(
+      analyticsRepository.fillHourly({
+        qrCodeId: "repo-test-qr-analytics-one",
+        from: new Date("2030-01-01T10:00:00.000Z"),
+        to: new Date("2030-01-01T12:00:00.000Z"),
+        redirectAttempts: 4,
+      }),
+    ).resolves.toBe(2)
+    await expect(
+      analyticsRepository.fillHourly({
+        qrCodeId: "repo-test-qr-analytics-two",
+        from: new Date("2030-01-01T10:00:00.000Z"),
+        to: new Date("2030-01-01T11:00:00.000Z"),
+        redirectAttempts: 3,
+      }),
+    ).resolves.toBe(1)
+
+    await expect(
+      analyticsRepository.listOrganizationHourly({
+        organizationId: "repo-test-org-1",
+        from: new Date("2030-01-01T10:00:00.000Z"),
+        to: new Date("2030-01-01T12:00:00.000Z"),
+      }),
+    ).resolves.toMatchObject([
+      { bucketStart: new Date("2030-01-01T10:00:00.000Z"), redirectAttempts: 7 },
+      { bucketStart: new Date("2030-01-01T11:00:00.000Z"), redirectAttempts: 4 },
+    ])
+  })
 })

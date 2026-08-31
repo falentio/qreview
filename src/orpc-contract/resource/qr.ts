@@ -65,7 +65,7 @@ export const batchCreateOutput = v.object({ items: v.array(qrCode) })
 export const batchCreateOrphanInput = v.object(
   v.entriesFromObjects([
     v.pick(qrCode, ["alias"]),
-    targetInput,
+    v.partial(targetInput),
     v.object({ count: v.pipe(v.number(), v.integer(), v.minValue(1), v.maxValue(100)) }),
     expirationInput,
   ]),

@@ -17,6 +17,7 @@ function setup() {
   const qrRepository = mock<QrRepository>()
   qrRepository.getOrganizationMemberRole.mockResolvedValue("owner")
   qrRepository.findById.mockResolvedValue(createQrRecord())
+  qrRepository.findBySlug.mockResolvedValue(createQrRecord())
   const service = new AnalyticsService({
     repository,
     qrRepository,
@@ -132,7 +133,7 @@ describe("AnalyticsService.getQrHourly", () => {
         to: "2030-01-01T11:00:00.000Z",
       }),
     ).rejects.toMatchObject({ code: "FORBIDDEN" })
-    expect(qrRepository.findById.mock.calls).toHaveLength(0)
+    expect(qrRepository.findBySlug.mock.calls).toHaveLength(0)
     expect(repository.listHourly.mock.calls).toHaveLength(0)
   })
 
@@ -179,6 +180,114 @@ describe("AnalyticsService.getQrHourly", () => {
       }),
     ).rejects.toMatchObject({ code: "INVALID_INPUT" })
     expect(repository.listHourly.mock.calls).toHaveLength(0)
+  })
+})
+
+describe("AnalyticsService.getOrganizationHourly", () => {
+  it("returns a zero-filled series aggregated across an organization", async () => {
+    const { repository, service } = setup()
+    repository.listOrganizationHourly.mockResolvedValue([
+      { bucketStart: new Date("2030-01-01T10:00:00.000Z"), redirectAttempts: 5 },
+      { bucketStart: new Date("2030-01-01T12:00:00.000Z"), redirectAttempts: 2 },
+    ])
+
+    await expect(
+      service.getOrganizationHourly({
+        actor: owner,
+        organizationId: "org-1",
+        from: "2030-01-01T10:00:00.000Z",
+        to: "2030-01-01T13:00:00.000Z",
+      }),
+    ).resolves.toEqual({
+      items: [
+        { hour: "2030-01-01T10:00:00.000Z", redirectAttempts: 5 },
+        { hour: "2030-01-01T11:00:00.000Z", redirectAttempts: 0 },
+        { hour: "2030-01-01T12:00:00.000Z", redirectAttempts: 2 },
+      ],
+    })
+    expect(repository.listOrganizationHourly.mock.calls).toEqual([
+      [
+        {
+          organizationId: "org-1",
+          from: new Date("2030-01-01T10:00:00.000Z"),
+          to: new Date("2030-01-01T13:00:00.000Z"),
+        },
+      ],
+    ])
+  })
+
+  it("rejects organization analytics for a non-admin member", async () => {
+    const { qrRepository, repository, service } = setup()
+    qrRepository.getOrganizationMemberRole.mockResolvedValue("member")
+
+    await expect(
+      service.getOrganizationHourly({
+        actor: owner,
+        organizationId: "org-1",
+        from: "2030-01-01T10:00:00.000Z",
+        to: "2030-01-01T11:00:00.000Z",
+      }),
+    ).rejects.toMatchObject({ code: "FORBIDDEN" })
+    expect(repository.listOrganizationHourly.mock.calls).toHaveLength(0)
+  })
+})
+
+describe("AnalyticsService.fillQrHourly", () => {
+  it("fills a bounded range of hourly buckets for a global admin", async () => {
+    const { qrRepository, repository, service } = setup()
+    repository.fillHourly.mockResolvedValue(48)
+
+    await expect(
+      service.fillQrHourly({
+        actor: globalAdmin,
+        slug: "abc123def4",
+        from: "2029-12-30T00:00:00.000Z",
+        to: "2030-01-01T00:00:00.000Z",
+        redirectAttempts: 12,
+      }),
+    ).resolves.toEqual({ slug: "abc123def4", bucketsFilled: 48 })
+    expect(qrRepository.findBySlug.mock.calls).toEqual([[{ slug: "abc123def4" }]])
+    expect(repository.fillHourly.mock.calls).toEqual([
+      [
+        {
+          qrCodeId: "qr-1",
+          from: new Date("2029-12-30T00:00:00.000Z"),
+          to: new Date("2030-01-01T00:00:00.000Z"),
+          redirectAttempts: 12,
+        },
+      ],
+    ])
+  })
+
+  it("rejects fill requests from non-global admins", async () => {
+    const { qrRepository, repository, service } = setup()
+
+    await expect(
+      service.fillQrHourly({
+        actor: owner,
+        slug: "abc123def4",
+        from: "2030-01-01T00:00:00.000Z",
+        to: "2030-01-01T01:00:00.000Z",
+        redirectAttempts: 1,
+      }),
+    ).rejects.toMatchObject({ code: "FORBIDDEN" })
+    expect(qrRepository.findById.mock.calls).toHaveLength(0)
+    expect(repository.fillHourly.mock.calls).toHaveLength(0)
+  })
+
+  it("rejects fill ranges longer than 30 days", async () => {
+    const { repository, service } = setup()
+
+    await expect(
+      service.fillQrHourly({
+        actor: globalAdmin,
+        slug: "abc123def4",
+        from: "2029-12-01T00:00:00.000Z",
+        to: "2030-01-01T00:00:00.000Z",
+        redirectAttempts: 1,
+      }),
+    ).rejects.toMatchObject({ code: "INVALID_INPUT" })
+    expect(repository.fillHourly.mock.calls).toHaveLength(0)
   })
 })
 
