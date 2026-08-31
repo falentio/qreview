@@ -1,5 +1,6 @@
 ---
 import { AdminShell } from "@/components/admin-shell"
+import { ClientRouter } from "astro:transitions"
 import "../styles/global.css"
 
 interface Props {
@@ -29,6 +30,7 @@ const user = Astro.locals.user
     <meta name="description" content={description} />
     <meta name="generator" content={Astro.generator} />
     <title>{title} | QR Admin</title>
+    <ClientRouter />
   </head>
   <body>
     <AdminShell

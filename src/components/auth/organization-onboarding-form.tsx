@@ -1,5 +1,6 @@
 import { useState } from "react"
 import { useForm } from "@tanstack/react-form"
+import { navigate } from "astro:transitions/client"
 
 import { authClient } from "@/lib/auth-client"
 import { cn } from "@/lib/utils"
@@ -77,7 +78,7 @@ export function OrganizationOnboardingForm({ className, ...props }: React.Compon
           return
         }
 
-        window.location.assign("/app")
+        await navigate("/app")
       } catch {
         setError("Something went wrong. Please try again.")
       }

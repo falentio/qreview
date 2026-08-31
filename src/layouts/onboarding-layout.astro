@@ -1,5 +1,6 @@
 ---
 import { OrganizationOnboardingForm } from "@/components/auth/organization-onboarding-form"
+import { ClientRouter } from "astro:transitions"
 import "../styles/global.css"
 
 interface Props {
@@ -20,6 +21,7 @@ const { title, description } = Astro.props
     <meta name="description" content={description} />
     <meta name="generator" content={Astro.generator} />
     <title>{title}</title>
+    <ClientRouter />
   </head>
   <body>
     <main class="flex min-h-svh flex-col items-center justify-center bg-muted p-6 md:p-10">

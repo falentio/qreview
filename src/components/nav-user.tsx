@@ -1,6 +1,7 @@
 "use client"
 
 import { BadgeCheck, Bell, ChevronsUpDown, CreditCard, LogOut, Sparkles } from "lucide-react"
+import { navigate } from "astro:transitions/client"
 
 import type { AppUser } from "@/components/app-sidebar"
 import { authClient } from "@/lib/auth-client"
@@ -36,7 +37,7 @@ export function NavUser({ user }: { user: AppUser }) {
 
   async function signOut() {
     const result = await authClient.signOut()
-    if (!result.error) window.location.assign("/login")
+    if (!result.error) await navigate("/login")
   }
 
   return (
