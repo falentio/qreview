@@ -41,9 +41,11 @@ type NavItem = {
   url: string
   icon: LucideIcon
   isActive?: boolean
+  prefetch?: boolean
   items?: {
     title: string
     url: string
+    prefetch?: boolean
   }[]
 }
 
@@ -58,6 +60,7 @@ export function AppSidebar({ pathname, user, ...props }: AppSidebarProps) {
       url: "/app",
       icon: Command,
       isActive: isActivePath(pathname, "/app"),
+      prefetch: true,
     },
     {
       title: "Team",
@@ -87,12 +90,14 @@ export function AppSidebar({ pathname, user, ...props }: AppSidebarProps) {
       url: "/app/qr-codes",
       icon: List,
       isActive: pathname === "/app/qr-codes",
+      prefetch: true,
     },
     {
       title: "Adopt a QR code",
       url: "/app/qr-codes/adopt",
       icon: UserPlus,
       isActive: pathname === "/app/qr-codes/adopt",
+      prefetch: true,
     },
     {
       title: "Create a QR code",
@@ -105,6 +110,7 @@ export function AppSidebar({ pathname, user, ...props }: AppSidebarProps) {
       url: "/app/qr-codes/archived",
       icon: Archive,
       isActive: pathname === "/app/qr-codes/archived",
+      prefetch: true,
     },
   ]
 

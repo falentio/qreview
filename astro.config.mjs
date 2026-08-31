@@ -11,6 +11,11 @@ import cloudflare from "@astrojs/cloudflare"
 export default defineConfig({
   integrations: [react()],
 
+  prefetch: {
+    prefetchAll: false,
+    defaultStrategy: "viewport",
+  },
+
   vite: {
     plugins: [tailwindcss()],
     optimizeDeps: {

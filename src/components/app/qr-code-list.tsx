@@ -239,6 +239,7 @@ export function QrCodeList({ view = "active" }: { view?: "active" | "archived" }
           {isArchivedView ? (
             <a
               href="/app/qr-codes"
+              data-astro-prefetch="viewport"
               className="inline-flex h-9 shrink-0 items-center justify-center rounded-lg border bg-background px-4 text-sm font-medium transition-colors hover:bg-muted"
             >
               View active QR codes
@@ -246,6 +247,7 @@ export function QrCodeList({ view = "active" }: { view?: "active" | "archived" }
           ) : (
             <a
               href="/app/qr-codes/adopt"
+              data-astro-prefetch="viewport"
               className="inline-flex h-9 shrink-0 items-center justify-center rounded-lg bg-primary px-4 text-sm font-medium text-primary-foreground transition-colors hover:bg-primary/80"
             >
               <QrCode className="mr-2 size-4" aria-hidden="true" />
@@ -296,6 +298,7 @@ export function QrCodeList({ view = "active" }: { view?: "active" | "archived" }
               {!isArchivedView && (
                 <a
                   href="/app/qr-codes/adopt"
+                  data-astro-prefetch="viewport"
                   className="inline-flex h-8 items-center justify-center rounded-lg bg-primary px-3 text-sm font-medium text-primary-foreground transition-colors hover:bg-primary/80"
                 >
                   Adopt a QR code

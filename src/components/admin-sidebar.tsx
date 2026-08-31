@@ -36,6 +36,7 @@ type AdminNavItem = {
   url: string
   icon: LucideIcon
   isActive?: boolean
+  prefetch?: boolean
 }
 
 function isActivePath(pathname: string, url: string) {
@@ -49,12 +50,14 @@ export function AdminSidebar({ pathname, user, ...props }: AdminSidebarProps) {
       url: "/admin",
       icon: Command,
       isActive: isActivePath(pathname, "/admin"),
+      prefetch: true,
     },
     {
       title: "QR codes",
       url: "/admin/qr-codes",
       icon: QrCode,
       isActive: isActivePath(pathname, "/admin/qr-codes"),
+      prefetch: true,
     },
     {
       title: "Organizations",

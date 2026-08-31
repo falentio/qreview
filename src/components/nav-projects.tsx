@@ -36,7 +36,7 @@ export function NavProjects({
       <SidebarMenu>
         {projects.map((item) => (
           <SidebarMenuItem key={item.name}>
-            <SidebarMenuButton render={<a href={item.url} />}>
+            <SidebarMenuButton render={<a href={item.url} data-astro-prefetch="viewport" />}>
               <item.icon />
               <span>{item.name}</span>
             </SidebarMenuButton>
@@ -70,7 +70,7 @@ export function NavProjects({
           </SidebarMenuItem>
         ))}
         <SidebarMenuItem>
-          <SidebarMenuButton render={<a href="/app/qr-codes" />}>
+          <SidebarMenuButton render={<a href="/app/qr-codes" data-astro-prefetch="viewport" />}>
             <MoreHorizontal />
             <span>View all</span>
           </SidebarMenuButton>

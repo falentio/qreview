@@ -330,7 +330,10 @@ export function AuthForm({ className, mode, ...props }: AuthFormProps) {
               </Field>
 
               <FieldDescription className="text-center">
-                {switchDescription} <a href={switchHref}>{switchLabel}</a>
+                {switchDescription}{" "}
+                <a href={switchHref} data-astro-prefetch="viewport">
+                  {switchLabel}
+                </a>
               </FieldDescription>
             </FieldGroup>
           </form>

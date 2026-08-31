@@ -20,9 +20,11 @@ type NavMainItem = {
   url: string
   icon: LucideIcon
   isActive?: boolean
+  prefetch?: boolean
   items?: {
     title: string
     url: string
+    prefetch?: boolean
   }[]
 }
 
@@ -49,7 +51,9 @@ export function NavMain({
             <SidebarMenuButton
               isActive={item.isActive}
               tooltip={item.title}
-              render={<a href={item.url} />}
+              render={
+                <a href={item.url} data-astro-prefetch={item.prefetch ? "viewport" : undefined} />
+              }
             >
               <item.icon />
               <span>{item.title}</span>
@@ -68,7 +72,12 @@ export function NavMain({
                       <SidebarMenuSubItem key={subItem.title}>
                         <SidebarMenuSubButton
                           isActive={pathname === subItem.url}
-                          render={<a href={subItem.url} />}
+                          render={
+                            <a
+                              href={subItem.url}
+                              data-astro-prefetch={subItem.prefetch ? "viewport" : undefined}
+                            />
+                          }
                         >
                           <span>{subItem.title}</span>
                         </SidebarMenuSubButton>
