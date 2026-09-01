@@ -1,3 +1,4 @@
+import type { AppLogger } from "@/lib/logging"
 import { QrDomainError } from "@/orpc-server/resource/qr/errors"
 import {
   isGoogleCanonicalReviewUrlForPlace,
@@ -50,6 +51,7 @@ export class GooglePlacesAdapter implements PlacesAdapter {
     private readonly dependencies: {
       apiKey: string
       fetcher?: typeof fetch
+      logger?: Pick<AppLogger, "warn">
     },
   ) {}
 
@@ -67,6 +69,7 @@ export class GooglePlacesAdapter implements PlacesAdapter {
     })
 
     if (!response.ok) {
+      await this.logResponseFailure({ operation: "searchText", response })
       throwForResponse(response.status, "Google Places tidak dapat menemukan lokasi tersebut.")
     }
 
@@ -97,6 +100,7 @@ export class GooglePlacesAdapter implements PlacesAdapter {
     )
 
     if (!response.ok) {
+      await this.logResponseFailure({ operation: "getPlaceDetails", response })
       throwForResponse(response.status, "Google Places tidak dapat mengonfirmasi lokasi tersebut.")
     }
 
@@ -136,6 +140,28 @@ export class GooglePlacesAdapter implements PlacesAdapter {
       })
     }
   }
+
+  private async logResponseFailure({
+    operation,
+    response,
+  }: {
+    operation: "searchText" | "getPlaceDetails"
+    response: Response
+  }): Promise<void> {
+    const details = await readGoogleError(response)
+    try {
+      this.dependencies.logger?.warn("Google Places request failed.", {
+        event: "google_places.request_failed",
+        operation,
+        httpStatus: response.status,
+        googleCode: details.code,
+        googleStatus: details.status,
+        googleMessage: details.message,
+      })
+    } catch {
+      // Logging must not change the provider error returned to the caller.
+    }
+  }
 }
 
 export function normalizeGooglePlacesQuery(query: string): string {
@@ -152,6 +178,38 @@ function throwForResponse(status: number, message: string): never {
   }
 
   throw new QrDomainError("PLACE_RESOLUTION_FAILED", message)
+}
+
+type GoogleErrorDetails = {
+  code: string | number | null
+  status: string | null
+  message: string | null
+}
+
+async function readGoogleError(response: Response): Promise<GoogleErrorDetails> {
+  try {
+    const body: unknown = await response.clone().json()
+    if (!isJsonObject(body) || !isJsonObject(body.error)) {
+      return { code: null, status: null, message: null }
+    }
+
+    return {
+      code: scalarValue(body.error.code),
+      status: stringValue(body.error.status),
+      message: boundedErrorMessage(body.error.message),
+    }
+  } catch {
+    return { code: null, status: null, message: null }
+  }
+}
+
+function scalarValue(value: unknown): string | number | null {
+  return typeof value === "string" || typeof value === "number" ? value : null
+}
+
+function boundedErrorMessage(value: unknown): string | null {
+  const message = stringValue(value)
+  return message ? message.slice(0, 500) : null
 }
 
 async function readJson(response: Response): Promise<unknown> {

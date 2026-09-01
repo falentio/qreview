@@ -1,4 +1,4 @@
-import { describe, expect, it } from "vite-plus/test"
+import { describe, expect, it, vi } from "vite-plus/test"
 
 import { GooglePlacesAdapter } from "@/orpc-server/resource/qr/places"
 
@@ -68,6 +68,38 @@ describe("GooglePlacesAdapter.search", () => {
       code: "PLACE_RESOLUTION_FAILED",
       httpCode: "BAD_REQUEST",
     })
+  })
+
+  it("logs the upstream reason before mapping a rejected request", async () => {
+    const warn = vi.fn()
+    const adapter = new GooglePlacesAdapter({
+      apiKey: "test-key",
+      logger: { warn },
+      fetcher: async () =>
+        response(400, {
+          error: {
+            code: 400,
+            status: "INVALID_ARGUMENT",
+            message: "Request contains an invalid argument.",
+          },
+        }),
+    })
+
+    await expect(adapter.search({ query: "Example" })).rejects.toMatchObject({
+      code: "PLACE_RESOLUTION_FAILED",
+      httpCode: "BAD_REQUEST",
+    })
+    expect(warn).toHaveBeenCalledWith(
+      "Google Places request failed.",
+      expect.objectContaining({
+        event: "google_places.request_failed",
+        operation: "searchText",
+        httpStatus: 400,
+        googleCode: 400,
+        googleStatus: "INVALID_ARGUMENT",
+        googleMessage: "Request contains an invalid argument.",
+      }),
+    )
   })
 
   it("treats an invalid successful response as a service failure", async () => {

@@ -21,7 +21,7 @@ const healthResource = createHealth({ db })
 const qrResource = createQr({
   db,
   places: new CachedPlacesAdapter({
-    places: new GooglePlacesAdapter({ apiKey: env.GOOGLE_MAPS_API_KEY }),
+    places: new GooglePlacesAdapter({ apiKey: env.GOOGLE_MAPS_API_KEY, logger }),
     cache: new CloudflareKvJsonCache({
       namespace: env.PLACES_CACHE,
       waitUntil,
