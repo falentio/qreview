@@ -1,4 +1,5 @@
 import { QrDomainError } from "./errors.ts"
+import type { AppLogger } from "@/lib/logging"
 
 const allowedHosts = new Set(["google.com", "www.google.com", "maps.google.com"])
 const shortUrlHost = "maps.app.goo.gl"
@@ -104,6 +105,7 @@ export function isGoogleMapsShortUrl(rawValue: string): boolean {
 export async function resolveGoogleMapsUrl(
   rawValue: string,
   fetcher: typeof fetch = fetch,
+  logger?: Pick<AppLogger, "warn">,
 ): Promise<ParsedGoogleMapsUrl> {
   const { rawUrl, url } = parseRawGoogleMapsUrl(rawValue)
   if (!isGoogleMapsShortUrlValue(url)) return parseGoogleMapsUrl(rawUrl)
@@ -112,6 +114,10 @@ export async function resolveGoogleMapsUrl(
   try {
     response = await fetcher(rawUrl, { redirect: "follow" })
   } catch (error) {
+    logger?.warn("Google Maps short URL request failed.", {
+      event: "google_maps.short_url_request_failed",
+      errorName: error instanceof Error ? error.name : typeof error,
+    })
     throw new QrDomainError(
       "PLACE_RESOLUTION_FAILED",
       "URL singkat Google Maps tidak dapat diproses.",
@@ -122,6 +128,13 @@ export async function resolveGoogleMapsUrl(
   }
 
   if (!response.ok || !response.url || response.url === rawUrl) {
+    logger?.warn("Google Maps short URL could not be processed.", {
+      event: "google_maps.short_url_resolution_failed",
+      httpStatus: response.status,
+      redirected: response.redirected,
+      responseUrlPresent: Boolean(response.url),
+      responseUrlMatchesInput: response.url === rawUrl,
+    })
     throw new QrDomainError(
       "PLACE_RESOLUTION_FAILED",
       "URL singkat Google Maps tidak dapat diproses.",

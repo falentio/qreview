@@ -103,7 +103,11 @@ export class QrService {
   }
 
   private async resolvePlaceCandidates(googleMapsUrl: string): Promise<QrResolveResponse> {
-    const parsed = await resolveGoogleMapsUrl(googleMapsUrl, this.dependencies.fetcher)
+    const parsed = await resolveGoogleMapsUrl(
+      googleMapsUrl,
+      this.dependencies.fetcher,
+      this.dependencies.logger,
+    )
 
     if (parsed.placeId) {
       const details = await this.dependencies.places.getPlaceDetails({ placeId: parsed.placeId })
@@ -613,7 +617,11 @@ export class QrService {
     if (!isGooglePlaceId(googlePlaceId)) {
       throw new QrDomainError("PLACE_RESOLUTION_FAILED", "ID Tempat Google tidak valid.")
     }
-    const parsed = await resolveGoogleMapsUrl(googleMapsUrl, this.dependencies.fetcher)
+    const parsed = await resolveGoogleMapsUrl(
+      googleMapsUrl,
+      this.dependencies.fetcher,
+      this.dependencies.logger,
+    )
     if (parsed.placeId && parsed.placeId !== googlePlaceId) {
       throw new QrDomainError(
         "PLACE_RESOLUTION_FAILED",

@@ -1,9 +1,10 @@
-import { describe, expect, it } from "vite-plus/test"
+import { describe, expect, it, vi } from "vite-plus/test"
 
 import {
   MAX_GOOGLE_MAPS_QUERY_LENGTH,
   MAX_GOOGLE_MAPS_URL_LENGTH,
   parseGoogleMapsUrl,
+  resolveGoogleMapsUrl,
 } from "@/orpc-server/resource/qr/url"
 
 describe("parseGoogleMapsUrl", () => {
@@ -112,5 +113,29 @@ describe("parseGoogleMapsUrl", () => {
         }),
       )
     }
+  })
+})
+
+describe("resolveGoogleMapsUrl", () => {
+  it("logs short-link response diagnostics before returning a bad request", async () => {
+    const warn = vi.fn()
+    const shortUrl = "https://maps.app.goo.gl/z8eTy4rJq16zpAgP6"
+
+    await expect(
+      resolveGoogleMapsUrl(shortUrl, async () => new Response(null, { status: 400 }), { warn }),
+    ).rejects.toMatchObject({
+      code: "PLACE_RESOLUTION_FAILED",
+      httpCode: "BAD_REQUEST",
+    })
+
+    expect(warn).toHaveBeenCalledWith(
+      "Google Maps short URL could not be processed.",
+      expect.objectContaining({
+        event: "google_maps.short_url_resolution_failed",
+        httpStatus: 400,
+        responseUrlPresent: false,
+        responseUrlMatchesInput: false,
+      }),
+    )
   })
 })
