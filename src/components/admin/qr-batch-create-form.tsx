@@ -52,7 +52,7 @@ function validate(values: FormValues, selectedPlaceId: string): FormErrors {
   }
 
   if (values.googleMapsUrl.trim() && !selectedPlaceId) {
-    errors.place = "Cari dan pilih tempat Google sebelum membuat kode QR"
+    errors.place = "Deteksi tempat dari URL Google Maps sebelum membuat kode QR"
   }
 
   const count = Number(values.count)
@@ -274,21 +274,21 @@ export function QrBatchCreateForm() {
                     disabled={isResolving || !values.googleMapsUrl.trim()}
                   >
                     {isResolving ? <Spinner /> : <Search />}
-                    {isResolving ? "Mencari tempat..." : "Cari tempat"}
+                    {isResolving ? "Mendeteksi tempat..." : "Deteksi tempat"}
                   </Button>
                 </div>
                 {errors.googleMapsUrl && <FieldError>{errors.googleMapsUrl}</FieldError>}
                 <FieldDescription>
-                  Tempel URL Google Maps bila perlu. Google Places akan mencari ID Tempat untuk
-                  Anda; jika ada beberapa hasil, pilih tempat yang benar di bawah. Biarkan kosong
-                  untuk membuat kode QR yang belum dikonfigurasi.
+                  Tempel URL Google Maps yang mengidentifikasi tempat secara langsung. URL yang
+                  hanya berisi kueri pencarian tidak didukung. Biarkan kosong untuk membuat kode QR
+                  yang belum dikonfigurasi.
                 </FieldDescription>
                 {resolveError && <FieldError>{resolveError}</FieldError>}
               </Field>
 
               {candidates.length > 0 && (
                 <fieldset className="flex flex-col gap-2 rounded-lg border p-3">
-                  <legend className="px-1 text-sm font-medium">Pilih tempat Google</legend>
+                  <legend className="px-1 text-sm font-medium">Tempat terdeteksi</legend>
                   {candidates.map((candidate) => (
                     <label
                       key={candidate.placeId}

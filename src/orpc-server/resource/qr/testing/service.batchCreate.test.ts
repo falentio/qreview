@@ -1,26 +1,21 @@
 import { describe, expect, it } from "vite-plus/test"
 import { mock } from "vitest-mock-extended"
 
-import type { PlacesAdapter } from "@/orpc-server/resource/qr/places"
-import { createQrRecord, globalAdmin, owner } from "@/orpc-server/resource/qr/fixtures"
+import {
+  createQrRecord,
+  globalAdmin,
+  googleCanonicalReviewUrl,
+  googleMapsUrl,
+  googlePlaceId,
+  owner,
+} from "@/orpc-server/resource/qr/fixtures"
 import type { QrRepository } from "@/orpc-server/resource/qr/repository"
 import { QrService } from "@/orpc-server/resource/qr/service"
 
-const targetUrl =
-  "https://www.google.com/maps/search/?api=1&query=Example&query_place_id=ChIJ123456789"
-const placeDetails = {
-  placeId: "ChIJ123456789",
-  name: "Example location",
-  address: "1 Example Street",
-  canonicalReviewUrl: "https://search.google.com/local/writereview?placeid=ChIJ123456789",
-}
-
 function setup() {
   const repository = mock<QrRepository>()
-  const places = mock<PlacesAdapter>()
   const service = new QrService({
     repository,
-    places,
     clock: { now: () => new Date("2030-01-01T00:00:00.000Z") },
     ids: {
       generateId: (() => {
@@ -33,13 +28,12 @@ function setup() {
       })(),
     },
   })
-  places.getPlaceDetails.mockResolvedValue(placeDetails)
-  return { places, repository, service }
+  return { repository, service }
 }
 
 describe("QrService.batchCreate", () => {
   it("creates identical configured QR codes for a global admin", async () => {
-    const { places, repository, service } = setup()
+    const { repository, service } = setup()
     const created = [
       createQrRecord({
         id: "qr-1",
@@ -67,14 +61,13 @@ describe("QrService.batchCreate", () => {
       actor: globalAdmin,
       organizationId: "org-1",
       alias: "  Batch QR  ",
-      googleMapsUrl: targetUrl,
-      googlePlaceId: placeDetails.placeId,
+      googleMapsUrl,
+      googlePlaceId,
       count: 3,
       expiresAt: "2030-02-01T00:00:00.000Z",
     })
 
     expect(result.items).toHaveLength(3)
-    expect(places.getPlaceDetails.mock.calls).toEqual([[{ placeId: placeDetails.placeId }]])
     expect(repository.create.mock.calls).toHaveLength(3)
     expect(repository.create.mock.calls.map(([input]) => input)).toMatchObject([
       {
@@ -85,9 +78,9 @@ describe("QrService.batchCreate", () => {
         claimable: false,
         expiresAt: new Date("2030-02-01T00:00:00.000Z"),
         target: {
-          rawGoogleMapsUrl: targetUrl,
-          googlePlaceId: placeDetails.placeId,
-          canonicalReviewUrl: placeDetails.canonicalReviewUrl,
+          rawGoogleMapsUrl: googleMapsUrl,
+          googlePlaceId,
+          canonicalReviewUrl: googleCanonicalReviewUrl,
         },
       },
       {
@@ -113,7 +106,7 @@ describe("QrService.batchCreate", () => {
   })
 
   it("creates configured orphan QR codes without an organization", async () => {
-    const { places, repository, service } = setup()
+    const { repository, service } = setup()
     const created = [
       createQrRecord({
         id: "qr-1",
@@ -134,8 +127,8 @@ describe("QrService.batchCreate", () => {
     const result = await service.batchCreateOrphan({
       actor: globalAdmin,
       alias: "  Unclaimed QR  ",
-      googleMapsUrl: targetUrl,
-      googlePlaceId: placeDetails.placeId,
+      googleMapsUrl,
+      googlePlaceId,
       count: 2,
       expiresAt: "2030-02-01T00:00:00.000Z",
     })
@@ -153,16 +146,15 @@ describe("QrService.batchCreate", () => {
         claimable: true,
       },
     ])
-    expect(places.getPlaceDetails.mock.calls).toEqual([[{ placeId: placeDetails.placeId }]])
     expect(repository.create.mock.calls.map(([input]) => input)).toMatchObject([
       {
         alias: "Unclaimed QR",
         organizationId: null,
         claimable: true,
         target: {
-          rawGoogleMapsUrl: targetUrl,
-          googlePlaceId: placeDetails.placeId,
-          canonicalReviewUrl: placeDetails.canonicalReviewUrl,
+          rawGoogleMapsUrl: googleMapsUrl,
+          googlePlaceId,
+          canonicalReviewUrl: googleCanonicalReviewUrl,
         },
       },
       { alias: "Unclaimed QR", organizationId: null, claimable: true },
@@ -170,7 +162,7 @@ describe("QrService.batchCreate", () => {
   })
 
   it("creates incomplete orphan QR codes without a target", async () => {
-    const { places, repository, service } = setup()
+    const { repository, service } = setup()
     repository.create.mockResolvedValue(
       createQrRecord({
         alias: "Unconfigured QR",
@@ -201,7 +193,6 @@ describe("QrService.batchCreate", () => {
         claimable: true,
       },
     ])
-    expect(places.getPlaceDetails.mock.calls).toHaveLength(0)
     expect(repository.create.mock.calls.map(([input]) => input.target)).toEqual([
       undefined,
       undefined,
@@ -209,15 +200,15 @@ describe("QrService.batchCreate", () => {
   })
 
   it("rejects non-admins and invalid counts before resolving or persisting", async () => {
-    const { places, repository, service } = setup()
+    const { repository, service } = setup()
 
     await expect(
       service.batchCreate({
         actor: owner,
         organizationId: "org-1",
         alias: "Batch QR",
-        googleMapsUrl: targetUrl,
-        googlePlaceId: placeDetails.placeId,
+        googleMapsUrl,
+        googlePlaceId,
         count: 2,
       }),
     ).rejects.toMatchObject({ code: "FORBIDDEN" })
@@ -227,13 +218,12 @@ describe("QrService.batchCreate", () => {
         actor: globalAdmin,
         organizationId: "org-1",
         alias: "Batch QR",
-        googleMapsUrl: targetUrl,
-        googlePlaceId: placeDetails.placeId,
+        googleMapsUrl,
+        googlePlaceId,
         count: 0,
       }),
     ).rejects.toMatchObject({ code: "INVALID_INPUT" })
 
-    expect(places.getPlaceDetails.mock.calls).toHaveLength(0)
     expect(repository.create.mock.calls).toHaveLength(0)
   })
 })

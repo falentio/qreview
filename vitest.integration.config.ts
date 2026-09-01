@@ -26,7 +26,7 @@ export default defineConfig(async () => {
         miniflare: {
           compatibilityDate: "2026-08-22",
           d1Databases: { DB: "qr-integration-tests" },
-          kvNamespaces: ["PLACES_CACHE", "QR_PUBLIC_PROJECTION"],
+          kvNamespaces: ["QR_PUBLIC_PROJECTION"],
           bindings: { TEST_MIGRATIONS: migrations },
         },
       }),

@@ -1,27 +1,20 @@
 import { describe, expect, it } from "vite-plus/test"
 import { mock } from "vitest-mock-extended"
 
-import { QrDomainError } from "@/orpc-server/resource/qr/errors"
-import type { PlacesAdapter } from "@/orpc-server/resource/qr/places"
-import { createQrRecord, owner } from "@/orpc-server/resource/qr/fixtures"
+import {
+  createQrRecord,
+  googleCanonicalReviewUrl,
+  googleMapsUrl,
+  googlePlaceId,
+  owner,
+} from "@/orpc-server/resource/qr/fixtures"
 import type { QrRepository } from "@/orpc-server/resource/qr/repository"
 import { QrService } from "@/orpc-server/resource/qr/service"
 
-const targetUrl =
-  "https://www.google.com/maps/search/?api=1&query=Example&query_place_id=ChIJ123456789"
-const placeDetails = {
-  placeId: "ChIJ123456789",
-  name: "Example location",
-  address: "1 Example Street",
-  canonicalReviewUrl: "https://search.google.com/local/writereview?placeid=ChIJ123456789",
-}
-
 function setup() {
   const repository = mock<QrRepository>()
-  const places = mock<PlacesAdapter>()
   const service = new QrService({
     repository,
-    places,
     clock: { now: () => new Date("2030-01-01T00:00:00.000Z") },
     ids: {
       generateId: () => "generated-id",
@@ -29,7 +22,7 @@ function setup() {
     },
   })
   repository.getOrganizationMemberRole.mockResolvedValue("owner")
-  return { repository, places, service }
+  return { repository, service }
 }
 
 describe("QrService.update", () => {
@@ -59,25 +52,24 @@ describe("QrService.update", () => {
     ])
   })
 
-  it("resolves and persists a replacement target", async () => {
-    const { repository, places, service } = setup()
+  it("resolves and persists a replacement target locally", async () => {
+    const { repository, service } = setup()
     repository.findById.mockResolvedValue(createQrRecord())
     repository.updateById.mockResolvedValue(
       createQrRecord({
-        rawGoogleMapsUrl: targetUrl,
-        googlePlaceId: placeDetails.placeId,
-        canonicalReviewUrl: placeDetails.canonicalReviewUrl,
+        rawGoogleMapsUrl: googleMapsUrl,
+        googlePlaceId,
+        canonicalReviewUrl: googleCanonicalReviewUrl,
       }),
     )
-    places.getPlaceDetails.mockResolvedValue(placeDetails)
 
     await expect(
       service.update({
         actor: owner,
         organizationId: "org-1",
         id: "qr-1",
-        googleMapsUrl: targetUrl,
-        googlePlaceId: placeDetails.placeId,
+        googleMapsUrl,
+        googlePlaceId,
       }),
     ).resolves.toMatchObject({ configurationState: "active" })
     expect(repository.updateById.mock.calls).toEqual([
@@ -87,9 +79,9 @@ describe("QrService.update", () => {
           organizationId: "org-1",
           alias: undefined,
           target: {
-            rawGoogleMapsUrl: targetUrl,
-            googlePlaceId: placeDetails.placeId,
-            canonicalReviewUrl: placeDetails.canonicalReviewUrl,
+            rawGoogleMapsUrl: googleMapsUrl,
+            googlePlaceId,
+            canonicalReviewUrl: googleCanonicalReviewUrl,
           },
           updatedAt: new Date("2030-01-01T00:00:00.000Z"),
         },
@@ -122,20 +114,17 @@ describe("QrService.update", () => {
     expect(repository.updateById.mock.calls).toHaveLength(0)
   })
 
-  it("does not mutate an existing QR code when Places resolution fails", async () => {
-    const { repository, places, service } = setup()
+  it("does not mutate an existing QR code when local resolution fails", async () => {
+    const { repository, service } = setup()
     repository.findById.mockResolvedValue(createQrRecord())
-    places.getPlaceDetails.mockRejectedValue(
-      new QrDomainError("PLACE_RESOLUTION_FAILED", "Place not found"),
-    )
 
     await expect(
       service.update({
         actor: owner,
         organizationId: "org-1",
         id: "qr-1",
-        googleMapsUrl: targetUrl,
-        googlePlaceId: "ChIJ123456789",
+        googleMapsUrl: "https://www.google.com/maps/search/?query=Example",
+        googlePlaceId,
       }),
     ).rejects.toMatchObject({ code: "PLACE_RESOLUTION_FAILED" })
     expect(repository.updateById.mock.calls).toHaveLength(0)

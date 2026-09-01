@@ -1,7 +1,6 @@
 import { describe, expect, it } from "vite-plus/test"
 import { mock } from "vitest-mock-extended"
 
-import type { PlacesAdapter } from "@/orpc-server/resource/qr/places"
 import { createQrRecord } from "@/orpc-server/resource/qr/fixtures"
 import type { QrPublicProjectionStore } from "@/orpc-server/resource/qr/public-cache"
 import type { QrRepository } from "@/orpc-server/resource/qr/repository"
@@ -10,11 +9,9 @@ import { QrService } from "@/orpc-server/resource/qr/service"
 
 function setup() {
   const repository = mock<QrRepository>()
-  const places = mock<PlacesAdapter>()
   const publicProjection = mock<QrPublicProjectionStore>()
   const service = new QrService({
     repository,
-    places,
     publicProjection,
     clock: { now: () => new Date("2030-01-02T00:00:00.000Z") },
     ids: {

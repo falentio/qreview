@@ -1,3 +1,2 @@
 BETTER_AUTH_SECRET=replace-with-a-long-random-secret
 BETTER_AUTH_URL=http://qr.falentio:1337
-GOOGLE_MAPS_API_KEY=

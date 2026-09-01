@@ -2,45 +2,39 @@ import { describe, expect, it } from "vite-plus/test"
 import { mock } from "vitest-mock-extended"
 
 import { QrDomainError } from "@/orpc-server/resource/qr/errors"
-import type { PlacesAdapter } from "@/orpc-server/resource/qr/places"
-import { createQrRecord, owner } from "@/orpc-server/resource/qr/fixtures"
+import {
+  createQrRecord,
+  googleCanonicalReviewUrl,
+  googleMapsUrl,
+  googlePlaceId,
+  owner,
+} from "@/orpc-server/resource/qr/fixtures"
 import type { QrRepository } from "@/orpc-server/resource/qr/repository"
 import { QrService } from "@/orpc-server/resource/qr/service"
 
-const targetUrl =
-  "https://www.google.com/maps/search/?api=1&query=Example&query_place_id=ChIJ123456789"
-const placeDetails = {
-  placeId: "ChIJ123456789",
-  name: "Example location",
-  address: "1 Example Street",
-  canonicalReviewUrl: "https://search.google.com/local/writereview?placeid=ChIJ123456789",
-}
-
 function setup() {
   const repository = mock<QrRepository>()
-  const places = mock<PlacesAdapter>()
   const clock = { now: () => new Date("2030-01-01T00:00:00.000Z") }
   const ids = {
     generateId: () => "generated-id",
     generateSlug: () => "generated1a",
   }
-  const service = new QrService({ repository, places, clock, ids })
+  const service = new QrService({ repository, clock, ids })
   repository.getOrganizationMemberRole.mockResolvedValue("owner")
-  places.getPlaceDetails.mockResolvedValue(placeDetails)
-  return { repository, places, service }
+  return { repository, service }
 }
 
 describe("QrService.create", () => {
-  it("lets organization members create active QR codes with a server-confirmed target", async () => {
-    const { places, repository, service } = setup()
+  it("lets organization members create active QR codes with a locally resolved target", async () => {
+    const { repository, service } = setup()
     repository.create.mockResolvedValue(createQrRecord({ alias: "Trimmed alias" }))
 
     const result = await service.create({
       actor: owner,
       organizationId: "org-1",
       alias: "  Trimmed alias  ",
-      googleMapsUrl: targetUrl,
-      googlePlaceId: "ChIJ123456789",
+      googleMapsUrl,
+      googlePlaceId,
     })
 
     expect(result.configurationState).toBe("active")
@@ -58,19 +52,14 @@ describe("QrService.create", () => {
       updatedAt: new Date("2030-01-01T00:00:00.000Z"),
     })
     expect(repository.create.mock.calls[0]?.[0].target).toEqual({
-      rawGoogleMapsUrl: targetUrl,
-      googlePlaceId: "ChIJ123456789",
-      canonicalReviewUrl: placeDetails.canonicalReviewUrl,
+      rawGoogleMapsUrl: googleMapsUrl,
+      googlePlaceId,
+      canonicalReviewUrl: googleCanonicalReviewUrl,
     })
-    expect(places.getPlaceDetails.mock.calls).toEqual([[{ placeId: "ChIJ123456789" }]])
   })
 
-  it("resolves a query URL only after the selected place appears in search results", async () => {
-    const { repository, places, service } = setup()
-    repository.create.mockResolvedValue(createQrRecord({ alias: "Example location" }))
-    places.search.mockResolvedValue([
-      { placeId: "ChIJ123456789", name: "Example location", address: null },
-    ])
+  it("rejects a query URL without a specific place ID", async () => {
+    const { repository, service } = setup()
 
     await expect(
       service.create({
@@ -78,11 +67,10 @@ describe("QrService.create", () => {
         organizationId: "org-1",
         alias: "Example location",
         googleMapsUrl: "https://www.google.com/maps/search/?query=%20Example%20",
-        googlePlaceId: "ChIJ123456789",
+        googlePlaceId,
       }),
-    ).resolves.toMatchObject({ alias: "Example location", configurationState: "active" })
-    expect(places.search.mock.calls).toEqual([[{ query: "Example" }]])
-    expect(places.getPlaceDetails.mock.calls).toEqual([[{ placeId: "ChIJ123456789" }]])
+    ).rejects.toMatchObject({ code: "PLACE_RESOLUTION_FAILED" })
+    expect(repository.create.mock.calls).toHaveLength(0)
   })
 
   it("retries a generated slug after a slug conflict", async () => {
@@ -96,43 +84,38 @@ describe("QrService.create", () => {
         actor: owner,
         organizationId: "org-1",
         alias: "Trimmed alias",
-        googleMapsUrl: targetUrl,
-        googlePlaceId: "ChIJ123456789",
+        googleMapsUrl,
+        googlePlaceId,
       }),
     ).resolves.toMatchObject({ alias: "Trimmed alias" })
     expect(repository.create.mock.calls).toHaveLength(2)
   })
 
   it("rejects an invalid alias before resolving or persisting its target", async () => {
-    const { repository, places, service } = setup()
+    const { repository, service } = setup()
 
     await expect(
       service.create({
         actor: owner,
         organizationId: "org-1",
         alias: "   ",
-        googleMapsUrl: targetUrl,
-        googlePlaceId: "ChIJ123456789",
+        googleMapsUrl,
+        googlePlaceId,
       }),
     ).rejects.toMatchObject({ code: "INVALID_INPUT" })
-    expect(places.getPlaceDetails.mock.calls).toHaveLength(0)
     expect(repository.create.mock.calls).toHaveLength(0)
   })
 
-  it("does not persist a canonical URL for a different Place ID", async () => {
-    const { repository, places, service } = setup()
-    places.getPlaceDetails.mockResolvedValue({
-      ...placeDetails,
-      canonicalReviewUrl: "https://search.google.com/local/writereview?placeid=ChIJ987654321",
-    })
+  it("rejects a target when its selected Place ID differs from the URL", async () => {
+    const { repository, service } = setup()
 
     await expect(
       service.create({
         actor: owner,
         organizationId: "org-1",
         alias: "Example location",
-        googleMapsUrl: targetUrl,
-        googlePlaceId: "ChIJ123456789",
+        googleMapsUrl,
+        googlePlaceId: "ChIJ987654321",
       }),
     ).rejects.toMatchObject({ code: "PLACE_RESOLUTION_FAILED" })
     expect(repository.create.mock.calls).toHaveLength(0)

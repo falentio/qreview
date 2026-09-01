@@ -5,21 +5,20 @@ import { mock } from "vitest-mock-extended"
 import type { ApiContext } from "@/orpc-server/context"
 import type { AuthSession, SessionRepository } from "@/orpc-server/resource/session/repository"
 import { SessionService } from "@/orpc-server/resource/session/service"
-import { createQrRecord, globalAdmin, owner } from "@/orpc-server/resource/qr/fixtures"
-import type { PlacesAdapter } from "@/orpc-server/resource/qr/places"
+import {
+  createQrRecord,
+  globalAdmin,
+  googleCanonicalReviewUrl,
+  googleMapsUrl,
+  googlePlaceId,
+  owner,
+} from "@/orpc-server/resource/qr/fixtures"
 import type { QrRepository } from "@/orpc-server/resource/qr/repository"
 import { createQrRouter } from "@/orpc-server/resource/qr/router"
 import { QrService } from "@/orpc-server/resource/qr/service"
 import { testLogger } from "@/orpc-server/testing/logger"
 
-const targetUrl =
-  "https://www.google.com/maps/search/?api=1&query=Example&query_place_id=ChIJ123456789"
-const placeDetails = {
-  placeId: "ChIJ123456789",
-  name: "Example location",
-  address: "1 Example Street",
-  canonicalReviewUrl: "https://search.google.com/local/writereview?placeid=ChIJ123456789",
-}
+const targetUrl = googleMapsUrl
 
 function createOrganizationAuth(role: string, error?: unknown): ApiContext["auth"] {
   return {
@@ -38,11 +37,9 @@ function setup({
   organizationError,
 }: { role?: string; organizationRole?: string; organizationError?: unknown } = {}) {
   const repository = mock<QrRepository>()
-  const places = mock<PlacesAdapter>()
   repository.getOrganizationMemberRole.mockResolvedValue("owner")
   const service = new QrService({
     repository,
-    places,
     ids: {
       generateId: () => "generated-id",
       generateSlug: () => "generated1a",
@@ -67,48 +64,34 @@ function setup({
     sessionService: new SessionService({ repository: sessionRepository }),
   } satisfies ApiContext
 
-  return { context, places, repository, router: createQrRouter({ service }) }
+  return { context, repository, router: createQrRouter({ service }) }
 }
 
 describe("QrRouter behavior", () => {
   it("resolves a Google Maps URL through the authenticated route", async () => {
-    const { context, places, router } = setup()
-    places.search.mockResolvedValue([
-      { placeId: "ChIJ123456789", name: "Example location", address: "1 Example Street" },
-    ])
+    const { context, router } = setup()
 
     await expect(
       call(
         router.resolve,
         {
           organizationId: "org-1",
-          googleMapsUrl: "https://www.google.com/maps/search/?query=Example",
+          googleMapsUrl: targetUrl,
         },
         { context },
       ),
     ).resolves.toEqual({
-      candidates: [
-        { placeId: "ChIJ123456789", name: "Example location", address: "1 Example Street" },
-      ],
+      candidates: [{ placeId: googlePlaceId, name: "Example", address: null }],
     })
   })
 
   it("resolves a Google Maps URL through the global admin route without an organization", async () => {
-    const { context, places, repository, router } = setup({ role: "admin" })
-    places.search.mockResolvedValue([
-      { placeId: "ChIJ123456789", name: "Example location", address: "1 Example Street" },
-    ])
+    const { context, repository, router } = setup({ role: "admin" })
 
     await expect(
-      call(
-        router.resolvePlace,
-        { googleMapsUrl: "https://www.google.com/maps/search/?query=Example" },
-        { context },
-      ),
+      call(router.resolvePlace, { googleMapsUrl: targetUrl }, { context }),
     ).resolves.toEqual({
-      candidates: [
-        { placeId: "ChIJ123456789", name: "Example location", address: "1 Example Street" },
-      ],
+      candidates: [{ placeId: googlePlaceId, name: "Example", address: null }],
     })
     expect(repository.getOrganizationMemberRole.mock.calls).toHaveLength(0)
   })
@@ -124,8 +107,7 @@ describe("QrRouter behavior", () => {
   })
 
   it("creates a QR code through the authenticated route", async () => {
-    const { context, places, repository, router } = setup()
-    places.getPlaceDetails.mockResolvedValue(placeDetails)
+    const { context, repository, router } = setup()
     repository.create.mockResolvedValue(createQrRecord({ alias: "New QR" }))
 
     await expect(
@@ -135,7 +117,7 @@ describe("QrRouter behavior", () => {
           organizationId: "org-1",
           alias: " New QR ",
           googleMapsUrl: targetUrl,
-          googlePlaceId: placeDetails.placeId,
+          googlePlaceId: googlePlaceId,
         },
         { context },
       ),
@@ -156,8 +138,7 @@ describe("QrRouter behavior", () => {
   })
 
   it("batch creates configured QR codes through the global admin route", async () => {
-    const { context, places, repository, router } = setup({ role: "admin" })
-    places.getPlaceDetails.mockResolvedValue(placeDetails)
+    const { context, repository, router } = setup({ role: "admin" })
     repository.create.mockResolvedValue(createQrRecord({ alias: "Batch QR" }))
 
     await expect(
@@ -167,19 +148,17 @@ describe("QrRouter behavior", () => {
           organizationId: "org-1",
           alias: "Batch QR",
           googleMapsUrl: targetUrl,
-          googlePlaceId: placeDetails.placeId,
+          googlePlaceId: googlePlaceId,
           count: 2,
         },
         { context },
       ),
     ).resolves.toMatchObject({ items: [{ alias: "Batch QR" }, { alias: "Batch QR" }] })
-    expect(places.getPlaceDetails.mock.calls).toHaveLength(1)
     expect(repository.create.mock.calls).toHaveLength(2)
   })
 
   it("batch creates configured orphan QR codes through the global admin route", async () => {
-    const { context, places, repository, router } = setup({ role: "admin" })
-    places.getPlaceDetails.mockResolvedValue(placeDetails)
+    const { context, repository, router } = setup({ role: "admin" })
     repository.create.mockResolvedValue(createQrRecord({ organizationId: null, alias: "Batch QR" }))
 
     await expect(
@@ -188,13 +167,12 @@ describe("QrRouter behavior", () => {
         {
           alias: "Batch QR",
           googleMapsUrl: targetUrl,
-          googlePlaceId: placeDetails.placeId,
+          googlePlaceId: googlePlaceId,
           count: 2,
         },
         { context },
       ),
     ).resolves.toMatchObject({ items: [{ alias: "Batch QR" }, { alias: "Batch QR" }] })
-    expect(places.getPlaceDetails.mock.calls).toHaveLength(1)
     expect(repository.create.mock.calls).toHaveLength(2)
     expect(repository.create.mock.calls.map(([input]) => input.organizationId)).toEqual([
       null,
@@ -203,7 +181,7 @@ describe("QrRouter behavior", () => {
   })
 
   it("batch creates incomplete orphan QR codes without a target", async () => {
-    const { context, places, repository, router } = setup({ role: "admin" })
+    const { context, repository, router } = setup({ role: "admin" })
     repository.create.mockResolvedValue(
       createQrRecord({
         organizationId: null,
@@ -221,7 +199,6 @@ describe("QrRouter behavior", () => {
         { ownershipState: "orphan", configurationState: "incomplete" },
       ],
     })
-    expect(places.getPlaceDetails.mock.calls).toHaveLength(0)
     expect(repository.create.mock.calls.map(([input]) => input.target)).toEqual([
       undefined,
       undefined,
@@ -229,15 +206,14 @@ describe("QrRouter behavior", () => {
   })
 
   it("updates an orphan map link by slug through the global admin route", async () => {
-    const { context, places, repository, router } = setup({ role: "admin" })
-    places.getPlaceDetails.mockResolvedValue(placeDetails)
+    const { context, repository, router } = setup({ role: "admin" })
     repository.findBySlug.mockResolvedValue(createQrRecord({ organizationId: null }))
     repository.updateMapBySlug.mockResolvedValue(
       createQrRecord({
         organizationId: null,
         rawGoogleMapsUrl: targetUrl,
-        googlePlaceId: placeDetails.placeId,
-        canonicalReviewUrl: placeDetails.canonicalReviewUrl,
+        googlePlaceId,
+        canonicalReviewUrl: googleCanonicalReviewUrl,
       }),
     )
 
@@ -247,7 +223,7 @@ describe("QrRouter behavior", () => {
         {
           slug: "abc123def4",
           googleMapsUrl: targetUrl,
-          googlePlaceId: placeDetails.placeId,
+          googlePlaceId,
         },
         { context },
       ),
@@ -288,8 +264,7 @@ describe("QrRouter behavior", () => {
   })
 
   it("rejects global-admin QR operations for regular users", async () => {
-    const { context, places, repository, router } = setup()
-    places.getPlaceDetails.mockResolvedValue(placeDetails)
+    const { context, repository, router } = setup()
 
     await expect(
       call(
@@ -298,7 +273,7 @@ describe("QrRouter behavior", () => {
           organizationId: "org-1",
           alias: "Batch QR",
           googleMapsUrl: targetUrl,
-          googlePlaceId: placeDetails.placeId,
+          googlePlaceId,
           count: 2,
         },
         { context },
@@ -316,7 +291,7 @@ describe("QrRouter behavior", () => {
         {
           alias: "Batch QR",
           googleMapsUrl: targetUrl,
-          googlePlaceId: placeDetails.placeId,
+          googlePlaceId,
           count: 2,
         },
         { context },
@@ -328,7 +303,7 @@ describe("QrRouter behavior", () => {
         {
           slug: "abc123def4",
           googleMapsUrl: targetUrl,
-          googlePlaceId: placeDetails.placeId,
+          googlePlaceId,
         },
         { context },
       ),
@@ -340,7 +315,6 @@ describe("QrRouter behavior", () => {
         { context },
       ),
     ).rejects.toMatchObject({ code: "FORBIDDEN" })
-    expect(places.getPlaceDetails.mock.calls).toHaveLength(0)
     expect(repository.findBySlug.mock.calls).toHaveLength(0)
     expect(repository.create.mock.calls).toHaveLength(0)
   })
@@ -414,7 +388,7 @@ describe("QrRouter behavior", () => {
   })
 
   it("requires authentication on every QR route", async () => {
-    const { places, repository, router } = setup()
+    const { repository, router } = setup()
     const sessionRepository = mock<SessionRepository>()
     sessionRepository.getCurrentSession.mockResolvedValue(null)
     const context = {
@@ -425,7 +399,6 @@ describe("QrRouter behavior", () => {
       auth: createOrganizationAuth("owner"),
       sessionService: new SessionService({ repository: sessionRepository }),
     } satisfies ApiContext
-    places.getPlaceDetails.mockResolvedValue(placeDetails)
 
     const attempts = [
       () =>
@@ -437,7 +410,7 @@ describe("QrRouter behavior", () => {
             organizationId: "org-1",
             alias: "QR",
             googleMapsUrl: targetUrl,
-            googlePlaceId: placeDetails.placeId,
+            googlePlaceId: googlePlaceId,
           },
           { context },
         ),
@@ -448,7 +421,7 @@ describe("QrRouter behavior", () => {
             organizationId: "org-1",
             alias: "QR",
             googleMapsUrl: targetUrl,
-            googlePlaceId: placeDetails.placeId,
+            googlePlaceId,
             count: 2,
           },
           { context },
@@ -461,7 +434,7 @@ describe("QrRouter behavior", () => {
           {
             alias: "QR",
             googleMapsUrl: targetUrl,
-            googlePlaceId: placeDetails.placeId,
+            googlePlaceId,
             count: 2,
           },
           { context },
@@ -477,7 +450,7 @@ describe("QrRouter behavior", () => {
           {
             slug: "abc123def4",
             googleMapsUrl: targetUrl,
-            googlePlaceId: placeDetails.placeId,
+            googlePlaceId,
           },
           { context },
         ),

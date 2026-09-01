@@ -2,7 +2,6 @@ import * as Alchemy from "alchemy"
 import * as Cloudflare from "alchemy/Cloudflare"
 import * as Config from "effect/Config"
 import * as Effect from "effect/Effect"
-import * as Redacted from "effect/Redacted"
 
 import {
   createQrPublicProjection,
@@ -14,10 +13,6 @@ import {
 export const Database = Cloudflare.D1.Database("Database", {
   name: "qr",
   migrations: "./drizzle",
-})
-
-export const PlacesCache = Cloudflare.KV.Namespace("PlacesCache", {
-  title: "PLACES_CACHE",
 })
 
 export const QrPublicProjection = Cloudflare.KV.Namespace("QrPublicProjection", {
@@ -42,10 +37,6 @@ export const Website = Cloudflare.Website.Astro(
         BETTER_AUTH_SECRET: betterAuthSecret.text,
         BETTER_AUTH_URL: Config.string("BETTER_AUTH_URL"),
         DB: Database,
-        GOOGLE_MAPS_API_KEY: Config.redacted("GOOGLE_MAPS_API_KEY").pipe(
-          Config.withDefault(Redacted.make("")),
-        ),
-        PLACES_CACHE: PlacesCache,
         QR_PUBLIC_PROJECTION: QrPublicProjection,
       },
       observability: { enabled: true },

@@ -3,7 +3,6 @@ import { mock } from "vitest-mock-extended"
 
 import { QrDomainError } from "@/orpc-server/resource/qr/errors"
 import { createQrRecord, globalAdmin, owner } from "@/orpc-server/resource/qr/fixtures"
-import type { PlacesAdapter } from "@/orpc-server/resource/qr/places"
 import type { QrPublicProjectionStore } from "@/orpc-server/resource/qr/public-cache"
 import type { QrRepository } from "@/orpc-server/resource/qr/repository"
 import { QrService } from "@/orpc-server/resource/qr/service"
@@ -13,7 +12,6 @@ function setup() {
   const publicProjection = mock<QrPublicProjectionStore>()
   const service = new QrService({
     repository,
-    places: mock<PlacesAdapter>(),
     publicProjection,
     clock: { now: () => new Date("2030-01-01T00:00:00.000Z") },
     ids: {

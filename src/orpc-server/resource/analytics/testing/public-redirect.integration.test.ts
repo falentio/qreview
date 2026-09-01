@@ -1,7 +1,6 @@
 import { beforeEach, describe, expect, it } from "vite-plus/test"
 
 import { createQrPublicResponse } from "@/orpc-server/resource/qr/public"
-import type { PlacesAdapter } from "@/orpc-server/resource/qr/places"
 import { QrService } from "@/orpc-server/resource/qr/service"
 import { AnalyticsService } from "@/orpc-server/resource/analytics/service"
 
@@ -32,7 +31,6 @@ describe("QR public redirect analytics against D1", () => {
     )
     const qrService = new QrService({
       repository: qrRepository,
-      places: {} as PlacesAdapter,
       ids: {
         generateId: () => "generated-id",
         generateSlug: () => "generated1a",
@@ -80,7 +78,6 @@ describe("QR public redirect analytics against D1", () => {
     )
     const qrService = new QrService({
       repository: qrRepository,
-      places: {} as PlacesAdapter,
       clock: { now: () => new Date("2030-01-02T00:00:00.000Z") },
       ids: {
         generateId: () => "generated-id",

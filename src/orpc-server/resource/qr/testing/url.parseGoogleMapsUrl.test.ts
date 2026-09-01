@@ -1,11 +1,17 @@
 import { describe, expect, it, vi } from "vite-plus/test"
 
 import {
+  createGoogleCanonicalReviewUrl,
+  googleFeatureIdFromPlaceId,
+  googlePlaceIdFromFeatureId,
   MAX_GOOGLE_MAPS_QUERY_LENGTH,
   MAX_GOOGLE_MAPS_URL_LENGTH,
   parseGoogleMapsUrl,
   resolveGoogleMapsUrl,
 } from "@/orpc-server/resource/qr/url"
+
+const featureId = "0x2e7887b579f3d48f:0x6ec81fc2711b27a"
+const placeId = "ChIJj9TzebWHeC4RerIRJ_yB7AY"
 
 describe("parseGoogleMapsUrl", () => {
   it("accepts supported HTTPS Google Maps URLs and extracts a place ID", () => {
@@ -17,6 +23,7 @@ describe("parseGoogleMapsUrl", () => {
       rawUrl:
         "https://www.google.com/maps/search/?api=1&query=Example&query_place_id=ChIJ123456789",
       placeId: "ChIJ123456789",
+      featureId: null,
       query: "Example",
     })
   })
@@ -29,6 +36,7 @@ describe("parseGoogleMapsUrl", () => {
     ).toEqual({
       rawUrl: "https://www.google.com/maps/search/?api=1&query=Example&place_id=ChIJ123456789",
       placeId: "ChIJ123456789",
+      featureId: null,
       query: "Example",
     })
     expect(
@@ -39,11 +47,13 @@ describe("parseGoogleMapsUrl", () => {
       rawUrl:
         "https://www.google.com/maps/search/?api=1&query=Example&data=!4m2!1sChIJ123456789!2sExample",
       placeId: "ChIJ123456789",
+      featureId: null,
       query: "Example",
     })
     expect(parseGoogleMapsUrl("https://maps.google.com/maps/place/ChIJ123456789/details")).toEqual({
       rawUrl: "https://maps.google.com/maps/place/ChIJ123456789/details",
       placeId: "ChIJ123456789",
+      featureId: null,
       query: null,
     })
     expect(
@@ -53,7 +63,8 @@ describe("parseGoogleMapsUrl", () => {
     ).toEqual({
       rawUrl:
         "https://www.google.com/maps/place/Hadar+Kopi+%26+Jamu/@-7.8840559,112.5184512,17z/data=!3m1!4b1!4m6!3m5!1s0x2e78872eb95f61c3:0x524dc00ed3a1a6ec!8m2!3d-7.8840559!4d112.5184512!16s%2Fg%2F11stf9xb64",
-      placeId: null,
+      placeId: "ChIJw2FfuS6HeC4R7Kah0w7ATVI",
+      featureId: "0x2e78872eb95f61c3:0x524dc00ed3a1a6ec",
       query: "Hadar Kopi & Jamu",
     })
     expect(
@@ -61,6 +72,7 @@ describe("parseGoogleMapsUrl", () => {
     ).toEqual({
       rawUrl: "https://www.google.com/maps/search/?q=%20Example%20Cafe%20",
       placeId: null,
+      featureId: null,
       query: "Example Cafe",
     })
     expect(
@@ -68,7 +80,49 @@ describe("parseGoogleMapsUrl", () => {
     ).toEqual({
       rawUrl: "https://www.google.com/maps/place/Example+Cafe/@40.1,-73.2,17z",
       placeId: null,
+      featureId: null,
       query: "Example Cafe",
+    })
+  })
+
+  it("converts a Maps feature ID into the reported Place ID", () => {
+    expect(
+      parseGoogleMapsUrl(
+        "https://www.google.com/maps/place/Example/data=!4m2!3m1!1s0x2e7887b579f3d48f:0x6ec81fc2711b27a!12e1",
+      ),
+    ).toEqual({
+      rawUrl:
+        "https://www.google.com/maps/place/Example/data=!4m2!3m1!1s0x2e7887b579f3d48f:0x6ec81fc2711b27a!12e1",
+      placeId,
+      featureId,
+      query: "Example",
+    })
+    expect(googlePlaceIdFromFeatureId(featureId)).toBe(placeId)
+    expect(googleFeatureIdFromPlaceId(placeId)).toBe(featureId)
+    expect(createGoogleCanonicalReviewUrl({ placeId, featureId })).toBe(
+      "https://www.google.com/maps/place//data=!4m3!3m2!1s0x2e7887b579f3d48f:0x6ec81fc2711b27a!12e1",
+    )
+  })
+
+  it("rejects inconsistent textual and feature IDs", () => {
+    expect(() =>
+      parseGoogleMapsUrl(
+        "https://www.google.com/maps/place/Example/data=!1sChIJj9TzebWHeC4RerIRJ_yB7AY!1s0x808f778c55555555:0xa4f25c571acded3f!12e1",
+      ),
+    ).toThrowError(expect.objectContaining({ code: "INVALID_GOOGLE_MAPS_URL" }))
+  })
+
+  it("does not extract feature IDs from unrelated query parameters", () => {
+    expect(
+      parseGoogleMapsUrl(
+        "https://www.google.com/maps/search/?query=Example&tracking=!1s0x2e7887b579f3d48f:0x6ec81fc2711b27a!12e1",
+      ),
+    ).toEqual({
+      rawUrl:
+        "https://www.google.com/maps/search/?query=Example&tracking=!1s0x2e7887b579f3d48f:0x6ec81fc2711b27a!12e1",
+      placeId: null,
+      featureId: null,
+      query: "Example",
     })
   })
 
@@ -117,6 +171,46 @@ describe("parseGoogleMapsUrl", () => {
 })
 
 describe("resolveGoogleMapsUrl", () => {
+  it("follows validated Google Maps redirects without following external locations", async () => {
+    const shortUrl = "https://maps.app.goo.gl/z8eTy4rJq16zpAgP6"
+    const redirectedUrl =
+      "https://www.google.com/maps/place/Example/data=!4m2!3m1!1s0x2e7887b579f3d48f:0x6ec81fc2711b27a!12e1"
+    const requests: Array<{ input: RequestInfo | URL; init?: RequestInit }> = []
+
+    await expect(
+      resolveGoogleMapsUrl(shortUrl, async (input, init) => {
+        requests.push({ input, init })
+        if (requests.length === 1) {
+          return new Response(null, { status: 302, headers: { Location: redirectedUrl } })
+        }
+        return new Response(null, { status: 200 })
+      }),
+    ).resolves.toMatchObject({
+      rawUrl: shortUrl,
+      placeId,
+      featureId,
+      query: "Example",
+    })
+    expect(requests).toEqual([
+      { input: shortUrl, init: { redirect: "manual" } },
+      { input: redirectedUrl, init: { redirect: "manual" } },
+    ])
+  })
+
+  it("rejects an external redirect before following it", async () => {
+    let requestCount = 0
+    await expect(
+      resolveGoogleMapsUrl("https://maps.app.goo.gl/z8eTy4rJq16zpAgP6", async () => {
+        requestCount += 1
+        return new Response(null, {
+          status: 302,
+          headers: { Location: "https://example.com/private" },
+        })
+      }),
+    ).rejects.toMatchObject({ code: "PLACE_RESOLUTION_FAILED" })
+    expect(requestCount).toBe(1)
+  })
+
   it("logs short-link response diagnostics before returning a bad request", async () => {
     const warn = vi.fn()
     const shortUrl = "https://maps.app.goo.gl/z8eTy4rJq16zpAgP6"

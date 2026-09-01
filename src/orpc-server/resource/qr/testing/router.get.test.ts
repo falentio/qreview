@@ -4,7 +4,6 @@ import { mock } from "vitest-mock-extended"
 
 import type { ApiContext } from "@/orpc-server/context"
 import { createQrRouter } from "@/orpc-server/resource/qr/router"
-import type { PlacesAdapter } from "@/orpc-server/resource/qr/places"
 import type { QrRepository } from "@/orpc-server/resource/qr/repository"
 import { QrService } from "@/orpc-server/resource/qr/service"
 import type { AuthSession, SessionRepository } from "@/orpc-server/resource/session/repository"
@@ -35,10 +34,8 @@ describe("QrRouter.get", () => {
   it("rejects empty IDs and malformed slugs at the get contract boundary", async () => {
     const repository = mock<QrRepository>()
     repository.getOrganizationMemberRole.mockResolvedValue("owner")
-    const places = mock<PlacesAdapter>()
     const service = new QrService({
       repository,
-      places,
       ids: {
         generateId: () => "generated-id",
         generateSlug: () => "generated1a",

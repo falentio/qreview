@@ -1,5 +1,6 @@
 // @ts-check
 import { defineConfig } from "astro/config"
+import { fileURLToPath } from "node:url"
 
 import react from "@astrojs/react"
 
@@ -28,6 +29,9 @@ export default defineConfig({
       exclude: ["qr-scanner"],
     },
     resolve: {
+      alias: {
+        "@": fileURLToPath(new URL("./src", import.meta.url)),
+      },
       dedupe: ["react", "react-dom"],
     },
   },

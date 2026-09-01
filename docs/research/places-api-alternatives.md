@@ -5,11 +5,11 @@
 
 ## Decision Summary
 
-The application does not only need place search. It needs to persist a Google Place ID and a canonical Google write-review URL. The current adapter obtains those values from Google Places, and the public redirect later uses the stored URL without making a provider request ([`places.ts`](../../src/orpc-server/resource/qr/places.ts), [`service.ts`](../../src/orpc-server/resource/qr/service.ts)).
+The application does not only need place search. It needs to persist a Google Place ID and a canonical Google write-review URL. The previous adapter obtained those values from Google Places, and the public redirect later uses the stored URL without making a provider request. The selected implementation now derives both values locally from the Maps URL and its feature ID.
 
 Nominatim, HERE, Mapbox, Foursquare, and Geoapify can provide place or address search, but their result identifiers belong to their own datasets. Their documented APIs do not provide a Google Place ID or Google's `writeAReviewUri`. They are therefore not drop-in replacements for the current flow.
 
-**Recommendation:** make an owner-supplied Google Business Profile review link the preferred no-Places-API workflow. Google documents a Business Profile flow for generating a link that asks customers to leave a review ([Google Business Profile Help](https://support.google.com/business/answer/7035772?hl=en)). Keep the Google Places workflow as the automatic-resolution option when the product must verify the selected business and generate Google's canonical review URL. Do not substitute a non-Google geocoder and pretend its ID is a Google Place ID.
+**Decision:** remove the Places API dependency and resolve exact Maps URLs locally. The resolver follows short-link redirects, extracts `0x<high>:0x<low>` feature IDs, converts them to the observed `ChIJ...` encoding, and generates the API-shaped Maps review URL. This is intentionally an undocumented compatibility seam and must be monitored for Google URL-format changes. Query-only URLs are rejected because they cannot be resolved deterministically without a provider.
 
 | Option                                                                                                                      | Identifier and review target                                                                                                                                                                    | API lookup needed                       | Fit for this application                                         |
 | --------------------------------------------------------------------------------------------------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | --------------------------------------- | ---------------------------------------------------------------- |
@@ -25,14 +25,13 @@ Nominatim, HERE, Mapbox, Foursquare, and Geoapify can provide place or address s
 
 The current implementation has these requirements:
 
-- `PlacesAdapter.search()` returns candidates whose `placeId` must pass Google Place ID validation.
-- `PlacesAdapter.getPlaceDetails()` returns a candidate plus `canonicalReviewUrl`.
-- `QrService.resolveTarget()` validates the Google Maps URL, optionally searches Google, fetches Place Details, and validates that the review URL belongs to the selected Google Place.
+- The local resolver extracts a Place ID and feature ID from a specific Google Maps URL.
+- `QrService.resolveTarget()` validates the Google Maps URL, confirms the selected Place ID, and constructs a canonical review URL locally.
 - QR records persist `rawGoogleMapsUrl`, `googlePlaceId`, and `canonicalReviewUrl`.
 - The public route returns a redirect only when the stored canonical review URL is valid and the QR is active.
-- The admin form requires a Google Maps URL and a selected Google place before creating QR records.
+- The admin form requires a Google Maps URL that identifies a specific place before creating QR records.
 
-These behaviors are implemented in [`places.ts`](../../src/orpc-server/resource/qr/places.ts), [`service.ts`](../../src/orpc-server/resource/qr/service.ts), [`url.ts`](../../src/orpc-server/resource/qr/url.ts), [`qr.ts`](../../src/orpc-contract/resource/qr.ts), [`qr-batch-create-form.tsx`](../../src/components/admin/qr-batch-create-form.tsx), and [`r/[slug].ts`](../../src/pages/r/[slug].ts).
+These behaviors are implemented in [`service.ts`](../../src/orpc-server/resource/qr/service.ts), [`url.ts`](../../src/orpc-server/resource/qr/url.ts), [`qr.ts`](../../src/orpc-contract/resource/qr.ts), [`qr-batch-create-form.tsx`](../../src/components/admin/qr-batch-create-form.tsx), and [`r/[slug].ts`](../../src/pages/r/[slug].ts).
 
 ## Options
 
@@ -104,16 +103,16 @@ Those results do not provide Google Place IDs or Google's canonical review-link 
 
 ## Google Places Cost and Link Tradeoff
 
-Google documents that Places API billing is pay-as-you-go and SKU-based. For Text Search, Nearby Search, and Place Details, the requested field mask determines the highest applicable SKU ([Places API Usage and Billing](https://developers.google.com/maps/documentation/places/web-service/usage-and-billing)). The current adapter requests candidate display data in Text Search and requests `googleMapsLinks.writeAReviewUri` in Place Details ([`places.ts`](../../src/orpc-server/resource/qr/places.ts)).
+Google documents that Places API billing is pay-as-you-go and SKU-based. For Text Search, Nearby Search, and Place Details, the requested field mask determines the highest applicable SKU ([Places API Usage and Billing](https://developers.google.com/maps/documentation/places/web-service/usage-and-billing)). The removed adapter previously requested candidate display data in Text Search and `googleMapsLinks.writeAReviewUri` in Place Details.
 
 Google's Maps-link documentation currently labels the `googleMapsLinks` feature as preview and free to use, but that does not make the surrounding Text Search and Place Details calls universally free; those calls remain subject to the published SKU and billing rules ([Link to Google Maps](https://developers.google.com/maps/documentation/places/web-service/maps-links), [Usage and Billing](https://developers.google.com/maps/documentation/places/web-service/usage-and-billing)). Pricing and preview status should be rechecked before relying on them as a long-term cost assumption.
 
-## Recommended Product Shape
+## Selected Product Shape
 
-1. Add a no-lookup setup path where an administrator pastes the official Google Business Profile review link. Store that link as the redirect target and make `googlePlaceId` optional for this path.
-2. Keep the current Google Places path for teams that want search, disambiguation, and server-generated canonical review links.
-3. Optionally accept a Google Maps URL with a manually supplied Place ID for a lower-cost place-link path, but make clear that it may target Maps rather than the write-review screen unless a review link is also supplied.
-4. Do not use Nominatim, HERE, Mapbox, Foursquare, or Geoapify to populate the existing Google fields. If one is added later, model its identifier as provider-specific and define a separate product flow for its destination.
+1. Follow `maps.app.goo.gl` redirects only to a validated Google Maps HTTPS URL.
+2. Extract the Maps feature ID and derive the Place ID locally using the observed protobuf/base64url representation.
+3. Generate the API-shaped `https://www.google.com/maps/place//data=...!12e1` review target and validate that it encodes the same Place ID.
+4. Reject query-only URLs and URLs whose Place ID cannot produce a feature ID. No alternate geocoder is used because its identifiers cannot populate Google fields.
 
 ## Sources Not Fully Verified
 

@@ -2,9 +2,9 @@ import { describe, expect, it, vi } from "vite-plus/test"
 
 import {
   CloudflareQrPublicProjectionCache,
+  type KvStore,
   type QrPublicProjection,
 } from "@/orpc-server/resource/qr/public-cache"
-import type { KvStore } from "@/orpc-server/resource/qr/cache"
 
 const activeProjection: QrPublicProjection = {
   schemaVersion: 2,

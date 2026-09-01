@@ -1,33 +1,27 @@
 import { describe, expect, it } from "vite-plus/test"
 import { mock } from "vitest-mock-extended"
 
-import type { PlacesAdapter } from "@/orpc-server/resource/qr/places"
-import { createQrRecord, globalAdmin, owner } from "@/orpc-server/resource/qr/fixtures"
+import {
+  createQrRecord,
+  globalAdmin,
+  googleCanonicalReviewUrl,
+  googleMapsUrl,
+  googlePlaceId,
+  owner,
+} from "@/orpc-server/resource/qr/fixtures"
 import type { QrRepository } from "@/orpc-server/resource/qr/repository"
 import { QrService } from "@/orpc-server/resource/qr/service"
 
-const targetUrl =
-  "https://www.google.com/maps/search/?api=1&query=Example&query_place_id=ChIJ123456789"
-const placeDetails = {
-  placeId: "ChIJ123456789",
-  name: "Example location",
-  address: "1 Example Street",
-  canonicalReviewUrl: "https://search.google.com/local/writereview?placeid=ChIJ123456789",
-}
-
 function setup() {
   const repository = mock<QrRepository>()
-  const places = mock<PlacesAdapter>()
   const service = new QrService({
     repository,
-    places,
     ids: {
       generateId: () => "generated-id",
       generateSlug: () => "generated1a",
     },
   })
   repository.getOrganizationMemberRole.mockResolvedValue("owner")
-  places.getPlaceDetails.mockResolvedValue(placeDetails)
   return { repository, service }
 }
 
@@ -84,8 +78,8 @@ describe("QrService.createOrphan", () => {
     const result = await service.createOrphan({
       actor: globalAdmin,
       alias: "Configured sign",
-      googleMapsUrl: targetUrl,
-      googlePlaceId: "ChIJ123456789",
+      googleMapsUrl,
+      googlePlaceId,
     })
 
     expect(result).toMatchObject({
@@ -101,9 +95,9 @@ describe("QrService.createOrphan", () => {
     })
     expect(repository.create.mock.calls).toHaveLength(1)
     expect(repository.create.mock.calls[0]?.[0].target).toEqual({
-      rawGoogleMapsUrl: targetUrl,
-      googlePlaceId: "ChIJ123456789",
-      canonicalReviewUrl: placeDetails.canonicalReviewUrl,
+      rawGoogleMapsUrl: googleMapsUrl,
+      googlePlaceId,
+      canonicalReviewUrl: googleCanonicalReviewUrl,
     })
   })
 

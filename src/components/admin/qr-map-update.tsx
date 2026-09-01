@@ -218,7 +218,7 @@ export function QrMapUpdate() {
     const nextErrors: FormErrors = {}
     if (!googleMapsUrl.trim()) nextErrors.googleMapsUrl = "URL Google Maps wajib diisi"
     if (!selectedPlaceId) {
-      nextErrors.place = "Cari dan pilih tempat Google sebelum memperbarui kode QR ini"
+      nextErrors.place = "Deteksi tempat dari URL Google Maps sebelum memperbarui kode QR ini"
     }
     setErrors(nextErrors)
     setRequestError(null)
@@ -438,20 +438,20 @@ export function QrMapUpdate() {
                         disabled={isResolving}
                       >
                         {isResolving ? <Spinner /> : <Search />}
-                        {isResolving ? "Mencari tempat..." : "Cari tempat"}
+                        {isResolving ? "Mendeteksi tempat..." : "Deteksi tempat"}
                       </Button>
                     </div>
                     {errors.googleMapsUrl && <FieldError>{errors.googleMapsUrl}</FieldError>}
                     <FieldDescription>
-                      Google Places akan mencari ID Tempat untuk Anda. Jika ada beberapa hasil,
-                      pilih tempat yang benar di bawah.
+                      URL Google Maps harus mengidentifikasi tempat secara langsung. URL yang hanya
+                      berisi kueri pencarian tidak didukung.
                     </FieldDescription>
                     {resolveError && <FieldError>{resolveError}</FieldError>}
                   </Field>
 
                   {candidates.length > 0 && (
                     <fieldset className="flex flex-col gap-2 rounded-lg border p-3">
-                      <legend className="px-1 text-sm font-medium">Pilih tempat Google</legend>
+                      <legend className="px-1 text-sm font-medium">Tempat terdeteksi</legend>
                       {candidates.map((candidate) => (
                         <label
                           key={candidate.placeId}

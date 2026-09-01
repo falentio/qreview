@@ -5,13 +5,14 @@ import type { AppLogger } from "@/lib/logging"
 import type { QrRedirectedEvent } from "@/orpc-server/events"
 import { QrDomainError } from "@/orpc-server/resource/qr/errors"
 import { createQrPublicResponse } from "@/orpc-server/resource/qr/public"
-import type { PlacesAdapter } from "@/orpc-server/resource/qr/places"
-import { createQrRecord } from "@/orpc-server/resource/qr/fixtures"
+import {
+  createQrRecord,
+  googleCanonicalReviewUrl,
+  googleMapsUrl,
+  googlePlaceId,
+} from "@/orpc-server/resource/qr/fixtures"
 import type { QrRecord, QrRepository } from "@/orpc-server/resource/qr/repository"
 import { QrService } from "@/orpc-server/resource/qr/service"
-
-const reviewUrl =
-  "https://www.google.com/maps/place//data=!4m3!3m2!1s0x2e78872eb95f61c3:0x524dc00ed3a1a6ec!12e1?g_mp=CiVnb29nbGUubWFwcy5wbGFjZXMudjEuUGxhY2VzLkdldFBsYWNlEAIYBCAA"
 
 function setup(
   record: QrRecord | null,
@@ -19,11 +20,9 @@ function setup(
   logger?: Partial<Pick<AppLogger, "error" | "warn">>,
 ) {
   const repository = mock<QrRepository>()
-  const places = mock<PlacesAdapter>()
   repository.findBySlug.mockResolvedValue(record)
   const service = new QrService({
     repository,
-    places,
     clock: { now: () => new Date("2030-01-02T00:00:00.000Z") },
     ids: {
       generateId: () => "generated-id",
@@ -130,13 +129,18 @@ describe("createQrPublicResponse", () => {
 
   it("redirects a configured orphan QR code", async () => {
     const publicResponse = setup(
-      createQrRecord({ organizationId: null, canonicalReviewUrl: reviewUrl }),
+      createQrRecord({
+        organizationId: null,
+        rawGoogleMapsUrl: googleMapsUrl,
+        googlePlaceId,
+        canonicalReviewUrl: googleCanonicalReviewUrl,
+      }),
     )
 
     const response = await publicResponse({ slug: "abc123def4" })
 
     expect(response.status).toBe(307)
-    expect(response.headers.get("Location")).toBe(reviewUrl)
+    expect(response.headers.get("Location")).toBe(googleCanonicalReviewUrl)
     expect(response.headers.get("Cache-Control")).toBe("no-store")
   })
 

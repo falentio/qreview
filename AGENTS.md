@@ -8,6 +8,7 @@
 - Use Vite+ task names from `vite.config.ts` when a cacheable workflow is appropriate. Task definitions may invoke project binaries directly so Vite Task can track them. Do not cache development servers, deployments, or database migrations.
 - Run `vp` commands sequentially unless a task explicitly declares safe parallelism.
 - Use `vp env` and `vp node` for the Vite+-managed runtime. Use `vp exec` for a local binary and `vp dlx` for a temporary binary.
+- Keep the local development server running at all times during work. Start `vp run dev` in a herdr-managed pane and leave that process running.
 
 ## Validation
 

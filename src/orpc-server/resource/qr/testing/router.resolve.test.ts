@@ -4,9 +4,8 @@ import { mock } from "vitest-mock-extended"
 
 import type { AppLogger } from "@/lib/logging"
 import type { ApiContext } from "@/orpc-server/context"
-import { QrDomainError } from "@/orpc-server/resource/qr/errors"
+import { googleMapsUrl, googlePlaceId } from "@/orpc-server/resource/qr/fixtures"
 import { createQrRouter } from "@/orpc-server/resource/qr/router"
-import type { PlacesAdapter } from "@/orpc-server/resource/qr/places"
 import type { QrRepository } from "@/orpc-server/resource/qr/repository"
 import { QrService } from "@/orpc-server/resource/qr/service"
 import type { AuthSession, SessionRepository } from "@/orpc-server/resource/session/repository"
@@ -25,121 +24,45 @@ const currentSession = {
   },
 } as AuthSession
 
+function setup({ fetcher }: { fetcher?: typeof fetch } = {}) {
+  const repository = mock<QrRepository>()
+  repository.getOrganizationMemberRole.mockResolvedValue("owner")
+  const service = new QrService({
+    repository,
+    fetcher,
+    ids: {
+      generateId: () => "generated-id",
+      generateSlug: () => "generated1a",
+    },
+  })
+  const router = createQrRouter({ service })
+  const sessionRepository = mock<SessionRepository>()
+  sessionRepository.getCurrentSession.mockResolvedValue(currentSession)
+  const context = {
+    request: new Request("http://localhost/rpc"),
+    requestId: "test-request",
+    logger: { ...testLogger, error: vi.fn() } as AppLogger,
+    db: {} as ApiContext["db"],
+    auth: {} as ApiContext["auth"],
+    sessionService: new SessionService({ repository: sessionRepository }),
+  } satisfies ApiContext
+
+  return { context, repository, router }
+}
+
 describe("QrRouter.resolve", () => {
-  it("converts unexpected service failures to a generic ORPC error and logs them", async () => {
-    const repository = mock<QrRepository>()
-    repository.getOrganizationMemberRole.mockResolvedValue("owner")
-    const places = mock<PlacesAdapter>()
-    places.search.mockRejectedValue(new Error("database password leaked"))
-    const logger = {
-      error: vi.fn(),
-      warn: vi.fn(),
-    } as Pick<AppLogger, "error" | "warn">
-    const service = new QrService({
-      repository,
-      places,
-      ids: {
-        generateId: () => "generated-id",
-        generateSlug: () => "generated1a",
-      },
-    })
-    const router = createQrRouter({ service })
-    const sessionRepository = mock<SessionRepository>()
-    sessionRepository.getCurrentSession.mockResolvedValue(currentSession)
-    const context = {
-      request: new Request("http://localhost/rpc"),
-      requestId: "test-request",
-      logger: { ...logger, debug: vi.fn(), info: vi.fn() } as AppLogger,
-      db: {} as ApiContext["db"],
-      auth: {} as ApiContext["auth"],
-      sessionService: new SessionService({ repository: sessionRepository }),
-    } satisfies ApiContext
+  it("resolves a specific Maps URL without a Places provider", async () => {
+    const { context, router } = setup()
 
     await expect(
-      call(
-        router.resolve,
-        {
-          organizationId: "org-1",
-          googleMapsUrl: "https://www.google.com/maps/search/?query=Example",
-        },
-        { context },
-      ),
-    ).rejects.toMatchObject({
-      code: "INTERNAL_SERVER_ERROR",
-      message: "Terjadi kesalahan pada server.",
-    })
-    expect(logger.error).toHaveBeenCalledWith(
-      expect.any(Error),
-      expect.objectContaining({ event: "rpc.failure", requestId: "test-request" }),
-    )
-  })
-
-  it("maps Places outages to the service-unavailable ORPC error", async () => {
-    const repository = mock<QrRepository>()
-    repository.getOrganizationMemberRole.mockResolvedValue("owner")
-    const places = mock<PlacesAdapter>()
-    places.search.mockRejectedValue(
-      new QrDomainError("PLACES_UNAVAILABLE", "Google Places is unavailable."),
-    )
-    const service = new QrService({
-      repository,
-      places,
-      ids: {
-        generateId: () => "generated-id",
-        generateSlug: () => "generated1a",
-      },
-    })
-    const router = createQrRouter({ service })
-    const sessionRepository = mock<SessionRepository>()
-    sessionRepository.getCurrentSession.mockResolvedValue(currentSession)
-    const context = {
-      request: new Request("http://localhost/rpc"),
-      requestId: "test-request",
-      logger: testLogger,
-      db: {} as ApiContext["db"],
-      auth: {} as ApiContext["auth"],
-      sessionService: new SessionService({ repository: sessionRepository }),
-    } satisfies ApiContext
-
-    await expect(
-      call(
-        router.resolve,
-        {
-          organizationId: "org-1",
-          googleMapsUrl: "https://www.google.com/maps/search/?query=Example",
-        },
-        { context },
-      ),
-    ).rejects.toMatchObject({
-      code: "SERVICE_UNAVAILABLE",
-      data: { code: "PLACES_UNAVAILABLE" },
+      call(router.resolve, { organizationId: "org-1", googleMapsUrl }, { context }),
+    ).resolves.toEqual({
+      candidates: [{ placeId: googlePlaceId, name: "Example", address: null }],
     })
   })
 
-  it("maps an unresolved place to a bad-request ORPC error", async () => {
-    const repository = mock<QrRepository>()
-    repository.getOrganizationMemberRole.mockResolvedValue("owner")
-    const places = mock<PlacesAdapter>()
-    places.search.mockResolvedValue([])
-    const service = new QrService({
-      repository,
-      places,
-      ids: {
-        generateId: () => "generated-id",
-        generateSlug: () => "generated1a",
-      },
-    })
-    const router = createQrRouter({ service })
-    const sessionRepository = mock<SessionRepository>()
-    sessionRepository.getCurrentSession.mockResolvedValue(currentSession)
-    const context = {
-      request: new Request("http://localhost/rpc"),
-      requestId: "test-request",
-      logger: testLogger,
-      db: {} as ApiContext["db"],
-      auth: {} as ApiContext["auth"],
-      sessionService: new SessionService({ repository: sessionRepository }),
-    } satisfies ApiContext
+  it("maps an unresolved query URL to a bad-request ORPC error", async () => {
+    const { context, router } = setup()
 
     await expect(
       call(
@@ -153,6 +76,61 @@ describe("QrRouter.resolve", () => {
     ).rejects.toMatchObject({
       code: "BAD_REQUEST",
       data: { code: "PLACE_RESOLUTION_FAILED" },
+    })
+  })
+
+  it("maps short-link failures to a bad-request ORPC error", async () => {
+    const logger = { warn: vi.fn() } as Pick<AppLogger, "warn">
+    const fetcher = async () => {
+      throw new Error("network down")
+    }
+    const repository = mock<QrRepository>()
+    repository.getOrganizationMemberRole.mockResolvedValue("owner")
+    const service = new QrService({
+      repository,
+      fetcher,
+      logger,
+      ids: { generateId: () => "generated-id", generateSlug: () => "generated1a" },
+    })
+    const router = createQrRouter({ service })
+    const sessionRepository = mock<SessionRepository>()
+    sessionRepository.getCurrentSession.mockResolvedValue(currentSession)
+    const context = {
+      request: new Request("http://localhost/rpc"),
+      requestId: "test-request",
+      logger: { ...testLogger, warn: logger.warn },
+      db: {} as ApiContext["db"],
+      auth: {} as ApiContext["auth"],
+      sessionService: new SessionService({ repository: sessionRepository }),
+    } satisfies ApiContext
+
+    await expect(
+      call(
+        router.resolve,
+        {
+          organizationId: "org-1",
+          googleMapsUrl: "https://maps.app.goo.gl/example",
+        },
+        { context },
+      ),
+    ).rejects.toMatchObject({
+      code: "BAD_REQUEST",
+      data: { code: "PLACE_RESOLUTION_FAILED" },
+    })
+  })
+
+  it("still maps domain failures raised by the resolver", async () => {
+    const { context, router } = setup()
+
+    await expect(
+      call(
+        router.resolve,
+        { organizationId: "org-1", googleMapsUrl: "https://example.com/maps" },
+        { context },
+      ),
+    ).rejects.toMatchObject({
+      code: "BAD_REQUEST",
+      data: { code: "INVALID_GOOGLE_MAPS_URL" },
     })
   })
 })

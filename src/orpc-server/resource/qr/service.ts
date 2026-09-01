@@ -1,4 +1,3 @@
-import type { PlacesAdapter, PlaceCandidate } from "@/orpc-server/resource/qr/places"
 import type { AppLogger } from "@/lib/logging"
 import { DependencyUnavailableError } from "@/orpc-server/errors"
 import { QrDomainError } from "@/orpc-server/resource/qr/errors"
@@ -9,6 +8,7 @@ import {
   type QrPublicProjectionStore,
 } from "@/orpc-server/resource/qr/public-cache"
 import {
+  createGoogleCanonicalReviewUrl,
   isGoogleCanonicalReviewUrlForPlace,
   isGooglePlaceId,
   resolveGoogleMapsUrl,
@@ -45,6 +45,12 @@ export type QrResponse = {
   deletedAt: string | null
 }
 
+export type PlaceCandidate = {
+  placeId: string
+  name: string
+  address: string | null
+}
+
 export type QrResolveResponse = { candidates: PlaceCandidate[] }
 
 export type PublicQrResponse =
@@ -69,7 +75,6 @@ export class QrService {
         | "restoreById"
         | "setExpirationBySlug"
       >
-      places: PlacesAdapter
       publicProjection?: QrPublicProjectionStore
       fetcher?: typeof fetch
       clock?: { now(): Date }
@@ -103,32 +108,27 @@ export class QrService {
   }
 
   private async resolvePlaceCandidates(googleMapsUrl: string): Promise<QrResolveResponse> {
-    const parsed = await resolveGoogleMapsUrl(
-      googleMapsUrl,
-      this.dependencies.fetcher,
-      this.dependencies.logger,
-    )
-
-    if (parsed.placeId) {
-      const details = await this.dependencies.places.getPlaceDetails({ placeId: parsed.placeId })
-      return { candidates: [toCandidate(details)] }
-    }
-
-    if (!parsed.query) {
-      throw new QrDomainError(
-        "INVALID_GOOGLE_MAPS_URL",
-        "URL Google Maps tidak memiliki kueri tempat.",
-      )
-    }
-
-    const candidates = await this.dependencies.places.search({ query: parsed.query })
-    if (candidates.length === 0) {
+    const parsed = await this.resolveLocalGoogleMapsUrl(googleMapsUrl)
+    if (!parsed.placeId || !parsed.featureId) {
       throw new QrDomainError(
         "PLACE_RESOLUTION_FAILED",
-        "Google Places tidak menemukan lokasi yang cocok.",
+        "URL Google Maps harus mengidentifikasi tempat secara langsung.",
       )
     }
-    return { candidates: candidates.slice(0, 5).map(toCandidate) }
+
+    return {
+      candidates: [
+        {
+          placeId: parsed.placeId,
+          name: parsed.query ?? "Google Maps place",
+          address: null,
+        },
+      ],
+    }
+  }
+
+  private resolveLocalGoogleMapsUrl(googleMapsUrl: string) {
+    return resolveGoogleMapsUrl(googleMapsUrl, this.dependencies.fetcher, this.dependencies.logger)
   }
 
   async create({
@@ -617,11 +617,7 @@ export class QrService {
     if (!isGooglePlaceId(googlePlaceId)) {
       throw new QrDomainError("PLACE_RESOLUTION_FAILED", "ID Tempat Google tidak valid.")
     }
-    const parsed = await resolveGoogleMapsUrl(
-      googleMapsUrl,
-      this.dependencies.fetcher,
-      this.dependencies.logger,
-    )
+    const parsed = await this.resolveLocalGoogleMapsUrl(googleMapsUrl)
     if (parsed.placeId && parsed.placeId !== googlePlaceId) {
       throw new QrDomainError(
         "PLACE_RESOLUTION_FAILED",
@@ -629,33 +625,30 @@ export class QrService {
       )
     }
 
-    if (!parsed.placeId) {
-      if (!parsed.query) {
-        throw new QrDomainError(
-          "PLACE_RESOLUTION_FAILED",
-          "URL Google Maps tidak memiliki kueri tempat.",
-        )
-      }
-      const candidates = await this.dependencies.places.search({ query: parsed.query })
-      if (!candidates.some((candidate) => candidate.placeId === googlePlaceId)) {
-        throw new QrDomainError(
-          "PLACE_RESOLUTION_FAILED",
-          "Tempat yang dipilih tidak ditemukan untuk URL Google Maps tersebut.",
-        )
-      }
-    }
-
-    const details = await this.dependencies.places.getPlaceDetails({ placeId: googlePlaceId })
-    if (!isGoogleCanonicalReviewUrlForPlace(details.canonicalReviewUrl, googlePlaceId)) {
+    if (parsed.placeId !== googlePlaceId || !parsed.featureId) {
       throw new QrDomainError(
         "PLACE_RESOLUTION_FAILED",
-        "Google Places tidak mengembalikan URL ulasan kanonis untuk lokasi tersebut.",
+        "URL Google Maps tidak memiliki identitas tempat yang dapat digunakan.",
       )
     }
+    const canonicalReviewUrl = createGoogleCanonicalReviewUrl({
+      placeId: googlePlaceId,
+      featureId: parsed.featureId,
+    })
+    if (
+      !canonicalReviewUrl ||
+      !isGoogleCanonicalReviewUrlForPlace(canonicalReviewUrl, googlePlaceId)
+    ) {
+      throw new QrDomainError(
+        "PLACE_RESOLUTION_FAILED",
+        "ID tempat Google tidak dapat dikonversi menjadi URL ulasan kanonis.",
+      )
+    }
+
     return {
       rawGoogleMapsUrl: parsed.rawUrl,
       googlePlaceId,
-      canonicalReviewUrl: details.canonicalReviewUrl,
+      canonicalReviewUrl,
     }
   }
 
@@ -828,8 +821,4 @@ function parseExpiration(value: string | null | undefined): Date | null {
     )
   }
   return parsed
-}
-
-function toCandidate(place: PlaceCandidate): PlaceCandidate {
-  return { placeId: place.placeId, name: place.name, address: place.address }
 }

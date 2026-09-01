@@ -1,6 +1,5 @@
 import type { AppLogger } from "@/lib/logging"
 import type { WaitUntil } from "@/orpc-server/events"
-import type { KvStore } from "@/orpc-server/resource/qr/cache"
 import type { QrRecord } from "@/orpc-server/resource/qr/repository"
 import {
   isGoogleCanonicalReviewUrlForPlace,
@@ -35,6 +34,11 @@ export type QrPublicProjectionStore = {
   get({ slug }: { slug: string }): Promise<QrPublicProjection | null>
   set(projection: QrPublicProjection): void
   setAndWait?(projection: QrPublicProjection): Promise<void>
+}
+
+export type KvStore = {
+  get(key: string, type: "text"): Promise<string | null>
+  put(key: string, value: string, options?: { expirationTtl?: number }): Promise<void>
 }
 
 export type QrPublicProjectionSource = Pick<

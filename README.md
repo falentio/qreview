@@ -38,9 +38,9 @@ migration history from Wrangler or Drizzle is adopted automatically by Alchemy.
 
 See [docs/deployment.md](docs/deployment.md) for the production deployment runbook.
 
-For production, set `BETTER_AUTH_URL=https://qr.rindi.tech` and any required API
-keys in the ignored `.env` file. Alchemy generates `BETTER_AUTH_SECRET` once and
-persists it in the Alchemy state store, keeping it stable across redeploys.
+For production, set `BETTER_AUTH_URL=https://qr.rindi.tech` in the ignored `.env`
+file. Alchemy generates `BETTER_AUTH_SECRET` once and persists it in the Alchemy
+state store, keeping it stable across redeploys.
 Authenticate Alchemy with `vp exec alchemy login
 --profile prod --configure`, or use the existing `default` profile.
 

@@ -40,7 +40,7 @@ Confirmed on 2026-08-29. These decisions define the implementation scope.
 - [`src/db/schema.ts`](../../src/db/schema.ts) defines `qr_codes` with a unique slug and an index on `organization_id`.
 - `organization_id` is nullable because orphan QR codes can later be claimed. A foreign-key deletion sets it to null.
 - Organization authorization is enforced in [`service.ts`](../../src/orpc-server/resource/qr/service.ts) and [`implementer.ts`](../../src/orpc-server/implementer.ts), rather than by the public slug lookup.
-- [`alchemy.run.ts`](../../alchemy.run.ts) binds the `DB` D1 database and KV namespaces for Places data and public QR projections; there is no Analytics Engine or Queue binding.
+- [`alchemy.run.ts`](../../alchemy.run.ts) binds the `DB` D1 database and the public QR projection KV namespace; there is no Places data cache, Analytics Engine, or Queue binding.
 
 ### Application architecture
 

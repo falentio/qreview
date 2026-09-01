@@ -23,12 +23,11 @@ The lowercase spelling is therefore recognized by the current endpoint far enoug
 
 ## Implications For This Repo
 
-- `src/orpc-server/resource/qr/places.ts` requests `googleMapsLinks.writeAReviewUri`, validates the returned value, and preserves that URI as the stored review destination (`places.ts`, lines 97-125).
-- The adapter should treat the API’s returned `writeAReviewUri` as the review destination and preserve it exactly. It should not change `placeid` to `placeId`, construct a review URL from the Place ID, or assume that the undocumented `search.google.com` endpoint has a stable parameter spelling.
-- `src/orpc-server/resource/qr/service.ts` redirects to the stored `canonicalReviewUrl` unchanged (`service.ts`, lines 414-421). Storing the exact Places response therefore keeps the public redirect aligned with Google’s generated target.
-- `src/orpc-server/resource/qr/url.ts` currently accepts both `placeId` and `placeid` for the undocumented Search endpoint (`url.ts`, lines 169-175). That permissive validation is not evidence that both forms work; the live observation shows they do not behave equivalently.
-- Unit and live integration tests now assert that the API-provided `writeAReviewUri` is preserved, including its current Maps URL shape and optional `g_mp` parameter.
-- The Places links feature is currently labeled Preview in Google’s documentation, so the exact returned URI should remain the source of truth and be rechecked against the current API behavior before relying on URL shape assumptions.
+- The Places API adapter has been removed. `src/orpc-server/resource/qr/url.ts` now derives the Place ID from a Maps feature ID and constructs the API-shaped Maps review URL locally.
+- `src/orpc-server/resource/qr/service.ts` validates that the selected Place ID matches the URL and persists the locally generated canonical target.
+- `src/orpc-server/resource/qr/public-cache.ts` relation-checks Maps data URLs by decoding their feature ID instead of accepting any URL with the expected shape.
+- The implementation intentionally relies on undocumented Google URL and Place ID encoding behavior. The live conversion must be rechecked if Google changes its canonical Maps URLs.
+- Existing persisted API-generated review URLs remain accepted, including URLs with the optional `g_mp` parameter.
 
 ## Official Sources
 
