@@ -7,6 +7,7 @@ import { createQrRouter } from "@/orpc-server/resource/qr/router"
 import { generateQrId, generateQrSlug } from "@/orpc-server/resource/qr/random"
 import { DrizzleQrRepository } from "@/orpc-server/resource/qr/repository.drizzle"
 import type { QrRepository } from "@/orpc-server/resource/qr/repository"
+import type { GoogleMapsRedirectResolver } from "@/orpc-server/resource/qr/redirect-resolver"
 import { QrService } from "@/orpc-server/resource/qr/service"
 
 export function createQr({
@@ -15,6 +16,7 @@ export function createQr({
   onQrRedirected,
   publicProjection,
   repository: providedRepository,
+  googleMapsRedirectResolver,
   logger,
 }: {
   db: Database
@@ -22,12 +24,14 @@ export function createQr({
   onQrRedirected?: QrEventListener
   publicProjection?: QrPublicProjectionStore
   repository?: QrRepository
+  googleMapsRedirectResolver?: GoogleMapsRedirectResolver
   logger?: AppLogger
 }) {
   const repository: QrRepository = providedRepository ?? new DrizzleQrRepository({ db })
   const service = new QrService({
     repository,
     publicProjection,
+    googleMapsRedirectResolver,
     clock,
     ids: { generateId: generateQrId, generateSlug: generateQrSlug },
     logger,

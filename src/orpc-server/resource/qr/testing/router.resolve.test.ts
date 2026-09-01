@@ -5,6 +5,7 @@ import { mock } from "vitest-mock-extended"
 import type { AppLogger } from "@/lib/logging"
 import type { ApiContext } from "@/orpc-server/context"
 import { googleMapsUrl, googlePlaceId } from "@/orpc-server/resource/qr/fixtures"
+import type { GoogleMapsRedirectResolver } from "@/orpc-server/resource/qr/redirect-resolver"
 import { createQrRouter } from "@/orpc-server/resource/qr/router"
 import type { QrRepository } from "@/orpc-server/resource/qr/repository"
 import { QrService } from "@/orpc-server/resource/qr/service"
@@ -24,12 +25,14 @@ const currentSession = {
   },
 } as AuthSession
 
-function setup({ fetcher }: { fetcher?: typeof fetch } = {}) {
+function setup({
+  googleMapsRedirectResolver,
+}: { googleMapsRedirectResolver?: GoogleMapsRedirectResolver } = {}) {
   const repository = mock<QrRepository>()
   repository.getOrganizationMemberRole.mockResolvedValue("owner")
   const service = new QrService({
     repository,
-    fetcher,
+    googleMapsRedirectResolver,
     ids: {
       generateId: () => "generated-id",
       generateSlug: () => "generated1a",
@@ -80,29 +83,12 @@ describe("QrRouter.resolve", () => {
   })
 
   it("maps short-link failures to a bad-request ORPC error", async () => {
-    const logger = { warn: vi.fn() } as Pick<AppLogger, "warn">
-    const fetcher = async () => {
-      throw new Error("network down")
+    const resolver = {
+      resolve: async () => {
+        throw new Error("network down")
+      },
     }
-    const repository = mock<QrRepository>()
-    repository.getOrganizationMemberRole.mockResolvedValue("owner")
-    const service = new QrService({
-      repository,
-      fetcher,
-      logger,
-      ids: { generateId: () => "generated-id", generateSlug: () => "generated1a" },
-    })
-    const router = createQrRouter({ service })
-    const sessionRepository = mock<SessionRepository>()
-    sessionRepository.getCurrentSession.mockResolvedValue(currentSession)
-    const context = {
-      request: new Request("http://localhost/rpc"),
-      requestId: "test-request",
-      logger: { ...testLogger, warn: logger.warn },
-      db: {} as ApiContext["db"],
-      auth: {} as ApiContext["auth"],
-      sessionService: new SessionService({ repository: sessionRepository }),
-    } satisfies ApiContext
+    const { context, router } = setup({ googleMapsRedirectResolver: resolver })
 
     await expect(
       call(

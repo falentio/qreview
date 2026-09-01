@@ -2,14 +2,17 @@ import { describe, expect, it } from "vite-plus/test"
 import { mock } from "vitest-mock-extended"
 
 import { googleMapsUrl, googlePlaceId, owner } from "@/orpc-server/resource/qr/fixtures"
+import type { GoogleMapsRedirectResolver } from "@/orpc-server/resource/qr/redirect-resolver"
 import type { QrRepository } from "@/orpc-server/resource/qr/repository"
 import { QrService } from "@/orpc-server/resource/qr/service"
 
-function setup({ fetcher }: { fetcher?: typeof fetch } = {}) {
+function setup({
+  googleMapsRedirectResolver,
+}: { googleMapsRedirectResolver?: GoogleMapsRedirectResolver } = {}) {
   const repository = mock<QrRepository>()
   const service = new QrService({
     repository,
-    fetcher,
+    googleMapsRedirectResolver,
     ids: {
       generateId: () => "generated-id",
       generateSlug: () => "generated1a",
@@ -82,21 +85,17 @@ describe("QrService.resolve", () => {
     expect(repository.getOrganizationMemberRole.mock.calls).toHaveLength(0)
   })
 
-  it("resolves a Google Maps short URL locally after its redirect", async () => {
+  it("resolves a Google Maps short URL through the injected resolver", async () => {
     const shortUrl = "https://maps.app.goo.gl/uKP1FgLVcksve8vB8"
     const redirectedUrl =
       "https://www.google.com/maps/place/Hadar+Kopi+%26+Jamu/@-7.8840559,112.5184512,17z/data=!3m1!4b1!4m6!3m5!1s0x2e78872eb95f61c3:0x524dc00ed3a1a6ec!8m2!3d-7.8840559!4d112.5184512!16s%2Fg%2F11stf9xb64"
-    const fetcher = async (input: RequestInfo | URL, init?: RequestInit): Promise<Response> => {
-      expect(input).toBe(shortUrl)
-      expect(init).toEqual({ redirect: "manual" })
-      return {
-        ok: true,
-        url: redirectedUrl,
-        status: 200,
-        headers: new Headers(),
-      } as Response
+    const googleMapsRedirectResolver = {
+      resolve: async (value: string) => {
+        expect(value).toBe(shortUrl)
+        return redirectedUrl
+      },
     }
-    const { service } = setup({ fetcher })
+    const { service } = setup({ googleMapsRedirectResolver })
 
     await expect(
       service.resolvePlace({

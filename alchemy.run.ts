@@ -36,6 +36,7 @@ export const Website = Cloudflare.Website.Astro(
       env: {
         BETTER_AUTH_SECRET: betterAuthSecret.text,
         BETTER_AUTH_URL: Config.string("BETTER_AUTH_URL"),
+        RAPIDAPI_KEY: Config.redacted("RAPIDAPI_KEY"),
         DB: Database,
         QR_PUBLIC_PROJECTION: QrPublicProjection,
       },

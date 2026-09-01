@@ -1,5 +1,5 @@
 import { QrDomainError } from "./errors.ts"
-import type { AppLogger } from "@/lib/logging"
+import type { GoogleMapsRedirectResolver } from "./redirect-resolver.ts"
 
 const allowedHosts = new Set(["google.com", "www.google.com", "maps.google.com"])
 const shortUrlHost = "maps.app.goo.gl"
@@ -222,72 +222,37 @@ export function isGoogleMapsShortUrl(rawValue: string): boolean {
 
 export async function resolveGoogleMapsUrl(
   rawValue: string,
-  fetcher: typeof fetch = fetch,
-  logger?: Pick<AppLogger, "warn">,
+  resolver: GoogleMapsRedirectResolver | undefined,
 ): Promise<ParsedGoogleMapsUrl> {
   const { rawUrl, url } = parseRawGoogleMapsUrl(rawValue)
   if (!isGoogleMapsShortUrlValue(url)) return parseGoogleMapsUrl(rawUrl)
-
-  let currentUrl = rawUrl
-  for (let redirectCount = 0; redirectCount <= 5; redirectCount += 1) {
-    let response: Response
-    try {
-      response = await fetcher(currentUrl, { redirect: "manual" })
-    } catch (error) {
-      logger?.warn("Google Maps short URL request failed.", {
-        event: "google_maps.short_url_request_failed",
-        errorName: error instanceof Error ? error.name : typeof error,
-      })
-      throw new QrDomainError(
-        "PLACE_RESOLUTION_FAILED",
-        "URL singkat Google Maps tidak dapat diproses.",
-        {
-          cause: error,
-        },
-      )
-    }
-
-    const location = response.headers.get("location") || response.url || currentUrl
-    if (response.status >= 300 && response.status < 400) {
-      if (!location || location === currentUrl || redirectCount === 5) {
-        throwShortUrlResolutionError(logger, response)
-      }
-      currentUrl = validateRedirectDestination(currentUrl, location)
-      continue
-    }
-
-    if (!response.ok || !location) {
-      throwShortUrlResolutionError(logger, response)
-    }
-    const resolvedUrl = validateRedirectDestination(currentUrl, location)
-    if (resolvedUrl === rawUrl) throwShortUrlResolutionError(logger, response)
-    return { ...parseGoogleMapsUrl(resolvedUrl), rawUrl }
+  if (!resolver) {
+    throw new QrDomainError(
+      "PLACE_RESOLUTION_FAILED",
+      "URL singkat Google Maps tidak dapat diproses.",
+    )
   }
 
-  throw new QrDomainError(
-    "PLACE_RESOLUTION_FAILED",
-    "URL singkat Google Maps tidak dapat diproses.",
-  )
-}
-
-function validateRedirectDestination(currentUrl: string, location: string): string {
-  let destination: URL
+  let resolvedUrl: string
   try {
-    destination = new URL(location, currentUrl)
+    resolvedUrl = await resolver.resolve(rawUrl)
   } catch (error) {
     throw new QrDomainError(
       "PLACE_RESOLUTION_FAILED",
       "URL singkat Google Maps tidak dapat diproses.",
-      {
-        cause: error,
-      },
+      { cause: error },
     )
   }
 
-  if (isGoogleMapsShortUrlValue(destination)) return destination.href
+  if (resolvedUrl === rawUrl || isGoogleMapsShortUrl(resolvedUrl)) {
+    throw new QrDomainError(
+      "PLACE_RESOLUTION_FAILED",
+      "URL singkat Google Maps tidak dapat diproses.",
+    )
+  }
 
   try {
-    parseGoogleMapsUrl(destination.href)
+    return { ...parseGoogleMapsUrl(resolvedUrl), rawUrl }
   } catch (error) {
     throw new QrDomainError(
       "PLACE_RESOLUTION_FAILED",
@@ -295,24 +260,6 @@ function validateRedirectDestination(currentUrl: string, location: string): stri
       { cause: error },
     )
   }
-  return destination.href
-}
-
-function throwShortUrlResolutionError(
-  logger: Pick<AppLogger, "warn"> | undefined,
-  response: Response,
-): never {
-  logger?.warn("Google Maps short URL could not be processed.", {
-    event: "google_maps.short_url_resolution_failed",
-    httpStatus: response.status,
-    redirected: response.redirected,
-    responseUrlPresent: Boolean(response.url),
-    responseUrlMatchesInput: false,
-  })
-  throw new QrDomainError(
-    "PLACE_RESOLUTION_FAILED",
-    "URL singkat Google Maps tidak dapat diproses.",
-  )
 }
 
 export function parseGoogleMapsUrl(rawValue: string): ParsedGoogleMapsUrl {

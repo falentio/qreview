@@ -13,6 +13,7 @@ import {
   isGooglePlaceId,
   resolveGoogleMapsUrl,
 } from "@/orpc-server/resource/qr/url"
+import type { GoogleMapsRedirectResolver } from "@/orpc-server/resource/qr/redirect-resolver"
 import type {
   NewQrRecord,
   QrRecord,
@@ -76,7 +77,7 @@ export class QrService {
         | "setExpirationBySlug"
       >
       publicProjection?: QrPublicProjectionStore
-      fetcher?: typeof fetch
+      googleMapsRedirectResolver?: GoogleMapsRedirectResolver
       clock?: { now(): Date }
       ids: { generateId(): string; generateSlug(): string }
       logger?: Pick<AppLogger, "warn">
@@ -128,7 +129,7 @@ export class QrService {
   }
 
   private resolveLocalGoogleMapsUrl(googleMapsUrl: string) {
-    return resolveGoogleMapsUrl(googleMapsUrl, this.dependencies.fetcher, this.dependencies.logger)
+    return resolveGoogleMapsUrl(googleMapsUrl, this.dependencies.googleMapsRedirectResolver)
   }
 
   async create({

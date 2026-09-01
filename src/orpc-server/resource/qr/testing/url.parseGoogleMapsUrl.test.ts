@@ -1,4 +1,4 @@
-import { describe, expect, it, vi } from "vite-plus/test"
+import { describe, expect, it } from "vite-plus/test"
 
 import {
   createGoogleCanonicalReviewUrl,
@@ -171,65 +171,53 @@ describe("parseGoogleMapsUrl", () => {
 })
 
 describe("resolveGoogleMapsUrl", () => {
-  it("follows validated Google Maps redirects without following external locations", async () => {
+  it("parses direct Maps URLs without invoking the resolver", async () => {
+    const resolve = async () => {
+      throw new Error("resolver should not be called")
+    }
+
+    await expect(
+      resolveGoogleMapsUrl("  https://www.google.com/maps/search/?query=Example  ", { resolve }),
+    ).resolves.toEqual({
+      rawUrl: "https://www.google.com/maps/search/?query=Example",
+      placeId: null,
+      featureId: null,
+      query: "Example",
+    })
+  })
+
+  it("uses the resolver for short URLs and preserves the original URL", async () => {
     const shortUrl = "https://maps.app.goo.gl/z8eTy4rJq16zpAgP6"
     const redirectedUrl =
       "https://www.google.com/maps/place/Example/data=!4m2!3m1!1s0x2e7887b579f3d48f:0x6ec81fc2711b27a!12e1"
-    const requests: Array<{ input: RequestInfo | URL; init?: RequestInit }> = []
+    const resolve = async (value: string) => {
+      expect(value).toBe(shortUrl)
+      return redirectedUrl
+    }
 
-    await expect(
-      resolveGoogleMapsUrl(shortUrl, async (input, init) => {
-        requests.push({ input, init })
-        if (requests.length === 1) {
-          return new Response(null, { status: 302, headers: { Location: redirectedUrl } })
-        }
-        return new Response(null, { status: 200 })
-      }),
-    ).resolves.toMatchObject({
+    await expect(resolveGoogleMapsUrl(shortUrl, { resolve })).resolves.toEqual({
       rawUrl: shortUrl,
       placeId,
       featureId,
       query: "Example",
     })
-    expect(requests).toEqual([
-      { input: shortUrl, init: { redirect: "manual" } },
-      { input: redirectedUrl, init: { redirect: "manual" } },
-    ])
   })
 
-  it("rejects an external redirect before following it", async () => {
-    let requestCount = 0
+  it("wraps resolver failures as place resolution failures", async () => {
     await expect(
-      resolveGoogleMapsUrl("https://maps.app.goo.gl/z8eTy4rJq16zpAgP6", async () => {
-        requestCount += 1
-        return new Response(null, {
-          status: 302,
-          headers: { Location: "https://example.com/private" },
-        })
+      resolveGoogleMapsUrl("https://maps.app.goo.gl/z8eTy4rJq16zpAgP6", {
+        resolve: async () => {
+          throw new Error("provider unavailable")
+        },
       }),
     ).rejects.toMatchObject({ code: "PLACE_RESOLUTION_FAILED" })
-    expect(requestCount).toBe(1)
   })
 
-  it("logs short-link response diagnostics before returning a bad request", async () => {
-    const warn = vi.fn()
-    const shortUrl = "https://maps.app.goo.gl/z8eTy4rJq16zpAgP6"
-
+  it("rejects malformed final URLs from the resolver", async () => {
     await expect(
-      resolveGoogleMapsUrl(shortUrl, async () => new Response(null, { status: 400 }), { warn }),
-    ).rejects.toMatchObject({
-      code: "PLACE_RESOLUTION_FAILED",
-      httpCode: "BAD_REQUEST",
-    })
-
-    expect(warn).toHaveBeenCalledWith(
-      "Google Maps short URL could not be processed.",
-      expect.objectContaining({
-        event: "google_maps.short_url_resolution_failed",
-        httpStatus: 400,
-        responseUrlPresent: false,
-        responseUrlMatchesInput: false,
+      resolveGoogleMapsUrl("https://maps.app.goo.gl/z8eTy4rJq16zpAgP6", {
+        resolve: async () => "https://example.com/private",
       }),
-    )
+    ).rejects.toMatchObject({ code: "PLACE_RESOLUTION_FAILED" })
   })
 })

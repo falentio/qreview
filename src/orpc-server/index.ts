@@ -6,6 +6,7 @@ import { implementer } from "@/orpc-server/implementer"
 import { createAnalytics } from "@/orpc-server/resource/analytics"
 import { createHealth } from "@/orpc-server/resource/health"
 import { createQr } from "@/orpc-server/resource/qr"
+import { createRapidApiRedirectResolver } from "@/orpc-server/resource/qr/redirect-resolver"
 import { CloudflareQrPublicProjectionCache } from "@/orpc-server/resource/qr/public-cache"
 import { DrizzleQrRepository } from "@/orpc-server/resource/qr/repository.drizzle"
 import { createSession } from "@/orpc-server/resource/session"
@@ -24,6 +25,7 @@ const qrResource = createQr({
   }),
   onQrRedirected: analyticsResource.listener,
   repository: qrRepository,
+  googleMapsRedirectResolver: createRapidApiRedirectResolver({ apiKey: env.RAPIDAPI_KEY }),
   logger,
 })
 const sessionResource = createSession({ auth })
