@@ -1,3 +1,4 @@
+import { getAppLogger, type AppLogger } from "@/lib/logging"
 import { CloudflareKvJsonCache, type CacheKind } from "@/orpc-server/resource/qr/cache"
 import { QrDomainError } from "@/orpc-server/resource/qr/errors"
 import { isGoogleCanonicalReviewUrlForPlace, isGooglePlaceId } from "@/orpc-server/resource/qr/url"
@@ -9,7 +10,7 @@ import {
 } from "@/orpc-server/resource/qr/places"
 
 type JsonObject = Record<string, unknown>
-type CacheLogger = Pick<Console, "warn">
+type CacheLogger = Pick<AppLogger, "warn">
 
 export class CachedPlacesAdapter implements PlacesAdapter {
   private readonly places: PlacesAdapter
@@ -19,7 +20,7 @@ export class CachedPlacesAdapter implements PlacesAdapter {
   constructor({
     places,
     cache,
-    logger = console,
+    logger = getAppLogger(["qr", "cache"]),
   }: {
     places: PlacesAdapter
     cache: CloudflareKvJsonCache

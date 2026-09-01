@@ -3,7 +3,7 @@ import { useForm } from "@tanstack/react-form"
 import { navigate } from "astro:transitions/client"
 
 import { authClient } from "@/lib/auth-client"
-import { cn } from "@/lib/utils"
+import { cn, getErrorMessage } from "@/lib/utils"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent } from "@/components/ui/card"
 import { AuthArtwork } from "@/components/auth/auth-artwork"
@@ -112,7 +112,7 @@ export function AuthForm({ className, mode, ...props }: AuthFormProps) {
             })
 
         if (result.error) {
-          setError(result.error.message || "Autentikasi gagal")
+          setError(getErrorMessage(result.error, "Autentikasi gagal"))
           return
         }
 

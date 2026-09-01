@@ -1,4 +1,5 @@
 import type { Database } from "@/db/client"
+import type { AppLogger } from "@/lib/logging"
 import type { QrEventListener } from "@/orpc-server/events"
 import { createQrPublicResponse } from "@/orpc-server/resource/qr/public"
 import type { QrPublicProjectionStore } from "@/orpc-server/resource/qr/public-cache"
@@ -16,6 +17,7 @@ export function createQr({
   onQrRedirected,
   publicProjection,
   repository: providedRepository,
+  logger,
 }: {
   db: Database
   places: PlacesAdapter
@@ -23,6 +25,7 @@ export function createQr({
   onQrRedirected?: QrEventListener
   publicProjection?: QrPublicProjectionStore
   repository?: QrRepository
+  logger?: AppLogger
 }) {
   const repository: QrRepository = providedRepository ?? new DrizzleQrRepository({ db })
   const service = new QrService({
@@ -31,9 +34,10 @@ export function createQr({
     publicProjection,
     clock,
     ids: { generateId: generateQrId, generateSlug: generateQrSlug },
+    logger,
   })
   const router = createQrRouter({ service })
-  const publicResponse = createQrPublicResponse({ service, onQrRedirected })
+  const publicResponse = createQrPublicResponse({ service, onQrRedirected, logger })
 
   return { repository, service, router, publicResponse }
 }

@@ -181,6 +181,23 @@ describe("AnalyticsService.getQrHourly", () => {
     ).rejects.toMatchObject({ code: "INVALID_INPUT" })
     expect(repository.listHourly.mock.calls).toHaveLength(0)
   })
+
+  it("classifies organization membership lookup failures as unavailable", async () => {
+    const { qrRepository, service } = setup()
+    qrRepository.getOrganizationMemberRole.mockRejectedValue(new Error("database unavailable"))
+
+    await expect(
+      service.getOrganizationHourly({
+        actor: owner,
+        organizationId: "org-1",
+        from: "2030-01-01T10:00:00.000Z",
+        to: "2030-01-01T11:00:00.000Z",
+      }),
+    ).rejects.toMatchObject({
+      code: "ORGANIZATION_UNAVAILABLE",
+      message: "Layanan organisasi tidak tersedia untuk sementara.",
+    })
+  })
 })
 
 describe("AnalyticsService.getOrganizationHourly", () => {

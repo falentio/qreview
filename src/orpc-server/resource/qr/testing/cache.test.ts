@@ -114,4 +114,27 @@ describe("CloudflareKvJsonCache", () => {
       error: expect.any(Error),
     })
   })
+
+  it("swallows cache write scheduling failures", () => {
+    const warn = vi.fn()
+    const cache = new CloudflareKvJsonCache({
+      namespace: createNamespace().namespace,
+      waitUntil: () => {
+        throw new Error("execution context unavailable")
+      },
+      logger: { warn },
+    })
+
+    expect(() =>
+      cache.set({
+        key: "places:v1:search:abc",
+        kind: "search",
+        value: [{ placeId: "ChIJ123456789" }],
+      }),
+    ).not.toThrow()
+    expect(warn).toHaveBeenCalledWith("Places cache write scheduling failed.", {
+      kind: "search",
+      error: expect.any(Error),
+    })
+  })
 })

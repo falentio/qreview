@@ -3,7 +3,7 @@ import { useForm } from "@tanstack/react-form"
 import { navigate } from "astro:transitions/client"
 
 import { authClient } from "@/lib/auth-client"
-import { cn } from "@/lib/utils"
+import { cn, getErrorMessage } from "@/lib/utils"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent } from "@/components/ui/card"
 import { Field, FieldDescription, FieldError, FieldGroup, FieldLabel } from "@/components/ui/field"
@@ -62,7 +62,7 @@ export function OrganizationOnboardingForm({ className, ...props }: React.Compon
         })
 
         if (result.error) {
-          setError(result.error.message || "Bisnis Anda tidak dapat dibuat")
+          setError(getErrorMessage(result.error, "Bisnis Anda tidak dapat dibuat"))
           return
         }
 
@@ -74,7 +74,7 @@ export function OrganizationOnboardingForm({ className, ...props }: React.Compon
 
         const activeResult = await authClient.organization.setActive({ organizationId })
         if (activeResult.error) {
-          setError(activeResult.error.message || "Bisnis Anda tidak dapat diaktifkan")
+          setError(getErrorMessage(activeResult.error, "Bisnis Anda tidak dapat diaktifkan"))
           return
         }
 

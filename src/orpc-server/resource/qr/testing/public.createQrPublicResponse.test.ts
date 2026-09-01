@@ -1,6 +1,7 @@
 import { describe, expect, it, vi } from "vite-plus/test"
 import { mock } from "vitest-mock-extended"
 
+import type { AppLogger } from "@/lib/logging"
 import type { QrRedirectedEvent } from "@/orpc-server/events"
 import { QrDomainError } from "@/orpc-server/resource/qr/errors"
 import { createQrPublicResponse } from "@/orpc-server/resource/qr/public"
@@ -12,7 +13,11 @@ import { QrService } from "@/orpc-server/resource/qr/service"
 const reviewUrl =
   "https://www.google.com/maps/place//data=!4m3!3m2!1s0x2e78872eb95f61c3:0x524dc00ed3a1a6ec!12e1?g_mp=CiVnb29nbGUubWFwcy5wbGFjZXMudjEuUGxhY2VzLkdldFBsYWNlEAIYBCAA"
 
-function setup(record: QrRecord | null, onQrRedirected?: (event: QrRedirectedEvent) => void) {
+function setup(
+  record: QrRecord | null,
+  onQrRedirected?: (event: QrRedirectedEvent) => void,
+  logger?: Partial<Pick<AppLogger, "error" | "warn">>,
+) {
   const repository = mock<QrRepository>()
   const places = mock<PlacesAdapter>()
   repository.findBySlug.mockResolvedValue(record)
@@ -25,7 +30,7 @@ function setup(record: QrRecord | null, onQrRedirected?: (event: QrRedirectedEve
       generateSlug: () => "generated1a",
     },
   })
-  return createQrPublicResponse({ service, onQrRedirected })
+  return createQrPublicResponse({ service, onQrRedirected, logger })
 }
 
 describe("createQrPublicResponse", () => {
@@ -48,10 +53,14 @@ describe("createQrPublicResponse", () => {
 
   it("keeps the redirect successful when the event listener fails", async () => {
     const pending: Promise<unknown>[] = []
-    const error = vi.spyOn(console, "error").mockImplementation(() => {})
-    const publicResponse = setup(createQrRecord(), () => {
-      throw new Error("analytics unavailable")
-    })
+    const error = vi.fn()
+    const publicResponse = setup(
+      createQrRecord(),
+      () => {
+        throw new Error("analytics unavailable")
+      },
+      { error },
+    )
 
     const response = await publicResponse({
       slug: "abc123def4",
@@ -60,14 +69,16 @@ describe("createQrPublicResponse", () => {
     await Promise.all(pending)
 
     expect(response.status).toBe(307)
-    expect(error).toHaveBeenCalledWith("QR redirect analytics failed", expect.any(Error))
-    error.mockRestore()
+    expect(error).toHaveBeenCalledWith(
+      expect.any(Error),
+      expect.objectContaining({ event: "qr.redirect.analytics_failed", qrCodeId: "qr-1" }),
+    )
   })
 
   it("keeps the redirect successful when event scheduling fails", async () => {
-    const error = vi.spyOn(console, "error").mockImplementation(() => {})
+    const error = vi.fn()
     const events: QrRedirectedEvent[] = []
-    const publicResponse = setup(createQrRecord(), (event) => events.push(event))
+    const publicResponse = setup(createQrRecord(), (event) => events.push(event), { error })
 
     const response = await publicResponse({
       slug: "abc123def4",
@@ -79,8 +90,13 @@ describe("createQrPublicResponse", () => {
     await new Promise<void>((resolve) => queueMicrotask(resolve))
     expect(response.status).toBe(307)
     expect(events).toHaveLength(1)
-    expect(error).toHaveBeenCalledWith("QR redirect analytics scheduling failed", expect.any(Error))
-    error.mockRestore()
+    expect(error).toHaveBeenCalledWith(
+      expect.any(Error),
+      expect.objectContaining({
+        event: "qr.redirect.analytics_scheduling_failed",
+        qrCodeId: "qr-1",
+      }),
+    )
   })
 
   it("does not emit redirect events for setup responses", async () => {
@@ -215,15 +231,22 @@ describe("createQrPublicResponse", () => {
   })
 
   it("returns a temporary unavailable response when public resolution cannot use either store", async () => {
+    const warn = vi.fn()
     const service = {
       resolvePublic: vi.fn(async () => {
         throw new QrDomainError("PUBLIC_UNAVAILABLE", "QR redirects are temporarily unavailable.")
       }),
     }
 
-    const response = await createQrPublicResponse({ service })({ slug: "abc123def4" })
+    const response = await createQrPublicResponse({ service, logger: { warn } })({
+      slug: "abc123def4",
+    })
 
     expect(response.status).toBe(503)
     expect(response.headers.get("Cache-Control")).toBe("no-store")
+    expect(warn).toHaveBeenCalledWith(
+      expect.any(Error),
+      expect.objectContaining({ event: "qr.public.unavailable" }),
+    )
   })
 })

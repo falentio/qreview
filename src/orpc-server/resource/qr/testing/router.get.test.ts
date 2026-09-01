@@ -9,6 +9,7 @@ import type { QrRepository } from "@/orpc-server/resource/qr/repository"
 import { QrService } from "@/orpc-server/resource/qr/service"
 import type { AuthSession, SessionRepository } from "@/orpc-server/resource/session/repository"
 import { SessionService } from "@/orpc-server/resource/session/service"
+import { testLogger } from "@/orpc-server/testing/logger"
 
 const currentSession = {
   user: {
@@ -48,6 +49,8 @@ describe("QrRouter.get", () => {
     sessionRepository.getCurrentSession.mockResolvedValue(currentSession)
     const context = {
       request: new Request("http://localhost/rpc"),
+      requestId: "test-request",
+      logger: testLogger,
       db: {} as ApiContext["db"],
       auth: createOrganizationAuth(),
       sessionService: new SessionService({ repository: sessionRepository }),

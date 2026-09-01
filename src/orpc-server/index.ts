@@ -1,4 +1,5 @@
 import { auth, db } from "@/lib/auth"
+import { getAppLogger } from "@/lib/logging"
 import { env, waitUntil } from "cloudflare:workers"
 import { createApiContext as createContext } from "@/orpc-server/context"
 import { implementer } from "@/orpc-server/implementer"
@@ -13,20 +14,29 @@ import { DrizzleQrRepository } from "@/orpc-server/resource/qr/repository.drizzl
 import { createSession } from "@/orpc-server/resource/session"
 
 const qrRepository = new DrizzleQrRepository({ db })
+const logger = getAppLogger(["qr"])
+const cacheLogger = getAppLogger(["qr", "cache"])
 const analyticsResource = createAnalytics({ db, qrRepository })
 const healthResource = createHealth({ db })
 const qrResource = createQr({
   db,
   places: new CachedPlacesAdapter({
     places: new GooglePlacesAdapter({ apiKey: env.GOOGLE_MAPS_API_KEY }),
-    cache: new CloudflareKvJsonCache({ namespace: env.PLACES_CACHE, waitUntil }),
+    cache: new CloudflareKvJsonCache({
+      namespace: env.PLACES_CACHE,
+      waitUntil,
+      logger: cacheLogger,
+    }),
+    logger: cacheLogger,
   }),
   publicProjection: new CloudflareQrPublicProjectionCache({
     namespace: env.QR_PUBLIC_PROJECTION,
     waitUntil,
+    logger: cacheLogger,
   }),
   onQrRedirected: analyticsResource.listener,
   repository: qrRepository,
+  logger,
 })
 const sessionResource = createSession({ auth })
 
@@ -43,6 +53,21 @@ export const qrService = qrResource.service
 export const qrPublicResponse = qrResource.publicResponse
 export const analyticsService = analyticsResource.service
 
-export function createApiContext({ request }: { request: Request }) {
-  return createContext({ auth, request, db, sessionService: sessionResource.service })
+export function createApiContext({
+  request,
+  requestId,
+  logger,
+}: {
+  request: Request
+  requestId: string
+  logger: Parameters<typeof createContext>[0]["logger"]
+}) {
+  return createContext({
+    auth,
+    request,
+    requestId,
+    logger,
+    db,
+    sessionService: sessionResource.service,
+  })
 }

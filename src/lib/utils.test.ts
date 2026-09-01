@@ -1,6 +1,11 @@
 import { describe, expect, it } from "vite-plus/test"
 
-import { createUncompressedTar, dateInputToExpiry, expiryToDateInput } from "@/lib/utils"
+import {
+  createUncompressedTar,
+  dateInputToExpiry,
+  expiryToDateInput,
+  getErrorMessage,
+} from "@/lib/utils"
 
 const decoder = new TextDecoder()
 
@@ -48,5 +53,26 @@ describe("QR expiry date helpers", () => {
   it("treats an empty date as never expiring", () => {
     expect(dateInputToExpiry("")).toBeNull()
     expect(expiryToDateInput(null)).toBe("")
+  })
+})
+
+describe("getErrorMessage", () => {
+  it("returns messages from known client-safe errors", () => {
+    const error = Object.assign(new Error("Akses ditolak."), { code: "FORBIDDEN" })
+
+    expect(getErrorMessage(error, "Coba lagi.")).toBe("Akses ditolak.")
+  })
+
+  it("supports structured client errors returned by Better Auth", () => {
+    expect(
+      getErrorMessage(
+        { code: "INVALID_EMAIL_OR_PASSWORD", message: "Email atau kata sandi salah." },
+        "Coba lagi.",
+      ),
+    ).toBe("Email atau kata sandi salah.")
+  })
+
+  it("hides messages from unknown errors", () => {
+    expect(getErrorMessage(new Error("database password leaked"), "Coba lagi.")).toBe("Coba lagi.")
   })
 })

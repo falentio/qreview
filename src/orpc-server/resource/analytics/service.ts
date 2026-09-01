@@ -1,4 +1,5 @@
 import type { QrRedirectedEvent } from "@/orpc-server/events"
+import { DependencyUnavailableError } from "@/orpc-server/errors"
 import { AnalyticsDomainError } from "@/orpc-server/resource/analytics/errors"
 import type { QrAnalyticsRepository } from "@/orpc-server/resource/analytics/repository"
 import type { QrRepository } from "@/orpc-server/resource/qr/repository"
@@ -146,10 +147,7 @@ export class AnalyticsService {
     const isGlobalAdmin = actor.role === "admin"
     if (!isGlobalAdmin) {
       if (!organizationId) throw this.forbidden()
-      const role = await this.dependencies.qrRepository.getOrganizationMemberRole({
-        organizationId,
-        userId: actor.id,
-      })
+      const role = await this.getOrganizationMemberRole({ organizationId, userId: actor.id })
       if (!role || !isOrganizationAdmin(role)) throw this.forbidden()
     }
 
@@ -167,11 +165,29 @@ export class AnalyticsService {
     organizationId: string
   }): Promise<void> {
     if (actor.role === "admin") return
-    const role = await this.dependencies.qrRepository.getOrganizationMemberRole({
-      organizationId,
-      userId: actor.id,
-    })
+    const role = await this.getOrganizationMemberRole({ organizationId, userId: actor.id })
     if (!role || !isOrganizationAdmin(role)) throw this.forbidden()
+  }
+
+  private async getOrganizationMemberRole({
+    organizationId,
+    userId,
+  }: {
+    organizationId: string
+    userId: string
+  }): Promise<string | null> {
+    try {
+      return await this.dependencies.qrRepository.getOrganizationMemberRole({
+        organizationId,
+        userId,
+      })
+    } catch (error) {
+      throw new DependencyUnavailableError(
+        "ORGANIZATION_UNAVAILABLE",
+        "Layanan organisasi tidak tersedia untuk sementara.",
+        { cause: error },
+      )
+    }
   }
 
   private parseRange({ from, to }: { from: string; to: string }) {

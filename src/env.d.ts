@@ -20,6 +20,8 @@ declare global {
   namespace App {
     interface Locals {
       runtime: { env: WebsiteEnv }
+      requestId: string
+      logger: import("./lib/logging").AppLogger
       user: import("better-auth").User | null
       session: import("better-auth").Session | null
     }

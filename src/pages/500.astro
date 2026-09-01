@@ -1,0 +1,23 @@
+---
+export const prerender = false
+
+Astro.response.status = 500
+const requestId = Astro.locals.requestId
+if (requestId) Astro.response.headers.set("X-Request-ID", requestId)
+---
+
+<!doctype html>
+<html lang="id">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width" />
+    <title>Terjadi kesalahan</title>
+  </head>
+  <body>
+    <main>
+      <h1>Terjadi kesalahan pada server.</h1>
+      <p>Silakan coba lagi nanti.</p>
+      {requestId && <p>Referensi: {requestId}</p>}
+    </main>
+  </body>
+</html>

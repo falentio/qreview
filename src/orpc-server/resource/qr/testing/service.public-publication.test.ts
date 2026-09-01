@@ -1,6 +1,7 @@
 import { afterEach, describe, expect, it, vi } from "vite-plus/test"
 import { mock } from "vitest-mock-extended"
 
+import type { AppLogger } from "@/lib/logging"
 import type { PlacesAdapter } from "@/orpc-server/resource/qr/places"
 import { createQrRecord, globalAdmin, owner } from "@/orpc-server/resource/qr/fixtures"
 import type { QrPublicProjectionStore } from "@/orpc-server/resource/qr/public-cache"
@@ -11,6 +12,7 @@ function setup() {
   const repository = mock<QrRepository>()
   const places = mock<PlacesAdapter>()
   const publicProjection = mock<QrPublicProjectionStore>()
+  const logger = { warn: vi.fn() } as Pick<AppLogger, "warn">
   const service = new QrService({
     repository,
     places,
@@ -20,9 +22,10 @@ function setup() {
       generateId: () => "generated-id",
       generateSlug: () => "generated1a",
     },
+    logger,
   })
   repository.getOrganizationMemberRole.mockResolvedValue("owner")
-  return { publicProjection, repository, service }
+  return { logger, publicProjection, repository, service }
 }
 
 afterEach(() => {
@@ -148,15 +151,13 @@ describe("QrService public projection publication", () => {
   })
 
   it("does not fail a successful mutation when projection publication throws", async () => {
-    const { publicProjection, repository, service } = setup()
+    const { logger, publicProjection, repository, service } = setup()
     const updated = createQrRecord({ alias: "Updated QR" })
     repository.findById.mockResolvedValue(createQrRecord())
     repository.updateById.mockResolvedValue(updated)
     publicProjection.set.mockImplementation(() => {
       throw new Error("KV unavailable")
     })
-    const warning = vi.spyOn(console, "warn").mockImplementation(() => {})
-
     await expect(
       service.update({
         actor: owner,
@@ -165,9 +166,9 @@ describe("QrService public projection publication", () => {
         alias: updated.alias,
       }),
     ).resolves.toMatchObject({ alias: updated.alias })
-    expect(warning).toHaveBeenCalledWith(
-      "QR public projection publication failed.",
-      expect.anything(),
-    )
+    expect(logger.warn).toHaveBeenCalledWith("QR public projection publication failed.", {
+      slug: updated.slug,
+      error: expect.any(Error),
+    })
   })
 })

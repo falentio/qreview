@@ -6,6 +6,7 @@ import type { ApiContext } from "@/orpc-server/context"
 import { createSessionRouter } from "@/orpc-server/resource/session/router"
 import type { AuthSession, SessionRepository } from "@/orpc-server/resource/session/repository"
 import { SessionService } from "@/orpc-server/resource/session/service"
+import { testLogger } from "@/orpc-server/testing/logger"
 
 const currentSession = {
   user: {
@@ -25,6 +26,8 @@ function createContext(session: AuthSession | null): ApiContext {
   return {
     auth: {} as ApiContext["auth"],
     request: new Request("http://localhost/rpc"),
+    requestId: "test-request",
+    logger: testLogger,
     db: {} as ApiContext["db"],
     sessionService: new SessionService({ repository }),
   }

@@ -1,3 +1,4 @@
+import type { AppLogger } from "@/lib/logging"
 import type { WaitUntil } from "@/orpc-server/events"
 import type { KvStore } from "@/orpc-server/resource/qr/cache"
 import type { QrRecord } from "@/orpc-server/resource/qr/repository"
@@ -48,7 +49,7 @@ export type QrPublicProjectionSource = Pick<
   | "deletedAt"
 >
 
-type ProjectionLogger = Pick<Console, "warn">
+type ProjectionLogger = Pick<AppLogger, "warn">
 
 export class CloudflareQrPublicProjectionCache implements QrPublicProjectionStore {
   private readonly dependencies: {
@@ -95,12 +96,7 @@ export class CloudflareQrPublicProjectionCache implements QrPublicProjectionStor
   }
 
   async setAndWait(projection: QrPublicProjection): Promise<void> {
-    try {
-      await this.write(projection)
-    } catch (error) {
-      this.logWriteFailure(projection.slug, error)
-      throw error
-    }
+    await this.write(projection)
   }
 
   private async write(projection: QrPublicProjection): Promise<void> {

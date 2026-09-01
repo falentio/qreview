@@ -5,6 +5,7 @@ import { mock } from "vitest-mock-extended"
 import type { ApiContext } from "@/orpc-server/context"
 import type { Database } from "@/db/client"
 import { createHealth } from "@/orpc-server/resource/health"
+import { testLogger } from "@/orpc-server/testing/logger"
 
 describe("createHealth", () => {
   it("composes the three resource layers around the injected database", async () => {
@@ -15,6 +16,8 @@ describe("createHealth", () => {
     const context = {
       auth: {} as ApiContext["auth"],
       request: new Request("http://localhost/rpc"),
+      requestId: "test-request",
+      logger: testLogger,
       db,
       sessionService: mock<ApiContext["sessionService"]>(),
     } satisfies ApiContext

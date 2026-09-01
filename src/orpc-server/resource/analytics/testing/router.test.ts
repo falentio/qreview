@@ -3,6 +3,7 @@ import { describe, expect, it } from "vite-plus/test"
 import { mock } from "vitest-mock-extended"
 
 import type { ApiContext } from "@/orpc-server/context"
+import { testLogger } from "@/orpc-server/testing/logger"
 import { createAnalyticsRouter } from "@/orpc-server/resource/analytics/router"
 import type { AnalyticsService } from "@/orpc-server/resource/analytics/service"
 import type { AuthSession, SessionRepository } from "@/orpc-server/resource/session/repository"
@@ -25,6 +26,8 @@ function createContext({ role = "user", authenticated = true } = {}): ApiContext
   )
   return {
     request: new Request("http://localhost/rpc"),
+    requestId: "test-request",
+    logger: testLogger,
     db: {} as ApiContext["db"],
     auth: {} as ApiContext["auth"],
     sessionService: new SessionService({ repository: sessionRepository }),

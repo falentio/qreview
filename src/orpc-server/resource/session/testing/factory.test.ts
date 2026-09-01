@@ -5,6 +5,7 @@ import { mock } from "vitest-mock-extended"
 import type { ApiContext } from "@/orpc-server/context"
 import { createSession } from "@/orpc-server/resource/session"
 import type { AuthSession, SessionAuth } from "@/orpc-server/resource/session/repository"
+import { testLogger } from "@/orpc-server/testing/logger"
 
 const currentSession = {
   user: {
@@ -30,6 +31,8 @@ describe("createSession", () => {
     const context = {
       auth: {} as ApiContext["auth"],
       request,
+      requestId: "test-request",
+      logger: testLogger,
       db: {} as ApiContext["db"],
       sessionService: session.service,
     } satisfies ApiContext

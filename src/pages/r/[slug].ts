@@ -6,7 +6,7 @@ import { createQrNotFoundResponse } from "@/orpc-server/resource/qr/public"
 
 export const prerender = false
 
-export const GET: APIRoute = ({ params }) => {
+export const GET: APIRoute = ({ params, locals }) => {
   if (!params.slug) return createQrNotFoundResponse()
-  return qrPublicResponse({ slug: params.slug, waitUntil })
+  return qrPublicResponse({ slug: params.slug, waitUntil, logger: locals.logger })
 }

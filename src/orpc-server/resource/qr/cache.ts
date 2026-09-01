@@ -1,3 +1,5 @@
+import { getAppLogger, type AppLogger } from "@/lib/logging"
+
 export const PLACES_CACHE_TTL_SECONDS = 30 * 24 * 60 * 60
 
 export type CacheKind = "search" | "details"
@@ -7,7 +9,7 @@ export type KvStore = {
   get(key: string, type: "text"): Promise<string | null>
   put(key: string, value: string, options?: { expirationTtl?: number }): Promise<void>
 }
-type CacheLogger = Pick<Console, "warn">
+type CacheLogger = Pick<AppLogger, "warn">
 
 export class CloudflareKvJsonCache {
   private readonly namespace: KvStore
@@ -19,7 +21,7 @@ export class CloudflareKvJsonCache {
     namespace,
     waitUntil,
     expirationTtl = PLACES_CACHE_TTL_SECONDS,
-    logger = console,
+    logger = getAppLogger(["qr", "cache"]),
   }: {
     namespace: KvStore
     waitUntil: WaitUntil
@@ -43,7 +45,11 @@ export class CloudflareKvJsonCache {
   }
 
   set<T>({ key, kind, value }: { key: string; kind: CacheKind; value: T }): void {
-    this.waitUntil(this.write({ key, kind, value }))
+    try {
+      this.waitUntil(this.write({ key, kind, value }))
+    } catch (error) {
+      this.logger.warn("Places cache write scheduling failed.", { kind, error })
+    }
   }
 
   private async write<T>({

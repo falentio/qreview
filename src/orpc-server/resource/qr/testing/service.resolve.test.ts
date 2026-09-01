@@ -60,6 +60,22 @@ describe("QrService.resolve", () => {
     expect(places.search.mock.calls).toEqual([[{ query: "Example" }]])
   })
 
+  it("classifies organization membership lookup failures as unavailable", async () => {
+    const { repository, service } = setup()
+    repository.getOrganizationMemberRole.mockRejectedValue(new Error("database unavailable"))
+
+    await expect(
+      service.resolve({
+        actor: owner,
+        organizationId: "org-1",
+        googleMapsUrl: "https://www.google.com/maps/search/?query=Example",
+      }),
+    ).rejects.toMatchObject({
+      code: "ORGANIZATION_UNAVAILABLE",
+      message: "Layanan organisasi tidak tersedia untuk sementara.",
+    })
+  })
+
   it("confirms a place ID directly without searching", async () => {
     const { places, repository, service } = setup()
     places.getPlaceDetails.mockResolvedValue({

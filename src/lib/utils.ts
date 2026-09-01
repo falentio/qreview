@@ -6,7 +6,58 @@ export function cn(...inputs: ClassValue[]) {
 }
 
 export function getErrorMessage(error: unknown, fallback: string) {
-  return error instanceof Error && error.message ? error.message : fallback
+  const message = getErrorText(error)
+  const code = getErrorCode(error)
+  return message && code && safeErrorCodes.has(code) ? message : fallback
+}
+
+const safeErrorCodes = new Set([
+  "BAD_REQUEST",
+  "UNAUTHORIZED",
+  "FORBIDDEN",
+  "NOT_FOUND",
+  "CONFLICT",
+  "SERVICE_UNAVAILABLE",
+  "VALIDATION_ERROR",
+  "INVALID_EMAIL",
+  "INVALID_EMAIL_OR_PASSWORD",
+  "INVALID_PASSWORD",
+  "PASSWORD_TOO_SHORT",
+  "PASSWORD_TOO_LONG",
+  "EMAIL_NOT_VERIFIED",
+  "USER_ALREADY_EXISTS",
+  "USER_ALREADY_EXISTS_USE_ANOTHER_EMAIL",
+  "ACCOUNT_NOT_FOUND",
+  "CREDENTIAL_ACCOUNT_NOT_FOUND",
+  "SESSION_EXPIRED",
+  "USER_NOT_FOUND",
+  "MISSING_FIELD",
+])
+
+function getErrorText(error: unknown): string | null {
+  if (error instanceof Error) return error.message || null
+  if (typeof error !== "object" || error === null) return null
+
+  return "message" in error && typeof error.message === "string" && error.message
+    ? error.message
+    : null
+}
+
+function getErrorCode(error: unknown): string | null {
+  if (typeof error !== "object" || error === null) return null
+
+  if ("code" in error && typeof error.code === "string") return error.code
+  if (
+    "data" in error &&
+    typeof error.data === "object" &&
+    error.data !== null &&
+    "code" in error.data &&
+    typeof error.data.code === "string"
+  ) {
+    return error.data.code
+  }
+
+  return null
 }
 
 export function dateInputToExpiry(value: string): string | null {

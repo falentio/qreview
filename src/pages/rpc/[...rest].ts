@@ -7,10 +7,14 @@ const handler = new RPCHandler(router)
 
 export const prerender = false
 
-export const ALL: APIRoute = async ({ request }) => {
+export const ALL: APIRoute = async ({ request, locals }) => {
   const result = await handler.handle(request, {
     prefix: "/rpc",
-    context: await createApiContext({ request }),
+    context: createApiContext({
+      request,
+      requestId: locals.requestId,
+      logger: locals.logger,
+    }),
   })
 
   return result.response ?? new Response("Not found", { status: 404 })

@@ -10,6 +10,7 @@ import type { PlacesAdapter } from "@/orpc-server/resource/qr/places"
 import type { QrRepository } from "@/orpc-server/resource/qr/repository"
 import { createQrRouter } from "@/orpc-server/resource/qr/router"
 import { QrService } from "@/orpc-server/resource/qr/service"
+import { testLogger } from "@/orpc-server/testing/logger"
 
 const targetUrl =
   "https://www.google.com/maps/search/?api=1&query=Example&query_place_id=ChIJ123456789"
@@ -20,10 +21,13 @@ const placeDetails = {
   canonicalReviewUrl: "https://search.google.com/local/writereview?placeid=ChIJ123456789",
 }
 
-function createOrganizationAuth(role: string): ApiContext["auth"] {
+function createOrganizationAuth(role: string, error?: unknown): ApiContext["auth"] {
   return {
     api: {
-      getActiveMemberRole: async () => ({ role }),
+      getActiveMemberRole: async () => {
+        if (error) throw error
+        return { role }
+      },
     },
   } as unknown as ApiContext["auth"]
 }
@@ -31,7 +35,8 @@ function createOrganizationAuth(role: string): ApiContext["auth"] {
 function setup({
   role = "user",
   organizationRole = "owner",
-}: { role?: string; organizationRole?: string } = {}) {
+  organizationError,
+}: { role?: string; organizationRole?: string; organizationError?: unknown } = {}) {
   const repository = mock<QrRepository>()
   const places = mock<PlacesAdapter>()
   repository.getOrganizationMemberRole.mockResolvedValue("owner")
@@ -55,8 +60,10 @@ function setup({
   } as AuthSession)
   const context = {
     request: new Request("http://localhost/rpc"),
+    requestId: "test-request",
+    logger: testLogger,
     db: {} as ApiContext["db"],
-    auth: createOrganizationAuth(organizationRole),
+    auth: createOrganizationAuth(organizationRole, organizationError),
     sessionService: new SessionService({ repository: sessionRepository }),
   } satisfies ApiContext
 
@@ -348,6 +355,16 @@ describe("QrRouter behavior", () => {
     expect(repository.listForOrganization.mock.calls).toHaveLength(0)
   })
 
+  it("reports organization membership outages as unavailable", async () => {
+    const { context, router } = setup({ organizationError: new Error("auth database unavailable") })
+
+    await expect(call(router.list, { organizationId: "org-1" }, { context })).rejects.toMatchObject(
+      {
+        code: "SERVICE_UNAVAILABLE",
+      },
+    )
+  })
+
   it("claims an orphan through the conditional claim route", async () => {
     const { context, repository, router } = setup()
     repository.findBySlug.mockResolvedValue(createQrRecord({ organizationId: null }))
@@ -402,6 +419,8 @@ describe("QrRouter behavior", () => {
     sessionRepository.getCurrentSession.mockResolvedValue(null)
     const context = {
       request: new Request("http://localhost/rpc"),
+      requestId: "test-request",
+      logger: testLogger,
       db: {} as ApiContext["db"],
       auth: createOrganizationAuth("owner"),
       sessionService: new SessionService({ repository: sessionRepository }),

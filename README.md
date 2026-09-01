@@ -86,3 +86,15 @@ build as part of `alchemy deploy`.
 - Better Auth: `/api/auth/*`
 - oRPC: `/rpc/*`
 - Protected app: `/app/*`
+
+## Error Handling and Logging
+
+Server logs use LogTape with hierarchical categories rooted at `qr`. Cloudflare
+Observability receives the redacted console sink. Each request gets an
+`X-Request-ID` response header; a safe incoming value is preserved and all
+other values are replaced with a generated ID.
+
+Expected domain failures keep their HTTP status and stable error code. Unknown
+server failures are logged with the request ID and return a generic message.
+Request bodies, cookies, authorization headers, API keys, and raw external
+provider input are not logged.

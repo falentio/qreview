@@ -1,21 +1,29 @@
 import { QrDomainError } from "@/orpc-server/resource/qr/errors"
 import type { QrEventListener, WaitUntil } from "@/orpc-server/events"
+import type { AppLogger } from "@/lib/logging"
 import type { QrService } from "@/orpc-server/resource/qr/service"
+
+type PublicLogger = Partial<Pick<AppLogger, "error" | "warn">>
 
 export function createQrPublicResponse({
   service,
   onQrRedirected,
+  logger: defaultLogger,
 }: {
   service: Pick<QrService, "resolvePublic">
   onQrRedirected?: QrEventListener
+  logger?: PublicLogger
 }) {
   return async function qrPublicResponse({
     slug,
     waitUntil,
+    logger,
   }: {
     slug: string
     waitUntil?: WaitUntil
+    logger?: PublicLogger
   }): Promise<Response> {
+    const requestLogger = logger ?? defaultLogger
     try {
       const result = await service.resolvePublic({ slug })
       if (result.kind === "expired") {
@@ -46,13 +54,19 @@ export function createQrPublicResponse({
             }),
           )
           .catch((error: unknown) => {
-            console.error("QR redirect analytics failed", error)
+            requestLogger?.error?.(error instanceof Error ? error : new Error(String(error)), {
+              event: "qr.redirect.analytics_failed",
+              qrCodeId: result.qrCodeId,
+            })
           })
         if (waitUntil) {
           try {
             waitUntil(eventDelivery)
           } catch (error) {
-            console.error("QR redirect analytics scheduling failed", error)
+            requestLogger?.error?.(error instanceof Error ? error : new Error(String(error)), {
+              event: "qr.redirect.analytics_scheduling_failed",
+              qrCodeId: result.qrCodeId,
+            })
             void eventDelivery
           }
         } else {
@@ -66,6 +80,7 @@ export function createQrPublicResponse({
         return createQrNotFoundResponse()
       }
       if (error instanceof QrDomainError && error.code === "PUBLIC_UNAVAILABLE") {
+        requestLogger?.warn?.(error, { event: "qr.public.unavailable" })
         return createQrUnavailableResponse()
       }
       throw error

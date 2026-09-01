@@ -1,4 +1,6 @@
 import type { PlacesAdapter, PlaceCandidate } from "@/orpc-server/resource/qr/places"
+import type { AppLogger } from "@/lib/logging"
+import { DependencyUnavailableError } from "@/orpc-server/errors"
 import { QrDomainError } from "@/orpc-server/resource/qr/errors"
 import {
   createQrPublicProjection,
@@ -72,6 +74,7 @@ export class QrService {
       fetcher?: typeof fetch
       clock?: { now(): Date }
       ids: { generateId(): string; generateSlug(): string }
+      logger?: Pick<AppLogger, "warn">
     },
   ) {}
 
@@ -516,7 +519,7 @@ export class QrService {
     try {
       cached = (await this.dependencies.publicProjection?.get({ slug })) ?? null
     } catch (error) {
-      console.warn("QR public projection read failed.", { slug, error })
+      this.dependencies.logger?.warn("QR public projection read failed.", { slug, error })
     }
     if (cached) return this.resolvePublicProjection(cached)
 
@@ -655,10 +658,20 @@ export class QrService {
     actor: QrActor
     organizationId: string
   }) {
-    const role = await this.dependencies.repository.getOrganizationMemberRole({
-      organizationId,
-      userId: actor.id,
-    })
+    let role: string | null
+    try {
+      role = await this.dependencies.repository.getOrganizationMemberRole({
+        organizationId,
+        userId: actor.id,
+      })
+    } catch (error) {
+      throw new DependencyUnavailableError(
+        "ORGANIZATION_UNAVAILABLE",
+        "Layanan organisasi tidak tersedia untuk sementara.",
+        { cause: error },
+      )
+    }
+
     if (!role) throw new QrDomainError("FORBIDDEN", "Anda bukan anggota organisasi ini.")
     return role
   }
@@ -707,7 +720,7 @@ export class QrService {
     try {
       this.dependencies.publicProjection?.set(projection)
     } catch (error) {
-      console.warn("QR public projection publication failed.", {
+      this.dependencies.logger?.warn("QR public projection publication failed.", {
         slug: projection.slug,
         error,
       })
@@ -732,7 +745,7 @@ export class QrService {
     try {
       await publicProjection.setAndWait(projection)
     } catch (error) {
-      console.warn("QR public projection restoration failed.", {
+      this.dependencies.logger?.warn("QR public projection restoration failed.", {
         slug: projection.slug,
         error,
       })
