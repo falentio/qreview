@@ -20,8 +20,10 @@ pnpm version and its runtime uses the pinned Node.js version declared in
    vp run dev > /tmp/qr-dev.log 2>&1 &
    ```
 
-   The local server uses `http://localhost:1337`, matching `BETTER_AUTH_URL` in
-   `.dev.vars`.
+   The local server uses `http://qr.falentio:1337`, matching `BETTER_AUTH_URL` in
+   `.dev.vars`. Astro binds all interfaces and allows `*.falentio` hostnames so
+   the configured wildcard can resolve to this machine's local IP here and its
+   Tailscale IP from other machines.
 
 5. Generate the Better Auth schema with `vp run auth:generate`.
 6. Generate Drizzle migrations with `vp run db:generate`.

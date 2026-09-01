@@ -25,6 +25,7 @@
 - Use subagents to do work with playwright to save our token context window, subagents must output all reusable informations for consequtive playwright subagents, so no redundant explorations.
 - If you feel the approaches are not clean/SOLID, you MUST propose alternative approaches using ask tool, let human decide.
 - Alchemy's `dev` command does not support `--background`. Keep the dev server running with `vp run dev`, or use shell backgrounding such as `vp run dev > /tmp/qr-dev.log 2>&1 &` when a background process is required.
+- The local Alchemy/Astro dev server must bind all interfaces and allow `*.falentio` hosts. This machine's wildcard DNS resolves to its local IP; other machines resolve it to this machine's Tailscale IP. Keep that DNS configuration outside this repository.
 - We does not has component testing (neither as unit test nor e2e), so smoke test when you did change page/component using playwright
 
 ## Third-Party Libraries
