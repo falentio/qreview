@@ -35,7 +35,7 @@ type DownloadState =
   | null
 
 const initialValues: FormValues = {
-  alias: "QR code",
+  alias: "Kode QR",
   googleMapsUrl: "",
   count: "1",
   expiresOn: "",
@@ -46,22 +46,22 @@ function validate(values: FormValues, selectedPlaceId: string): FormErrors {
 
   const alias = values.alias.trim()
   if (!alias) {
-    errors.alias = "Alias is required"
+    errors.alias = "Alias wajib diisi"
   } else if (alias.length > 120) {
-    errors.alias = "Alias must be at most 120 characters"
+    errors.alias = "Alias maksimal 120 karakter"
   }
 
   if (values.googleMapsUrl.trim() && !selectedPlaceId) {
-    errors.place = "Find and select a Google place before creating QR codes"
+    errors.place = "Cari dan pilih tempat Google sebelum membuat kode QR"
   }
 
   const count = Number(values.count)
   if (!Number.isInteger(count) || count < 1 || count > 100) {
-    errors.count = "Batch size must be a whole number between 1 and 100"
+    errors.count = "Ukuran batch harus berupa bilangan bulat antara 1 dan 100"
   }
 
   if (values.expiresOn && !dateInputToExpiry(values.expiresOn)) {
-    errors.expiresOn = "Enter a valid expiry date"
+    errors.expiresOn = "Masukkan tanggal kedaluwarsa yang valid"
   }
 
   return errors
@@ -109,7 +109,7 @@ export function QrBatchCreateForm() {
       if (result.candidates.length === 1) setSelectedPlaceId(result.candidates[0]!.placeId)
     } catch (error) {
       setResolveError(
-        getErrorMessage(error, "Could not find that place. Check the URL and try again."),
+        getErrorMessage(error, "Tempat tersebut tidak dapat ditemukan. Periksa URL dan coba lagi."),
       )
     } finally {
       setIsResolving(false)
@@ -138,7 +138,7 @@ export function QrBatchCreateForm() {
       })
       setCreatedItems(result.items)
     } catch (error) {
-      setRequestError(getErrorMessage(error, "Could not create the QR codes. Please try again."))
+      setRequestError(getErrorMessage(error, "Kode QR tidak dapat dibuat. Silakan coba lagi."))
     } finally {
       setIsSubmitting(false)
     }
@@ -165,7 +165,7 @@ export function QrBatchCreateForm() {
       link.click()
       link.remove()
     } catch (error) {
-      setDownloadError(getErrorMessage(error, "Could not generate the QR code. Please try again."))
+      setDownloadError(getErrorMessage(error, "Kode QR tidak dapat dibuat. Silakan coba lagi."))
     } finally {
       setDownloadState(null)
     }
@@ -199,7 +199,7 @@ export function QrBatchCreateForm() {
       downloadBlob(new Blob([png], { type: "image/png" }), `google-review-card-${slug}.png`)
     } catch (error) {
       setDownloadError(
-        getErrorMessage(error, "Could not generate the review card template. Please try again."),
+        getErrorMessage(error, "Template kartu ulasan tidak dapat dibuat. Silakan coba lagi."),
       )
     } finally {
       setDownloadState(null)
@@ -222,7 +222,7 @@ export function QrBatchCreateForm() {
       downloadBlob(new Blob([archive], { type: "application/x-tar" }), "google-review-cards.tar")
     } catch (error) {
       setDownloadError(
-        getErrorMessage(error, "Could not generate the review card templates. Please try again."),
+        getErrorMessage(error, "Template kartu ulasan tidak dapat dibuat. Silakan coba lagi."),
       )
     } finally {
       setDownloadState(null)
@@ -233,10 +233,10 @@ export function QrBatchCreateForm() {
     <div className="flex flex-col gap-6">
       <Card>
         <CardHeader>
-          <CardTitle>Batch details</CardTitle>
+          <CardTitle>Detail batch</CardTitle>
           <CardDescription>
-            Create up to 100 unclaimed QR records. An organization can claim them later. Image
-            generation happens after the server returns the records.
+            Buat hingga 100 data kode QR yang belum diklaim. Organisasi dapat mengklaimnya nanti.
+            Gambar dibuat setelah server mengembalikan data.
           </CardDescription>
         </CardHeader>
         <CardContent>
@@ -249,14 +249,14 @@ export function QrBatchCreateForm() {
                   name="alias"
                   value={values.alias}
                   onChange={(event) => updateValue("alias", event.target.value)}
-                  placeholder="Table tent"
+                  placeholder="Nama tampilan"
                   aria-invalid={Boolean(errors.alias)}
                 />
                 {errors.alias && <FieldError>{errors.alias}</FieldError>}
               </Field>
 
               <Field data-invalid={Boolean(errors.googleMapsUrl)}>
-                <FieldLabel htmlFor="googleMapsUrl">Google Maps URL (optional)</FieldLabel>
+                <FieldLabel htmlFor="googleMapsUrl">URL Google Maps (opsional)</FieldLabel>
                 <div className="flex flex-col gap-2 sm:flex-row">
                   <Input
                     id="googleMapsUrl"
@@ -274,21 +274,21 @@ export function QrBatchCreateForm() {
                     disabled={isResolving || !values.googleMapsUrl.trim()}
                   >
                     {isResolving ? <Spinner /> : <Search />}
-                    {isResolving ? "Finding place..." : "Find place"}
+                    {isResolving ? "Mencari tempat..." : "Cari tempat"}
                   </Button>
                 </div>
                 {errors.googleMapsUrl && <FieldError>{errors.googleMapsUrl}</FieldError>}
                 <FieldDescription>
-                  Optionally paste a Google Maps URL. Google Places will find the Place ID for you;
-                  if there are multiple matches, choose the correct place below. Leave it blank to
-                  create an unconfigured QR code.
+                  Tempel URL Google Maps bila perlu. Google Places akan mencari ID Tempat untuk
+                  Anda; jika ada beberapa hasil, pilih tempat yang benar di bawah. Biarkan kosong
+                  untuk membuat kode QR yang belum dikonfigurasi.
                 </FieldDescription>
                 {resolveError && <FieldError>{resolveError}</FieldError>}
               </Field>
 
               {candidates.length > 0 && (
                 <fieldset className="flex flex-col gap-2 rounded-lg border p-3">
-                  <legend className="px-1 text-sm font-medium">Select a Google place</legend>
+                  <legend className="px-1 text-sm font-medium">Pilih tempat Google</legend>
                   {candidates.map((candidate) => (
                     <label
                       key={candidate.placeId}
@@ -331,7 +331,7 @@ export function QrBatchCreateForm() {
               )}
 
               <Field data-invalid={Boolean(errors.count)} className="sm:max-w-40 sm:self-end">
-                <FieldLabel htmlFor="count">Batch size</FieldLabel>
+                <FieldLabel htmlFor="count">Ukuran batch</FieldLabel>
                 <Input
                   id="count"
                   name="count"
@@ -347,7 +347,7 @@ export function QrBatchCreateForm() {
               </Field>
 
               <Field data-invalid={Boolean(errors.expiresOn)} className="sm:max-w-56">
-                <FieldLabel htmlFor="expiresOn">Expiry date</FieldLabel>
+                <FieldLabel htmlFor="expiresOn">Tanggal kedaluwarsa</FieldLabel>
                 <Input
                   id="expiresOn"
                   name="expiresOn"
@@ -360,8 +360,8 @@ export function QrBatchCreateForm() {
                   <FieldError>{errors.expiresOn}</FieldError>
                 ) : (
                   <FieldDescription>
-                    Leave blank for a QR code that never expires. Expiry begins at the start of the
-                    next UTC day.
+                    Kosongkan untuk kode QR yang tidak pernah kedaluwarsa. Masa berlaku dimulai pada
+                    awal hari UTC berikutnya.
                   </FieldDescription>
                 )}
               </Field>
@@ -375,7 +375,7 @@ export function QrBatchCreateForm() {
               <div className="flex justify-end">
                 <Button type="submit" disabled={isSubmitting || downloadState !== null}>
                   {isSubmitting ? <Spinner /> : <QrCode />}
-                  {isSubmitting ? "Creating QR codes..." : "Create QR codes"}
+                  {isSubmitting ? "Membuat kode QR..." : "Buat kode QR"}
                 </Button>
               </div>
             </FieldGroup>
@@ -387,7 +387,7 @@ export function QrBatchCreateForm() {
         <Card>
           <CardHeader>
             <div className="flex flex-wrap items-start justify-between gap-3">
-              <CardTitle>QR records created</CardTitle>
+              <CardTitle>Data kode QR dibuat</CardTitle>
               <Button
                 type="button"
                 variant="outline"
@@ -397,14 +397,13 @@ export function QrBatchCreateForm() {
               >
                 {downloadState?.kind === "templates" ? <Spinner /> : <FileArchive />}
                 {downloadState?.kind === "templates"
-                  ? `Generating ${downloadState.completed}/${createdItems.length}...`
-                  : "Download all as templates"}
+                  ? `Membuat ${downloadState.completed}/${createdItems.length}...`
+                  : "Unduh semua sebagai template"}
               </Button>
             </div>
             <CardDescription>
-              {createdItems.length} unclaimed QR{" "}
-              {createdItems.length === 1 ? "record is" : "records are"} ready for client-side image
-              generation.
+              {createdItems.length} data kode QR yang belum diklaim siap dibuat gambarnya di
+              browser.
             </CardDescription>
           </CardHeader>
           <CardContent>
@@ -415,7 +414,7 @@ export function QrBatchCreateForm() {
                   className="flex flex-col gap-3 p-4 sm:flex-row sm:items-center sm:justify-between"
                 >
                   <div className="min-w-0">
-                    <p className="text-sm font-medium">QR code {index + 1}</p>
+                    <p className="text-sm font-medium">Kode QR {index + 1}</p>
                     <p className="truncate text-sm text-muted-foreground">{item.alias}</p>
                   </div>
                   <div className="flex flex-wrap items-center gap-2">
@@ -433,8 +432,8 @@ export function QrBatchCreateForm() {
                         <Download />
                       )}
                       {downloadState?.kind === "png" && downloadState.slug === item.slug
-                        ? "Generating..."
-                        : "Download PNG"}
+                        ? "Membuat..."
+                        : "Unduh PNG"}
                     </Button>
                     <Button
                       type="button"
@@ -449,8 +448,8 @@ export function QrBatchCreateForm() {
                         <Download />
                       )}
                       {downloadState?.kind === "template" && downloadState.slug === item.slug
-                        ? "Generating..."
-                        : "Download template"}
+                        ? "Membuat..."
+                        : "Unduh template"}
                     </Button>
                     <a
                       href={`/r/${item.slug}`}
@@ -458,7 +457,7 @@ export function QrBatchCreateForm() {
                       rel="noreferrer"
                       className="inline-flex items-center gap-1 text-sm font-medium text-primary hover:underline"
                     >
-                      Open redirect
+                      Buka pengalihan
                       <ExternalLink className="size-3.5" />
                     </a>
                   </div>
@@ -471,7 +470,7 @@ export function QrBatchCreateForm() {
               </p>
             )}
             <p className="mt-4 text-sm text-muted-foreground">
-              QR and template image generation happens entirely in your browser.
+              Pembuatan gambar QR dan template sepenuhnya dilakukan di browser Anda.
             </p>
           </CardContent>
         </Card>

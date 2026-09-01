@@ -41,7 +41,7 @@ function isActivePath(pathname: string, url: string) {
 export function AppSidebar({ pathname, user, ...props }: AppSidebarProps) {
   const navMain: NavItem[] = [
     {
-      title: "Overview",
+      title: "Ringkasan",
       url: "/app",
       icon: Command,
       isActive: isActivePath(pathname, "/app"),
@@ -51,21 +51,21 @@ export function AppSidebar({ pathname, user, ...props }: AppSidebarProps) {
 
   const qrNavigation: NavItem[] = [
     {
-      title: "All QR codes",
+      title: "Semua kode QR",
       url: "/app/qr-codes",
       icon: List,
       isActive: pathname === "/app/qr-codes",
       prefetch: true,
     },
     {
-      title: "Adopt a QR code",
+      title: "Klaim kode QR",
       url: "/app/qr-codes/adopt",
       icon: UserPlus,
       isActive: pathname === "/app/qr-codes/adopt",
       prefetch: true,
     },
     {
-      title: "Archived",
+      title: "Diarsipkan",
       url: "/app/qr-codes/archived",
       icon: Archive,
       isActive: pathname === "/app/qr-codes/archived",
@@ -83,7 +83,7 @@ export function AppSidebar({ pathname, user, ...props }: AppSidebarProps) {
       </SidebarHeader>
       <SidebarContent>
         <NavMain items={navMain} pathname={pathname} />
-        <NavMain items={qrNavigation} pathname={pathname} label="QR codes" />
+        <NavMain items={qrNavigation} pathname={pathname} label="Kode QR" />
         {navSecondary.length ? <NavSecondary items={navSecondary} className="mt-auto" /> : null}
       </SidebarContent>
       <SidebarFooter>

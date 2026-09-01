@@ -5,13 +5,13 @@ import AppLayout from "@/layouts/app-layout.astro"
 import { QrAdoptionForm } from "@/components/app/qr-adoption-form"
 ---
 
-<AppLayout title="Adopt a QR code" description="Assign an unclaimed QR code to your business.">
+<AppLayout title="Klaim kode QR" description="Tetapkan kode QR yang belum diklaim ke bisnis Anda.">
   <div class="flex flex-1 flex-col gap-6 p-4 pt-0 md:p-6 md:pt-0">
     <div class="flex flex-col gap-2 pt-2">
-      <p class="text-sm font-medium text-muted-foreground">QR codes</p>
-      <h1 class="text-3xl font-semibold tracking-tight">Adopt a QR code</h1>
+      <p class="text-sm font-medium text-muted-foreground">Kode QR</p>
+      <h1 class="text-3xl font-semibold tracking-tight">Klaim kode QR</h1>
       <p class="max-w-2xl text-muted-foreground">
-        Scan or upload a QR code from your business kit to assign it to the active business workspace.
+        Pindai atau unggah kode QR dari kit bisnis Anda untuk menetapkannya ke ruang kerja bisnis aktif.
       </p>
     </div>
     <QrAdoptionForm client:only="react" />

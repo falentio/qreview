@@ -32,7 +32,7 @@ export function NavProjects({
 
   return (
     <SidebarGroup className="group-data-[collapsible=icon]:hidden">
-      <SidebarGroupLabel>Collections</SidebarGroupLabel>
+      <SidebarGroupLabel>Koleksi</SidebarGroupLabel>
       <SidebarMenu>
         {projects.map((item) => (
           <SidebarMenuItem key={item.name}>
@@ -42,10 +42,12 @@ export function NavProjects({
             </SidebarMenuButton>
             <DropdownMenu>
               <DropdownMenuTrigger
-                render={<SidebarMenuAction showOnHover aria-label={`Actions for ${item.name}`} />}
+                render={
+                  <SidebarMenuAction showOnHover aria-label={`Tindakan untuk ${item.name}`} />
+                }
               >
                 <MoreHorizontal />
-                <span className="sr-only">More actions for {item.name}</span>
+                <span className="sr-only">Tindakan lainnya untuk {item.name}</span>
               </DropdownMenuTrigger>
               <DropdownMenuContent
                 className="w-48"
@@ -54,16 +56,16 @@ export function NavProjects({
               >
                 <DropdownMenuItem>
                   <Folder className="text-muted-foreground" />
-                  <span>View collection</span>
+                  <span>Lihat koleksi</span>
                 </DropdownMenuItem>
                 <DropdownMenuItem>
                   <Share className="text-muted-foreground" />
-                  <span>Share collection</span>
+                  <span>Bagikan koleksi</span>
                 </DropdownMenuItem>
                 <DropdownMenuSeparator />
                 <DropdownMenuItem>
                   <Trash2 className="text-muted-foreground" />
-                  <span>Delete collection</span>
+                  <span>Hapus koleksi</span>
                 </DropdownMenuItem>
               </DropdownMenuContent>
             </DropdownMenu>
@@ -72,7 +74,7 @@ export function NavProjects({
         <SidebarMenuItem>
           <SidebarMenuButton render={<a href="/app/qr-codes" data-astro-prefetch="viewport" />}>
             <MoreHorizontal />
-            <span>View all</span>
+            <span>Lihat semua</span>
           </SidebarMenuButton>
         </SidebarMenuItem>
       </SidebarMenu>

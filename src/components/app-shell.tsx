@@ -34,7 +34,7 @@ export function AppShell({ children, pathname, title, user }: AppShellProps) {
               <BreadcrumbList>
                 <BreadcrumbItem className="hidden md:block">
                   <BreadcrumbLink href="/app" data-astro-prefetch="viewport">
-                    QR workspace
+                    Ruang kerja QR
                   </BreadcrumbLink>
                 </BreadcrumbItem>
                 <BreadcrumbSeparator className="hidden md:block" />

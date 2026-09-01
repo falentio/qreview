@@ -101,7 +101,7 @@ export function QrMapUpdate() {
     const nextSlug = getSlugFromQrValue(value)
     if (!nextSlug) {
       setScanError(
-        "That QR code is not a valid QR code from this app. Scan a code with a /r/{slug} link.",
+        "Kode QR tersebut bukan kode QR yang valid dari aplikasi ini. Pindai kode dengan tautan /r/{slug}.",
       )
       return
     }
@@ -130,7 +130,10 @@ export function QrMapUpdate() {
     } catch (error) {
       if (requestId !== verifyRequestRef.current) return
       setScanError(
-        getErrorMessage(error, "This QR code was not found. Scan an active QR code from this app."),
+        getErrorMessage(
+          error,
+          "Kode QR ini tidak ditemukan. Pindai kode QR aktif dari aplikasi ini.",
+        ),
       )
     } finally {
       if (requestId === verifyRequestRef.current) {
@@ -144,7 +147,7 @@ export function QrMapUpdate() {
     event.preventDefault()
     const nextSlug = getSlugFromQrValue(manualSlug)
     if (!nextSlug) {
-      setScanError("Enter a valid 10-character slug or the QR code URL, such as /r/abc123def4.")
+      setScanError("Masukkan slug 10 karakter yang valid atau URL kode QR, seperti /r/abc123def4.")
       return
     }
     void handleScan(nextSlug)
@@ -162,7 +165,7 @@ export function QrMapUpdate() {
       const result = await QrScanner.scanImage(file, { returnDetailedScanResult: true })
       await handleScan(result.data)
     } catch (error) {
-      setScanError(getErrorMessage(error, "Could not read a QR code from that image."))
+      setScanError(getErrorMessage(error, "Kode QR tidak dapat dibaca dari gambar tersebut."))
     } finally {
       setIsUploading(false)
     }
@@ -182,7 +185,7 @@ export function QrMapUpdate() {
   async function resolvePlace() {
     const trimmedUrl = googleMapsUrl.trim()
     if (!trimmedUrl) {
-      setErrors((current) => ({ ...current, googleMapsUrl: "Google Maps URL is required" }))
+      setErrors((current) => ({ ...current, googleMapsUrl: "URL Google Maps wajib diisi" }))
       return
     }
 
@@ -203,7 +206,7 @@ export function QrMapUpdate() {
     } catch (error) {
       if (requestId !== resolveRequestRef.current) return
       setResolveError(
-        getErrorMessage(error, "Could not find that place. Check the URL and try again."),
+        getErrorMessage(error, "Tempat tersebut tidak dapat ditemukan. Periksa URL dan coba lagi."),
       )
     } finally {
       if (requestId === resolveRequestRef.current) setIsResolving(false)
@@ -213,9 +216,9 @@ export function QrMapUpdate() {
   async function submitUpdate(event: FormEvent<HTMLFormElement>) {
     event.preventDefault()
     const nextErrors: FormErrors = {}
-    if (!googleMapsUrl.trim()) nextErrors.googleMapsUrl = "Google Maps URL is required"
+    if (!googleMapsUrl.trim()) nextErrors.googleMapsUrl = "URL Google Maps wajib diisi"
     if (!selectedPlaceId) {
-      nextErrors.place = "Find and select a Google place before updating this QR code"
+      nextErrors.place = "Cari dan pilih tempat Google sebelum memperbarui kode QR ini"
     }
     setErrors(nextErrors)
     setRequestError(null)
@@ -237,7 +240,9 @@ export function QrMapUpdate() {
       setStep("success")
     } catch (error) {
       if (requestId !== updateRequestRef.current) return
-      setRequestError(getErrorMessage(error, "Could not update this QR code. Please try again."))
+      setRequestError(
+        getErrorMessage(error, "Kode QR ini tidak dapat diperbarui. Silakan coba lagi."),
+      )
     } finally {
       if (requestId === updateRequestRef.current) {
         setIsSubmitting(false)
@@ -249,7 +254,7 @@ export function QrMapUpdate() {
   async function submitExpiration() {
     const nextErrors: FormErrors = {}
     const expiration = dateInputToExpiry(expiresOn)
-    if (expiresOn && !expiration) nextErrors.expiresOn = "Enter a valid expiry date"
+    if (expiresOn && !expiration) nextErrors.expiresOn = "Masukkan tanggal kedaluwarsa yang valid"
     setErrors((current) => ({ ...current, expiresOn: nextErrors.expiresOn }))
     setRequestError(null)
     if (Object.keys(nextErrors).length > 0) return
@@ -266,7 +271,9 @@ export function QrMapUpdate() {
       setStep("success")
     } catch (error) {
       if (requestId !== updateRequestRef.current) return
-      setRequestError(getErrorMessage(error, "Could not update this QR code. Please try again."))
+      setRequestError(
+        getErrorMessage(error, "Kode QR ini tidak dapat diperbarui. Silakan coba lagi."),
+      )
     } finally {
       if (requestId === updateRequestRef.current) {
         setIsSubmitting(false)
@@ -287,17 +294,17 @@ export function QrMapUpdate() {
         accept="image/*"
         className="sr-only"
         onChange={(event) => void uploadQrImage(event)}
-        aria-label="Upload a QR code image"
+        aria-label="Unggah gambar kode QR"
       />
       <Card className="border-primary/20 bg-primary/[0.02]">
         <CardHeader className="border-b">
           <CardTitle className="flex items-center gap-2">
             <ScanLine className="size-4 text-primary" aria-hidden="true" />
-            Update a QR code
+            Perbarui kode QR
           </CardTitle>
           <CardDescription>
-            Scan a printed QR code to replace its Google Maps destination or expiry date. This tool
-            is available to global admins only.
+            Pindai kode QR tercetak untuk mengganti tujuan Google Maps atau tanggal kedaluwarsanya.
+            Alat ini hanya tersedia untuk admin global.
           </CardDescription>
         </CardHeader>
         <CardContent className="flex flex-col gap-4 pt-5 sm:flex-row sm:items-center sm:justify-between">
@@ -306,16 +313,14 @@ export function QrMapUpdate() {
               <MapPin className="size-5" aria-hidden="true" />
             </div>
             <div>
-              <p className="text-sm font-medium">Change where or how long a code works</p>
-              <p className="mt-1 text-sm text-muted-foreground">
-                The QR image and slug stay the same.
-              </p>
+              <p className="text-sm font-medium">Ubah tujuan atau masa berlaku kode</p>
+              <p className="mt-1 text-sm text-muted-foreground">Gambar QR dan slug tetap sama.</p>
             </div>
           </div>
           <div className="flex w-full flex-col gap-2 sm:w-auto sm:flex-row">
             <Button type="button" onClick={openScanner} className="w-full sm:w-auto">
               <ScanLine aria-hidden="true" />
-              Use camera
+              Gunakan kamera
             </Button>
             <Button
               type="button"
@@ -324,7 +329,7 @@ export function QrMapUpdate() {
               className="w-full sm:w-auto"
             >
               <Upload aria-hidden="true" />
-              Upload QR image
+              Unggah gambar QR
             </Button>
           </div>
         </CardContent>
@@ -335,10 +340,10 @@ export function QrMapUpdate() {
           {step === "scan" && (
             <>
               <DialogHeader>
-                <DialogTitle>Scan a QR code</DialogTitle>
+                <DialogTitle>Pindai kode QR</DialogTitle>
                 <DialogDescription>
-                  Scan the QR code printed for this app. Once the slug is recognized, you can update
-                  its map destination or expiry date.
+                  Pindai kode QR yang dicetak untuk aplikasi ini. Setelah slug dikenali, Anda dapat
+                  memperbarui tujuan peta atau tanggal kedaluwarsanya.
                 </DialogDescription>
               </DialogHeader>
               <div className="flex flex-col gap-3">
@@ -353,7 +358,7 @@ export function QrMapUpdate() {
                     aria-live="polite"
                   >
                     <Spinner />
-                    Checking QR code...
+                    Memeriksa kode QR...
                   </p>
                 )}
                 {cameraError && (
@@ -374,11 +379,11 @@ export function QrMapUpdate() {
                   className="w-full"
                 >
                   {isUploading ? <Spinner /> : <Upload />}
-                  {isUploading ? "Reading QR image..." : "Upload a QR image instead"}
+                  {isUploading ? "Membaca gambar QR..." : "Unggah gambar QR sebagai gantinya"}
                 </Button>
                 <div className="flex items-center gap-3 text-xs text-muted-foreground">
                   <div className="h-px flex-1 bg-border" />
-                  <span>or enter the slug</span>
+                  <span>atau masukkan slug</span>
                   <div className="h-px flex-1 bg-border" />
                 </div>
                 <form className="flex flex-col gap-2 sm:flex-row" onSubmit={submitManualSlug}>
@@ -391,14 +396,14 @@ export function QrMapUpdate() {
                     placeholder="abc123def4"
                     autoComplete="off"
                     spellCheck={false}
-                    aria-label="QR code slug"
+                    aria-label="Slug kode QR"
                   />
                   <Button type="submit" variant="outline" className="sm:w-auto">
-                    Use slug
+                    Gunakan slug
                   </Button>
                 </form>
                 <p className="text-xs text-muted-foreground">
-                  Camera access requires a secure connection and browser permission.
+                  Akses kamera memerlukan koneksi aman dan izin browser.
                 </p>
               </div>
             </>
@@ -407,16 +412,16 @@ export function QrMapUpdate() {
           {step === "edit" && (
             <>
               <DialogHeader>
-                <DialogTitle>Update QR code</DialogTitle>
+                <DialogTitle>Perbarui kode QR</DialogTitle>
                 <DialogDescription>
-                  QR code <code className="rounded bg-muted px-1.5 py-0.5 text-xs">{slug}</code> is
-                  ready. Change its destination or expiry date.
+                  Kode QR <code className="rounded bg-muted px-1.5 py-0.5 text-xs">{slug}</code>{" "}
+                  siap. Ubah tujuan atau tanggal kedaluwarsanya.
                 </DialogDescription>
               </DialogHeader>
               <form className="flex flex-col gap-5" onSubmit={(event) => void submitUpdate(event)}>
                 <FieldGroup>
                   <Field data-invalid={Boolean(errors.googleMapsUrl)}>
-                    <FieldLabel htmlFor="update-google-maps-url">Google Maps URL</FieldLabel>
+                    <FieldLabel htmlFor="update-google-maps-url">URL Google Maps</FieldLabel>
                     <div className="flex flex-col gap-2 sm:flex-row">
                       <Input
                         id="update-google-maps-url"
@@ -433,20 +438,20 @@ export function QrMapUpdate() {
                         disabled={isResolving}
                       >
                         {isResolving ? <Spinner /> : <Search />}
-                        {isResolving ? "Finding place..." : "Find place"}
+                        {isResolving ? "Mencari tempat..." : "Cari tempat"}
                       </Button>
                     </div>
                     {errors.googleMapsUrl && <FieldError>{errors.googleMapsUrl}</FieldError>}
                     <FieldDescription>
-                      Google Places will find the Place ID for you. If there are multiple matches,
-                      choose the correct place below.
+                      Google Places akan mencari ID Tempat untuk Anda. Jika ada beberapa hasil,
+                      pilih tempat yang benar di bawah.
                     </FieldDescription>
                     {resolveError && <FieldError>{resolveError}</FieldError>}
                   </Field>
 
                   {candidates.length > 0 && (
                     <fieldset className="flex flex-col gap-2 rounded-lg border p-3">
-                      <legend className="px-1 text-sm font-medium">Select a Google place</legend>
+                      <legend className="px-1 text-sm font-medium">Pilih tempat Google</legend>
                       {candidates.map((candidate) => (
                         <label
                           key={candidate.placeId}
@@ -488,7 +493,7 @@ export function QrMapUpdate() {
                     </p>
                   )}
                   <Field data-invalid={Boolean(errors.expiresOn)}>
-                    <FieldLabel htmlFor="update-expires-on">Expiry date</FieldLabel>
+                    <FieldLabel htmlFor="update-expires-on">Tanggal kedaluwarsa</FieldLabel>
                     <Input
                       id="update-expires-on"
                       type="date"
@@ -504,8 +509,8 @@ export function QrMapUpdate() {
                       <FieldError>{errors.expiresOn}</FieldError>
                     ) : (
                       <FieldDescription>
-                        Leave blank for a QR code that never expires. Expiry begins at the start of
-                        the next UTC day.
+                        Kosongkan untuk kode QR yang tidak pernah kedaluwarsa. Masa berlaku dimulai
+                        pada awal hari UTC berikutnya.
                       </FieldDescription>
                     )}
                   </Field>
@@ -522,7 +527,7 @@ export function QrMapUpdate() {
                     onClick={backToScanner}
                     disabled={isSubmitting || isResolving}
                   >
-                    Scan a different code
+                    Pindai kode lain
                   </Button>
                   <div className="flex flex-col gap-2 sm:flex-row">
                     <Button
@@ -532,11 +537,11 @@ export function QrMapUpdate() {
                       disabled={isSubmitting || isResolving}
                     >
                       {pendingAction === "expiration" ? <Spinner /> : <CheckCircle2 />}
-                      {pendingAction === "expiration" ? "Saving..." : "Save expiry"}
+                      {pendingAction === "expiration" ? "Menyimpan..." : "Simpan kedaluwarsa"}
                     </Button>
                     <Button type="submit" disabled={isSubmitting || isResolving}>
                       {pendingAction === "map" ? <Spinner /> : <MapPin />}
-                      {pendingAction === "map" ? "Updating..." : "Update map destination"}
+                      {pendingAction === "map" ? "Memperbarui..." : "Perbarui tujuan peta"}
                     </Button>
                   </div>
                 </div>
@@ -551,27 +556,29 @@ export function QrMapUpdate() {
                   <CheckCircle2 className="size-6" aria-hidden="true" />
                 </div>
                 <DialogTitle>
-                  {updateKind === "expiration" ? "Expiry updated" : "Map destination updated"}
+                  {updateKind === "expiration"
+                    ? "Tanggal kedaluwarsa diperbarui"
+                    : "Tujuan peta diperbarui"}
                 </DialogTitle>
                 <DialogDescription>
-                  QR code{" "}
+                  Kode QR{" "}
                   <code className="rounded bg-muted px-1.5 py-0.5 text-xs">{updatedQr.slug}</code>{" "}
                   {updateKind === "expiration"
-                    ? " now has the updated expiry setting."
-                    : " now points to the selected Google place. The printed QR code does not need to be replaced."}
+                    ? " kini menggunakan pengaturan tanggal kedaluwarsa terbaru."
+                    : " kini mengarah ke tempat Google yang dipilih. Kode QR yang dicetak tidak perlu diganti."}
                 </DialogDescription>
               </DialogHeader>
               <div className="flex flex-col gap-2 rounded-lg border bg-muted/30 p-3 text-sm">
                 {updateKind === "map" && (
                   <>
                     <div className="flex items-center justify-between gap-3">
-                      <span className="text-muted-foreground">Place ID</span>
+                      <span className="text-muted-foreground">ID Tempat</span>
                       <code className="max-w-[65%] truncate text-xs">
                         {updatedQr.googlePlaceId}
                       </code>
                     </div>
                     <div className="flex items-start justify-between gap-3">
-                      <span className="text-muted-foreground">Maps URL</span>
+                      <span className="text-muted-foreground">URL Google Maps</span>
                       <span className="max-w-[65%] truncate text-right text-xs">
                         {updatedQr.rawGoogleMapsUrl}
                       </span>
@@ -579,17 +586,17 @@ export function QrMapUpdate() {
                   </>
                 )}
                 <div className="flex items-center justify-between gap-3">
-                  <span className="text-muted-foreground">Expiry date</span>
-                  <span>{expiryToDateInput(updatedQr.expiresAt) || "Never"}</span>
+                  <span className="text-muted-foreground">Tanggal kedaluwarsa</span>
+                  <span>{expiryToDateInput(updatedQr.expiresAt) || "Tidak pernah"}</span>
                 </div>
               </div>
               <div className="flex flex-col-reverse gap-2 sm:flex-row sm:justify-end">
                 <Button type="button" variant="outline" onClick={openScanner}>
                   <ScanLine aria-hidden="true" />
-                  Scan another QR code
+                  Pindai kode QR lain
                 </Button>
                 <Button type="button" onClick={() => handleOpenChange(false)}>
-                  Done
+                  Selesai
                 </Button>
               </div>
             </>

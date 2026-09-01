@@ -67,7 +67,7 @@ export class GooglePlacesAdapter implements PlacesAdapter {
     })
 
     if (!response.ok) {
-      throwForResponse(response.status, "Google Places could not resolve that location.")
+      throwForResponse(response.status, "Google Places tidak dapat menemukan lokasi tersebut.")
     }
 
     const body = await readJson(response)
@@ -82,7 +82,7 @@ export class GooglePlacesAdapter implements PlacesAdapter {
 
   async getPlaceDetails({ placeId }: { placeId: string }): Promise<PlaceDetails> {
     if (!isGooglePlaceId(placeId)) {
-      throw new QrDomainError("PLACE_RESOLUTION_FAILED", "The Google Place ID is invalid.")
+      throw new QrDomainError("PLACE_RESOLUTION_FAILED", "ID Tempat Google tidak valid.")
     }
 
     const response = await this.request(
@@ -97,7 +97,7 @@ export class GooglePlacesAdapter implements PlacesAdapter {
     )
 
     if (!response.ok) {
-      throwForResponse(response.status, "Google Places could not confirm that location.")
+      throwForResponse(response.status, "Google Places tidak dapat mengonfirmasi lokasi tersebut.")
     }
 
     const body = await readJson(response)
@@ -113,7 +113,7 @@ export class GooglePlacesAdapter implements PlacesAdapter {
     ) {
       throw new QrDomainError(
         "PLACE_RESOLUTION_FAILED",
-        "Google Places returned no canonical review URL for that location.",
+        "Google Places tidak mengembalikan URL ulasan kanonis untuk lokasi tersebut.",
       )
     }
 
@@ -124,14 +124,14 @@ export class GooglePlacesAdapter implements PlacesAdapter {
     if (!this.dependencies.apiKey?.trim()) {
       throw new QrDomainError(
         "PLACES_UNAVAILABLE",
-        "Google Places is not configured on this server.",
+        "Google Places belum dikonfigurasi di server ini.",
       )
     }
 
     try {
       return await (this.dependencies.fetcher ?? fetch)(input, init)
     } catch (error: unknown) {
-      throw new QrDomainError("PLACES_UNAVAILABLE", "Google Places is unavailable.", {
+      throw new QrDomainError("PLACES_UNAVAILABLE", "Google Places tidak tersedia.", {
         cause: error,
       })
     }
@@ -141,14 +141,14 @@ export class GooglePlacesAdapter implements PlacesAdapter {
 export function normalizeGooglePlacesQuery(query: string): string {
   const normalizedQuery = query.trim()
   if (!normalizedQuery || normalizedQuery.length > MAX_GOOGLE_MAPS_QUERY_LENGTH) {
-    throw new QrDomainError("INVALID_INPUT", "The Google Maps place query is invalid.")
+    throw new QrDomainError("INVALID_INPUT", "Kueri tempat Google Maps tidak valid.")
   }
   return normalizedQuery
 }
 
 function throwForResponse(status: number, message: string): never {
   if (status === 401 || status === 403 || status === 408 || status === 429 || status >= 500) {
-    throw new QrDomainError("PLACES_UNAVAILABLE", "Google Places is unavailable.")
+    throw new QrDomainError("PLACES_UNAVAILABLE", "Google Places tidak tersedia.")
   }
 
   throw new QrDomainError("PLACE_RESOLUTION_FAILED", message)
@@ -158,8 +158,12 @@ async function readJson(response: Response): Promise<unknown> {
   try {
     return await response.json()
   } catch (error) {
-    throw new QrDomainError("PLACES_UNAVAILABLE", "Google Places returned an invalid response.", {
-      cause: error,
-    })
+    throw new QrDomainError(
+      "PLACES_UNAVAILABLE",
+      "Google Places mengembalikan respons yang tidak valid.",
+      {
+        cause: error,
+      },
+    )
   }
 }

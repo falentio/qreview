@@ -38,7 +38,7 @@ export function QrCodeCamera({ active, onScan, onError }: QrCodeCameraProps) {
         onErrorRef.current(
           getErrorMessage(
             error,
-            "Could not access the camera. Check browser permissions or enter the slug below.",
+            "Kamera tidak dapat diakses. Periksa izin browser atau masukkan slug di bawah.",
           ),
         )
       }
@@ -57,11 +57,11 @@ export function QrCodeCamera({ active, onScan, onError }: QrCodeCameraProps) {
         className="size-full object-cover"
         muted
         playsInline
-        aria-label="QR code camera preview"
+        aria-label="Pratinjau kamera kode QR"
       />
       <div className="pointer-events-none absolute inset-[15%] rounded-2xl border-2 border-white/90 shadow-[0_0_0_999px_rgb(2_6_23/0.45)]" />
       <p className="pointer-events-none absolute inset-x-0 bottom-3 text-center text-xs font-medium text-white drop-shadow">
-        Align the QR code inside the frame
+        Sejajarkan kode QR di dalam bingkai
       </p>
     </div>
   )

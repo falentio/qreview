@@ -25,22 +25,22 @@ type AuthFormProps = React.ComponentProps<"div"> & {
 
 function validateEmail(value: string) {
   if (!value) {
-    return "Email is required"
+    return "Email wajib diisi"
   }
 
-  return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(value) ? undefined : "Enter a valid email address"
+  return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(value) ? undefined : "Masukkan alamat email yang valid"
 }
 
 function validatePassword(value: string) {
   if (!value) {
-    return "Password is required"
+    return "Kata sandi wajib diisi"
   }
 
   if (value.length < 8) {
-    return "Password must be at least 8 characters"
+    return "Kata sandi harus terdiri dari setidaknya 8 karakter"
   }
 
-  return value.length > 128 ? "Password must be at most 128 characters" : undefined
+  return value.length > 128 ? "Kata sandi harus terdiri dari paling banyak 128 karakter" : undefined
 }
 
 function AppleIcon() {
@@ -79,11 +79,11 @@ function MetaIcon() {
 export function AuthForm({ className, mode, ...props }: AuthFormProps) {
   const [error, setError] = useState<string | null>(null)
   const isLogin = mode === "login"
-  const formTitle = isLogin ? "Welcome back" : "Create your account"
-  const formDescription = isLogin ? "Log in to your QR account" : "Sign up to start using QR"
-  const submitLabel = isLogin ? "Log in" : "Create account"
-  const switchDescription = isLogin ? "Don't have an account?" : "Already have an account?"
-  const switchLabel = isLogin ? "Sign up" : "Log in"
+  const formTitle = isLogin ? "Selamat datang kembali" : "Buat akun Anda"
+  const formDescription = isLogin ? "Masuk ke akun QR Anda" : "Daftar untuk mulai menggunakan QR"
+  const submitLabel = isLogin ? "Masuk" : "Buat akun"
+  const switchDescription = isLogin ? "Belum punya akun?" : "Sudah punya akun?"
+  const switchLabel = isLogin ? "Daftar" : "Masuk"
   const switchHref = isLogin ? "/signup" : "/login"
 
   const form = useForm({
@@ -112,13 +112,13 @@ export function AuthForm({ className, mode, ...props }: AuthFormProps) {
             })
 
         if (result.error) {
-          setError(result.error.message || "Authentication failed")
+          setError(result.error.message || "Autentikasi gagal")
           return
         }
 
         await navigate("/app")
       } catch {
-        setError("Something went wrong. Please try again.")
+        setError("Terjadi kesalahan. Silakan coba lagi.")
       }
     },
   })
@@ -144,8 +144,9 @@ export function AuthForm({ className, mode, ...props }: AuthFormProps) {
                 <form.Field
                   name="fullName"
                   validators={{
-                    onBlur: ({ value }) => (value.trim() ? undefined : "Full name is required"),
-                    onSubmit: ({ value }) => (value.trim() ? undefined : "Full name is required"),
+                    onBlur: ({ value }) => (value.trim() ? undefined : "Nama lengkap wajib diisi"),
+                    onSubmit: ({ value }) =>
+                      value.trim() ? undefined : "Nama lengkap wajib diisi",
                   }}
                 >
                   {(field) => {
@@ -153,7 +154,7 @@ export function AuthForm({ className, mode, ...props }: AuthFormProps) {
 
                     return (
                       <Field data-invalid={isInvalid}>
-                        <FieldLabel htmlFor={field.name}>Full name</FieldLabel>
+                        <FieldLabel htmlFor={field.name}>Nama lengkap</FieldLabel>
                         <Input
                           id={field.name}
                           name={field.name}
@@ -223,13 +224,13 @@ export function AuthForm({ className, mode, ...props }: AuthFormProps) {
                   return (
                     <Field data-invalid={isInvalid}>
                       <div className="flex items-center">
-                        <FieldLabel htmlFor={field.name}>Password</FieldLabel>
+                        <FieldLabel htmlFor={field.name}>Kata sandi</FieldLabel>
                         {isLogin && (
                           <a
                             href="#"
                             className="ml-auto text-sm underline-offset-2 hover:underline"
                           >
-                            Forgot your password?
+                            Lupa kata sandi?
                           </a>
                         )}
                       </div>
@@ -260,11 +261,11 @@ export function AuthForm({ className, mode, ...props }: AuthFormProps) {
                     onBlur: ({ value, fieldApi }) =>
                       value === fieldApi.form.getFieldValue("password")
                         ? undefined
-                        : "Passwords do not match",
+                        : "Kata sandi tidak cocok",
                     onSubmit: ({ value, fieldApi }) =>
                       value === fieldApi.form.getFieldValue("password")
                         ? undefined
-                        : "Passwords do not match",
+                        : "Kata sandi tidak cocok",
                   }}
                 >
                   {(field) => {
@@ -272,7 +273,7 @@ export function AuthForm({ className, mode, ...props }: AuthFormProps) {
 
                     return (
                       <Field data-invalid={isInvalid}>
-                        <FieldLabel htmlFor={field.name}>Confirm password</FieldLabel>
+                        <FieldLabel htmlFor={field.name}>Konfirmasi kata sandi</FieldLabel>
                         <Input
                           id={field.name}
                           name={field.name}
@@ -304,28 +305,28 @@ export function AuthForm({ className, mode, ...props }: AuthFormProps) {
                 <form.Subscribe selector={(state) => state.isSubmitting}>
                   {(isSubmitting) => (
                     <Button type="submit" disabled={isSubmitting}>
-                      {isSubmitting ? "Please wait..." : submitLabel}
+                      {isSubmitting ? "Mohon tunggu..." : submitLabel}
                     </Button>
                   )}
                 </form.Subscribe>
               </Field>
 
               <FieldSeparator className="*:data-[slot=field-separator-content]:bg-card">
-                Or continue with
+                Atau lanjutkan dengan
               </FieldSeparator>
 
               <Field className="grid grid-cols-3 gap-4">
                 <Button variant="outline" type="button" disabled>
                   <AppleIcon />
-                  <span className="sr-only">Continue with Apple</span>
+                  <span className="sr-only">Lanjutkan dengan Apple</span>
                 </Button>
                 <Button variant="outline" type="button" disabled>
                   <GoogleIcon />
-                  <span className="sr-only">Continue with Google</span>
+                  <span className="sr-only">Lanjutkan dengan Google</span>
                 </Button>
                 <Button variant="outline" type="button" disabled>
                   <MetaIcon />
-                  <span className="sr-only">Continue with Meta</span>
+                  <span className="sr-only">Lanjutkan dengan Meta</span>
                 </Button>
               </Field>
 
@@ -345,8 +346,8 @@ export function AuthForm({ className, mode, ...props }: AuthFormProps) {
       </Card>
 
       <FieldDescription className="px-6 text-center">
-        By continuing, you agree to our <a href="#">Terms of Service</a> and{" "}
-        <a href="#">Privacy Policy</a>.
+        Dengan melanjutkan, Anda menyetujui <a href="#">Ketentuan Layanan</a> dan{" "}
+        <a href="#">Kebijakan Privasi</a> kami.
       </FieldDescription>
     </div>
   )

@@ -38,7 +38,7 @@ const RETENTION_MS = 60 * DAY_MS
 
 const chartConfig = {
   redirectAttempts: {
-    label: "Redirect attempts",
+    label: "Upaya pengalihan",
     color: "var(--chart-4)",
   },
 } satisfies ChartConfig
@@ -69,7 +69,7 @@ function rangeForPreset(preset: Preset, now = new Date()): DateRange {
 }
 
 function formatDate(value: string | Date): string {
-  return new Intl.DateTimeFormat(undefined, {
+  return new Intl.DateTimeFormat("id-ID", {
     month: "short",
     day: "numeric",
     year: "numeric",
@@ -78,7 +78,7 @@ function formatDate(value: string | Date): string {
 }
 
 function formatHour(value: string): string {
-  return new Intl.DateTimeFormat(undefined, {
+  return new Intl.DateTimeFormat("id-ID", {
     month: "short",
     day: "numeric",
     hour: "numeric",
@@ -136,7 +136,7 @@ export function QrAnalyticsDashboard() {
       .catch(() => {
         if (!disposed) {
           setItems([])
-          setQrRequestError("Could not load QR codes. Please try again.")
+          setQrRequestError("Kode QR tidak dapat dimuat. Silakan coba lagi.")
         }
       })
       .finally(() => {
@@ -187,7 +187,7 @@ export function QrAnalyticsDashboard() {
       .catch((error: unknown) => {
         if (!disposed && currentRequestId === requestIdRef.current) {
           setAnalyticsItems([])
-          setRequestError(getErrorMessage(error, "Could not load analytics. Please try again."))
+          setRequestError(getErrorMessage(error, "Analitik tidak dapat dimuat. Silakan coba lagi."))
         }
       })
       .finally(() => {
@@ -232,9 +232,9 @@ export function QrAnalyticsDashboard() {
           <div className="flex size-12 items-center justify-center rounded-xl bg-primary/10 text-primary">
             <QrCode className="size-6" aria-hidden="true" />
           </div>
-          <h2 className="mt-4 text-lg font-semibold">Add a QR code to see analytics</h2>
+          <h2 className="mt-4 text-lg font-semibold">Tambahkan kode QR untuk melihat analitik</h2>
           <p className="mt-1 max-w-md text-sm text-muted-foreground">
-            Redirect attempts will appear here after a QR code is assigned to{" "}
+            Upaya pengalihan akan muncul di sini setelah kode QR ditetapkan ke{" "}
             {selectedOrganization?.name}.
           </p>
           <a
@@ -242,7 +242,7 @@ export function QrAnalyticsDashboard() {
             data-astro-prefetch="viewport"
             className="mt-5 inline-flex h-9 items-center justify-center rounded-lg bg-primary px-4 text-sm font-medium text-primary-foreground transition-colors hover:bg-primary/80"
           >
-            Adopt a QR code
+            Klaim kode QR
           </a>
         </CardContent>
       </Card>
@@ -257,15 +257,15 @@ export function QrAnalyticsDashboard() {
             <ChartNoAxesCombined className="size-5" aria-hidden="true" />
           </div>
           <div className="min-w-0">
-            <p className="text-sm font-medium">Redirect activity</p>
+            <p className="text-sm font-medium">Aktivitas pengalihan</p>
             <p className="mt-1 truncate text-sm text-muted-foreground">
-              {selectedQr ? selectedQr.alias : "All QR codes"} · {formatRange(range)}
+              {selectedQr ? selectedQr.alias : "Semua kode QR"} · {formatRange(range)}
             </p>
           </div>
         </div>
         <div className="flex flex-col gap-3 sm:flex-row sm:flex-wrap sm:items-end">
           <label className="flex min-w-0 flex-1 flex-col gap-1.5 text-xs font-medium text-muted-foreground sm:min-w-48">
-            QR scope
+            Cakupan QR
             <Select
               value={scope}
               onValueChange={(value) => {
@@ -273,39 +273,39 @@ export function QrAnalyticsDashboard() {
               }}
             >
               <SelectTrigger
-                aria-label="QR analytics scope"
+                aria-label="Cakupan analitik QR"
                 className="w-full"
                 disabled={isQrLoading}
               >
                 <SelectValue>
                   {scope === "all"
-                    ? "All QR codes"
+                    ? "Semua kode QR"
                     : selectedQr
                       ? `${selectedQr.alias} (${selectedQr.slug})`
-                      : "Select a QR code"}
+                      : "Pilih kode QR"}
                 </SelectValue>
               </SelectTrigger>
               <SelectContent align="start">
-                <SelectItem value="all">All QR codes</SelectItem>
+                <SelectItem value="all">Semua kode QR</SelectItem>
                 {items.map((item) => (
                   <SelectItem key={item.id} value={item.id}>
-                    {item.alias} ({item.slug}){item.deletedAt ? " (archived)" : ""}
+                    {item.alias} ({item.slug}){item.deletedAt ? " (diarsipkan)" : ""}
                   </SelectItem>
                 ))}
               </SelectContent>
             </Select>
           </label>
           <label className="flex min-w-0 flex-1 flex-col gap-1.5 text-xs font-medium text-muted-foreground sm:min-w-40">
-            Date range
+            Rentang tanggal
             <Select value={preset} onValueChange={(value) => changePreset(value as Preset)}>
-              <SelectTrigger aria-label="Analytics date range" className="w-full">
+              <SelectTrigger aria-label="Rentang tanggal analitik" className="w-full">
                 <SelectValue />
               </SelectTrigger>
               <SelectContent align="start">
-                <SelectItem value="24h">Last 24 hours</SelectItem>
-                <SelectItem value="7d">Last 7 days</SelectItem>
-                <SelectItem value="30d">Last 30 days</SelectItem>
-                <SelectItem value="60d">Last 60 days</SelectItem>
+                <SelectItem value="24h">24 jam terakhir</SelectItem>
+                <SelectItem value="7d">7 hari terakhir</SelectItem>
+                <SelectItem value="30d">30 hari terakhir</SelectItem>
+                <SelectItem value="60d">60 hari terakhir</SelectItem>
               </SelectContent>
             </Select>
           </label>
@@ -317,7 +317,7 @@ export function QrAnalyticsDashboard() {
           <CardContent className="flex min-h-48 flex-col items-center justify-center gap-3 p-8 text-center">
             <p role="alert" className="text-sm text-destructive">
               {organizationsError
-                ? getErrorMessage(organizationsError, "Could not load your businesses.")
+                ? getErrorMessage(organizationsError, "Bisnis Anda tidak dapat dimuat.")
                 : (qrRequestError ?? requestError)}
             </p>
             <Button
@@ -326,7 +326,7 @@ export function QrAnalyticsDashboard() {
               onClick={() => setReloadToken((value) => value + 1)}
             >
               <RefreshCw aria-hidden="true" />
-              Try again
+              Coba lagi
             </Button>
           </CardContent>
         </Card>
@@ -334,19 +334,19 @@ export function QrAnalyticsDashboard() {
         <>
           <div className="grid gap-4 sm:grid-cols-3">
             <MetricCard
-              label="Redirect attempts"
-              value={totalAttempts.toLocaleString()}
+              label="Upaya pengalihan"
+              value={totalAttempts.toLocaleString("id-ID")}
               icon={Activity}
             />
             <MetricCard
-              label="Average per hour"
-              value={averageAttempts.toLocaleString(undefined, { maximumFractionDigits: 1 })}
+              label="Rata-rata per jam"
+              value={averageAttempts.toLocaleString("id-ID", { maximumFractionDigits: 1 })}
               icon={ChartNoAxesCombined}
             />
             <MetricCard
-              label="Peak hour"
-              value={peak ? peak.redirectAttempts.toLocaleString() : "0"}
-              detail={peak ? formatHour(peak.hour) : "No activity yet"}
+              label="Jam tersibuk"
+              value={peak ? peak.redirectAttempts.toLocaleString("id-ID") : "0"}
+              detail={peak ? formatHour(peak.hour) : "Belum ada aktivitas"}
               icon={CalendarDays}
             />
           </div>
@@ -354,23 +354,20 @@ export function QrAnalyticsDashboard() {
           <Card>
             <CardHeader className="gap-4 border-b sm:flex-row sm:items-start sm:justify-between">
               <div>
-                <CardTitle>Hourly redirect attempts</CardTitle>
+                <CardTitle>Upaya pengalihan per jam</CardTitle>
                 <CardDescription>
-                  Data is recorded when an active QR redirects a request. The chart shows completed
-                  UTC hours only.
+                  Data dicatat saat QR aktif mengalihkan permintaan. Grafik hanya menampilkan jam
+                  UTC yang telah selesai.
                 </CardDescription>
               </div>
               <span className="inline-flex h-7 shrink-0 items-center gap-1.5 rounded-md border bg-muted/30 px-2 text-xs text-muted-foreground">
                 <span className="size-2 rounded-full bg-chart-4" aria-hidden="true" />
-                Hourly
+                Per jam
               </span>
             </CardHeader>
             <CardContent className="pt-5">
               {isAnalyticsLoading ? (
-                <div
-                  className="flex h-80 items-center justify-center"
-                  aria-label="Loading analytics"
-                >
+                <div className="flex h-80 items-center justify-center" aria-label="Memuat analitik">
                   <Spinner className="size-5" />
                 </div>
               ) : (
@@ -378,7 +375,7 @@ export function QrAnalyticsDashboard() {
                   <ChartContainer
                     config={chartConfig}
                     className="h-80 w-full aspect-auto"
-                    aria-label="Hourly redirect attempts chart"
+                    aria-label="Grafik upaya pengalihan per jam"
                   >
                     <AreaChart
                       accessibilityLayer
@@ -418,7 +415,7 @@ export function QrAnalyticsDashboard() {
                   </ChartContainer>
                   {totalAttempts === 0 && (
                     <p className="pt-3 text-center text-sm text-muted-foreground">
-                      No redirect attempts were recorded in this range.
+                      Tidak ada upaya pengalihan yang tercatat dalam rentang ini.
                     </p>
                   )}
                 </>
@@ -429,8 +426,9 @@ export function QrAnalyticsDashboard() {
           <div className="flex items-start gap-2 rounded-lg border border-dashed bg-muted/20 p-3 text-xs text-muted-foreground">
             <Activity className="mt-0.5 size-3.5 shrink-0" aria-hidden="true" />
             <p>
-              Analytics stores hourly aggregate counts only. It does not identify visitors or prove
-              that every request came from a person scanning a printed QR code.
+              Analitik hanya menyimpan jumlah agregat per jam. Data ini tidak mengidentifikasi
+              pengunjung atau membuktikan bahwa setiap permintaan berasal dari seseorang yang
+              memindai kode QR tercetak.
             </p>
           </div>
         </>
@@ -466,7 +464,7 @@ function MetricCard({
 
 function DashboardSkeleton() {
   return (
-    <div className="flex flex-col gap-6" aria-label="Loading analytics dashboard">
+    <div className="flex flex-col gap-6" aria-label="Memuat dasbor analitik">
       <div className="h-24 animate-pulse rounded-xl bg-muted" />
       <div className="grid gap-4 sm:grid-cols-3">
         {["one", "two", "three"].map((item) => (

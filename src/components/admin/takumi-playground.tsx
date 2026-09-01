@@ -14,8 +14,8 @@ const DEBOUNCE_MS = 450
 const DEFAULT_MARKUP = `<div tw="w-full h-full flex items-center justify-center bg-[#162235] p-20">
   <div tw="max-w-4xl">
     <p tw="text-cyan-300 text-2xl font-bold tracking-[0.3em]">TAKUMI JS</p>
-    <h1 tw="mt-5 text-white text-7xl font-bold leading-tight">Build image ideas in the browser.</h1>
-    <p tw="mt-6 text-slate-300 text-2xl">Edit this HTML and the preview will follow.</p>
+    <h1 tw="mt-5 text-white text-7xl font-bold leading-tight">Bangun ide gambar di browser.</h1>
+    <p tw="mt-6 text-slate-300 text-2xl">Edit HTML ini dan pratinjau akan mengikuti.</p>
   </div>
 </div>`
 
@@ -24,13 +24,13 @@ type RenderStatus = "waiting" | "rendering" | "ready" | "error"
 function statusCopy(status: RenderStatus) {
   switch (status) {
     case "rendering":
-      return "Rendering preview..."
+      return "Merender pratinjau..."
     case "ready":
-      return "Preview up to date"
+      return "Pratinjau terbaru"
     case "error":
-      return "Could not render preview"
+      return "Pratinjau tidak dapat dirender"
     default:
-      return "Waiting to render"
+      return "Menunggu untuk dirender"
   }
 }
 
@@ -65,7 +65,7 @@ export function TakumiPlayground() {
           setError(
             renderError instanceof Error
               ? renderError.message
-              : "Check the markup and try rendering again.",
+              : "Periksa markup dan coba render lagi.",
           )
         })
     }, DEBOUNCE_MS)
@@ -89,11 +89,11 @@ export function TakumiPlayground() {
           <div>
             <CardTitle className="flex items-center gap-2">
               <CodeXml className="size-4 text-primary" aria-hidden="true" />
-              Takumi playground
+              Playground Takumi
             </CardTitle>
             <CardDescription className="mt-1 max-w-2xl">
-              Write HTML with Tailwind classes and see Takumi render it as an SVG image. Scripts are
-              not executed.
+              Tulis HTML dengan kelas Tailwind dan lihat Takumi merendernya sebagai gambar SVG.
+              Skrip tidak dijalankan.
             </CardDescription>
           </div>
           <Button
@@ -104,7 +104,7 @@ export function TakumiPlayground() {
             disabled={markup === DEFAULT_MARKUP}
           >
             <RotateCcw aria-hidden="true" />
-            Reset
+            Atur ulang
           </Button>
         </div>
       </CardHeader>
@@ -122,14 +122,14 @@ export function TakumiPlayground() {
             aria-describedby="takumi-markup-help"
           />
           <p id="takumi-markup-help" className="text-xs text-muted-foreground">
-            Preview updates {DEBOUNCE_MS} ms after you stop typing. Canvas: A6 at 300 DPI (
-            {CANVAS.width} x {CANVAS.height} px).
+            Pratinjau diperbarui {DEBOUNCE_MS} md setelah Anda berhenti mengetik. Kanvas: A6 pada
+            300 DPI ({CANVAS.width} x {CANVAS.height} px).
           </p>
         </div>
 
         <div className="flex min-w-0 flex-col gap-2">
           <div className="flex items-center justify-between gap-3">
-            <p className="text-sm font-medium">Preview</p>
+            <p className="text-sm font-medium">Pratinjau</p>
             <p
               className="flex items-center gap-1.5 text-xs text-muted-foreground"
               aria-live="polite"
@@ -147,12 +147,12 @@ export function TakumiPlayground() {
             {previewUrl ? (
               <img
                 src={previewUrl}
-                alt="Takumi rendered preview"
+                alt="Pratinjau hasil render Takumi"
                 className="max-h-[30rem] w-full object-contain"
               />
             ) : (
               <p className="px-6 text-center text-sm text-muted-foreground">
-                Your rendered SVG preview will appear here.
+                Pratinjau SVG hasil render Anda akan muncul di sini.
               </p>
             )}
           </div>

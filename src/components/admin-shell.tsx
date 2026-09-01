@@ -35,7 +35,7 @@ export function AdminShell({ children, pathname, title, user }: AdminShellProps)
               <BreadcrumbList>
                 <BreadcrumbItem className="hidden md:block">
                   <BreadcrumbLink href="/admin" data-astro-prefetch="viewport">
-                    QR admin
+                    Admin QR
                   </BreadcrumbLink>
                 </BreadcrumbItem>
                 <BreadcrumbSeparator className="hidden md:block" />

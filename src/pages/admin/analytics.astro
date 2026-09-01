@@ -5,14 +5,14 @@ import AdminLayout from "@/layouts/admin-layout.astro"
 import { QrAnalyticsFillForm } from "@/components/admin/qr-analytics-fill-form"
 ---
 
-<AdminLayout title="Fill analytics data" description="Populate hourly QR analytics data for testing and preparation.">
+<AdminLayout title="Isi data analitik" description="Isi data analitik QR per jam untuk pengujian dan persiapan.">
   <div class="flex flex-1 flex-col gap-6 p-4 pt-0 md:p-6 md:pt-0">
     <div class="flex flex-col gap-2 pt-2">
-      <p class="text-sm font-medium text-muted-foreground">Platform analytics</p>
-      <h1 class="text-3xl font-semibold tracking-tight">Fill analytics data</h1>
+      <p class="text-sm font-medium text-muted-foreground">Analitik platform</p>
+      <h1 class="text-3xl font-semibold tracking-tight">Isi data analitik</h1>
       <p class="max-w-2xl text-muted-foreground">
-        Populate hourly redirect-attempt data for an existing QR code. This page is restricted to
-        global administrators and is intended for test data and dashboard preparation.
+        Isi data upaya pengalihan per jam untuk kode QR yang sudah ada. Halaman ini dibatasi untuk
+        admin global dan ditujukan untuk data pengujian serta persiapan dasbor.
       </p>
     </div>
     <QrAnalyticsFillForm client:only="react" />

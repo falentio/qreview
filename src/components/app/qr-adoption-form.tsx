@@ -74,13 +74,13 @@ export function QrAdoptionForm() {
     const nextSlug = getSlugFromQrValue(value)
     if (!nextSlug) {
       setScanError(
-        "That QR code is not valid for this app. Scan a code with a /r/{slug} link or enter the slug below.",
+        "Kode QR tersebut tidak valid untuk aplikasi ini. Pindai kode dengan tautan /r/{slug} atau masukkan slug di bawah.",
       )
       return
     }
 
     if (!selectedOrganization) {
-      setScanError("Select a business in the sidebar before adopting a QR code.")
+      setScanError("Pilih bisnis di sidebar sebelum mengklaim kode QR.")
       return
     }
 
@@ -102,7 +102,7 @@ export function QrAdoptionForm() {
       setStep("success")
     } catch (error) {
       if (requestId !== claimRequestRef.current) return
-      setScanError(getErrorMessage(error, "Could not adopt this QR code. Please try again."))
+      setScanError(getErrorMessage(error, "Kode QR ini tidak dapat diklaim. Silakan coba lagi."))
     } finally {
       if (requestId === claimRequestRef.current) {
         claimInFlightRef.current = false
@@ -128,7 +128,7 @@ export function QrAdoptionForm() {
       const result = await QrScanner.scanImage(file, { returnDetailedScanResult: true })
       await adoptFromQrValue(result.data)
     } catch (error) {
-      setScanError(getErrorMessage(error, "Could not read a QR code from that image."))
+      setScanError(getErrorMessage(error, "Kode QR tidak dapat dibaca dari gambar tersebut."))
     } finally {
       setIsUploading(false)
     }
@@ -142,17 +142,17 @@ export function QrAdoptionForm() {
         accept="image/*"
         className="sr-only"
         onChange={(event) => void uploadQrImage(event)}
-        aria-label="Upload a QR code image"
+        aria-label="Unggah gambar kode QR"
       />
       <Card className="border-primary/20 bg-primary/[0.02]">
         <CardHeader className="border-b">
           <CardTitle className="flex items-center gap-2">
             <QrCode className="size-4 text-primary" aria-hidden="true" />
-            Adopt a QR code
+            Klaim kode QR
           </CardTitle>
           <CardDescription>
-            Scan a printed QR code or upload its image to assign it to the selected business.
-            Business owners and admins can adopt unclaimed codes.
+            Pindai kode QR tercetak atau unggah gambarnya untuk menetapkannya ke bisnis yang
+            dipilih. Pemilik dan admin bisnis dapat mengklaim kode yang belum diklaim.
           </CardDescription>
         </CardHeader>
         <CardContent className="flex flex-col gap-4 pt-5 sm:flex-row sm:items-center sm:justify-between">
@@ -163,11 +163,11 @@ export function QrAdoptionForm() {
             <div>
               <p className="text-sm font-medium">
                 {selectedOrganization
-                  ? `Assign a code to ${selectedOrganization.name}`
-                  : "Select a business first"}
+                  ? `Tetapkan kode ke ${selectedOrganization.name}`
+                  : "Pilih bisnis terlebih dahulu"}
               </p>
               <p className="mt-1 text-sm text-muted-foreground">
-                The code will be available in this business workspace.
+                Kode akan tersedia di ruang kerja bisnis ini.
               </p>
             </div>
           </div>
@@ -179,7 +179,7 @@ export function QrAdoptionForm() {
               className="w-full sm:w-auto"
             >
               <ScanLine aria-hidden="true" />
-              Use camera
+              Gunakan kamera
             </Button>
             <Button
               type="button"
@@ -189,7 +189,7 @@ export function QrAdoptionForm() {
               className="w-full sm:w-auto"
             >
               <Upload aria-hidden="true" />
-              Upload QR image
+              Unggah gambar QR
             </Button>
           </div>
         </CardContent>
@@ -200,10 +200,10 @@ export function QrAdoptionForm() {
           {step === "scan" && (
             <>
               <DialogHeader>
-                <DialogTitle>Adopt a QR code</DialogTitle>
+                <DialogTitle>Klaim kode QR</DialogTitle>
                 <DialogDescription>
-                  Scan the QR code printed for this app. The code must be unclaimed before it can be
-                  assigned to your business.
+                  Pindai kode QR yang dicetak untuk aplikasi ini. Kode harus belum diklaim sebelum
+                  dapat ditetapkan ke bisnis Anda.
                 </DialogDescription>
               </DialogHeader>
               <div className="flex flex-col gap-3">
@@ -218,12 +218,12 @@ export function QrAdoptionForm() {
                     aria-live="polite"
                   >
                     <Spinner />
-                    Adopting QR code...
+                    Mengklaim kode QR...
                   </p>
                 )}
                 {!selectedOrganization && (
                   <p role="alert" className="text-sm text-destructive">
-                    Select a business in the sidebar before adopting a QR code.
+                    Pilih bisnis di sidebar sebelum mengklaim kode QR.
                   </p>
                 )}
                 {cameraError && (
@@ -244,11 +244,11 @@ export function QrAdoptionForm() {
                   className="w-full"
                 >
                   {isUploading ? <Spinner /> : <Upload />}
-                  {isUploading ? "Reading QR image..." : "Upload a QR image instead"}
+                  {isUploading ? "Membaca gambar QR..." : "Unggah gambar QR sebagai gantinya"}
                 </Button>
                 <div className="flex items-center gap-3 text-xs text-muted-foreground">
                   <div className="h-px flex-1 bg-border" />
-                  <span>or enter the slug</span>
+                  <span>atau masukkan slug</span>
                   <div className="h-px flex-1 bg-border" />
                 </div>
                 <form className="flex flex-col gap-2 sm:flex-row" onSubmit={submitManualSlug}>
@@ -261,7 +261,7 @@ export function QrAdoptionForm() {
                     placeholder="abc123def4"
                     autoComplete="off"
                     spellCheck={false}
-                    aria-label="QR code slug"
+                    aria-label="Slug kode QR"
                     disabled={isClaiming || !selectedOrganization}
                   />
                   <Button
@@ -270,11 +270,11 @@ export function QrAdoptionForm() {
                     className="sm:w-auto"
                     disabled={isClaiming || !selectedOrganization}
                   >
-                    Adopt slug
+                    Klaim dengan slug
                   </Button>
                 </form>
                 <p className="text-xs text-muted-foreground">
-                  Camera access requires a secure connection and browser permission.
+                  Akses kamera memerlukan koneksi aman dan izin browser.
                 </p>
               </div>
             </>
@@ -286,11 +286,11 @@ export function QrAdoptionForm() {
                 <div className="mb-1 flex size-11 items-center justify-center rounded-full bg-emerald-500/10 text-emerald-600">
                   <CheckCircle2 className="size-6" aria-hidden="true" />
                 </div>
-                <DialogTitle>QR code adopted</DialogTitle>
+                <DialogTitle>Kode QR berhasil diklaim</DialogTitle>
                 <DialogDescription>
-                  QR code{" "}
+                  Kode QR{" "}
                   <code className="rounded bg-muted px-1.5 py-0.5 text-xs">{claimedQr.slug}</code>{" "}
-                  is now assigned to {selectedOrganization?.name ?? "your business"}.
+                  kini ditetapkan ke {selectedOrganization?.name ?? "bisnis Anda"}.
                 </DialogDescription>
               </DialogHeader>
               <div className="flex flex-col gap-2 rounded-lg border bg-muted/30 p-3 text-sm">
@@ -299,17 +299,19 @@ export function QrAdoptionForm() {
                   <code>{claimedQr.slug}</code>
                 </div>
                 <div className="flex items-center justify-between gap-3">
-                  <span className="text-muted-foreground">Configuration</span>
-                  <span className="capitalize">{claimedQr.configurationState}</span>
+                  <span className="text-muted-foreground">Konfigurasi</span>
+                  <span>
+                    {claimedQr.configurationState === "active" ? "Aktif" : "Belum lengkap"}
+                  </span>
                 </div>
               </div>
               <div className="flex flex-col-reverse gap-2 sm:flex-row sm:justify-end">
                 <Button type="button" variant="outline" onClick={openScanner}>
                   <ScanLine aria-hidden="true" />
-                  Adopt another QR code
+                  Klaim kode QR lain
                 </Button>
                 <Button type="button" onClick={() => handleOpenChange(false)}>
-                  Done
+                  Selesai
                 </Button>
               </div>
             </>

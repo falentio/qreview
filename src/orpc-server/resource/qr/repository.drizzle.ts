@@ -38,11 +38,11 @@ export class DrizzleQrRepository implements QrRepository {
         .returning()
 
       const row = rows[0]
-      if (!row) throw new Error("QR code insert returned no row")
+      if (!row) throw new Error("Penyisipan kode QR tidak mengembalikan data")
       return row
     } catch (error) {
       if (isSlugConflict(error)) {
-        throw new QrDomainError("SLUG_CONFLICT", "The generated QR slug already exists.", {
+        throw new QrDomainError("SLUG_CONFLICT", "Slug kode QR yang dibuat sudah ada.", {
           cause: error,
         })
       }

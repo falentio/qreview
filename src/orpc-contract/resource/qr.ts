@@ -24,7 +24,10 @@ export const qrCode = v.object({
 const qrTargetFields = v.pick(qrCode, ["rawGoogleMapsUrl", "googlePlaceId"])
 const expirationValue = v.pipe(
   v.string(),
-  v.regex(/^\d{4}-\d{2}-\d{2}(?:T00:00:00\.000Z)?$/, "Expiry must be a UTC calendar date."),
+  v.regex(
+    /^\d{4}-\d{2}-\d{2}(?:T00:00:00\.000Z)?$/,
+    "Tanggal kedaluwarsa harus berupa tanggal kalender UTC.",
+  ),
 )
 const expirationInput = v.object({ expiresAt: v.optional(v.nullable(expirationValue)) })
 

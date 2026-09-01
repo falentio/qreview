@@ -133,7 +133,7 @@ function QrCode({ qrUrl }: { qrUrl: string }) {
 
   return (
     <svg
-      aria-label="QR code for leaving a Google review"
+      aria-label="Kode QR untuk memberikan ulasan Google"
       height={QR_RENDER_SIZE}
       role="img"
       shapeRendering="crispEdges"
@@ -259,7 +259,7 @@ function ActionPanel({ qrUrl }: { qrUrl: string }) {
               color: "#ffffff",
             }}
           >
-            NFC tap to review
+            Ketuk NFC untuk mengulas
           </div>
         </div>
 
@@ -283,7 +283,7 @@ function ActionPanel({ qrUrl }: { qrUrl: string }) {
             zIndex: 1,
           }}
         >
-          OR
+          ATAU
         </div>
 
         <div style={{ ...actionColumnStyle, backgroundColor: "#ffffff" }}>
@@ -308,7 +308,7 @@ function ActionPanel({ qrUrl }: { qrUrl: string }) {
               color: "#162235",
             }}
           >
-            Scan to review
+            Pindai untuk mengulas
           </div>
         </div>
       </div>
@@ -356,9 +356,9 @@ export function GoogleReviewCard({ qrUrl }: GoogleReviewCardProps) {
               textAlign: "center",
             }}
           >
-            <div>Review us</div>
+            <div>Ulas kami</div>
             <div>
-              on <span style={{ color: "#1a73e8", fontWeight: 600 }}>Google</span>
+              di <span style={{ color: "#1a73e8", fontWeight: 600 }}>Google</span>
             </div>
           </div>
 
@@ -393,7 +393,7 @@ export function GoogleReviewCard({ qrUrl }: GoogleReviewCardProps) {
               textAlign: "center",
             }}
           >
-            TAP OR SCAN TO REVIEW
+            KETUK ATAU PINDAI UNTUK MENGULAS
           </div>
           <ActionPanel qrUrl={qrUrl} />
         </div>
@@ -410,12 +410,12 @@ export function GoogleReviewCard({ qrUrl }: GoogleReviewCardProps) {
               width: "100%",
             }}
           >
-            <div>Thank you!</div>
+            <div>Terima kasih!</div>
           </div>
 
           <div style={{ alignItems: "center", display: "flex", gap: "14px", marginTop: "22px" }}>
             <div style={{ color: "#647084", fontSize: "27px", lineHeight: 1.1 }}>
-              Your feedback matters to us.
+              Ulasan Anda berarti bagi kami.
             </div>
           </div>
         </div>

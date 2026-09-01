@@ -31,7 +31,7 @@ type NavMainItem = {
 export function NavMain({
   items,
   pathname,
-  label = "Workspace",
+  label = "Ruang kerja",
 }: {
   items: NavMainItem[]
   pathname: string
@@ -64,7 +64,7 @@ export function NavMain({
                   render={<SidebarMenuAction className="data-[state=open]:rotate-90" />}
                 >
                   <ChevronRight />
-                  <span className="sr-only">Toggle {item.title}</span>
+                  <span className="sr-only">Buka atau tutup {item.title}</span>
                 </CollapsibleTrigger>
                 <CollapsibleContent>
                   <SidebarMenuSub>

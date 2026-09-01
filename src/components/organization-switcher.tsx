@@ -67,17 +67,17 @@ export function OrganizationSwitcher() {
             <div className="grid flex-1 text-left text-sm leading-tight">
               <span className="truncate font-medium">
                 {hasError
-                  ? "Couldn't load businesses"
+                  ? "Bisnis tidak dapat dimuat"
                   : isPending
-                    ? "Loading businesses..."
-                    : "No businesses"}
+                    ? "Memuat bisnis..."
+                    : "Tidak ada bisnis"}
               </span>
               <span className="truncate text-xs">
                 {hasError
-                  ? "Click to try again"
+                  ? "Klik untuk mencoba lagi"
                   : isPending
-                    ? "Please wait"
-                    : "Create one to get started"}
+                    ? "Mohon tunggu"
+                    : "Buat bisnis untuk memulai"}
               </span>
             </div>
           </SidebarMenuButton>
@@ -116,7 +116,7 @@ export function OrganizationSwitcher() {
           >
             <DropdownMenuGroup>
               <DropdownMenuLabel className="text-xs text-muted-foreground">
-                Businesses
+                Bisnis
               </DropdownMenuLabel>
               {organizations?.map((organization, index) => (
                 <DropdownMenuItem
@@ -140,7 +140,7 @@ export function OrganizationSwitcher() {
               <div className="flex size-6 items-center justify-center rounded-md border bg-transparent">
                 <Plus className="size-4" />
               </div>
-              <div className="font-medium text-muted-foreground">Add business</div>
+              <div className="font-medium text-muted-foreground">Tambah bisnis</div>
             </DropdownMenuItem>
           </DropdownMenuContent>
         </DropdownMenu>

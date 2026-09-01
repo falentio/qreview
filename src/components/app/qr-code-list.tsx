@@ -46,14 +46,14 @@ type ArchiveTarget = { item: QrItem; organizationId: string } | null
 type RestoreTarget = { item: QrItem; organizationId: string } | null
 
 function formatDate(value: string) {
-  return new Intl.DateTimeFormat(undefined, { dateStyle: "medium" }).format(new Date(value))
+  return new Intl.DateTimeFormat("id-ID", { dateStyle: "medium" }).format(new Date(value))
 }
 
 function formatExpiry(value: string | null) {
-  if (!value) return "Never"
+  if (!value) return "Tidak pernah"
   const date = new Date(value)
   date.setUTCDate(date.getUTCDate() - 1)
-  return new Intl.DateTimeFormat(undefined, { dateStyle: "medium", timeZone: "UTC" }).format(date)
+  return new Intl.DateTimeFormat("id-ID", { dateStyle: "medium", timeZone: "UTC" }).format(date)
 }
 
 export function QrCodeList({ view = "active" }: { view?: "active" | "archived" }) {
@@ -103,7 +103,7 @@ export function QrCodeList({ view = "active" }: { view?: "active" | "archived" }
       const png = await renderGoogleReviewTemplate(redirectUrl(slug))
       downloadBlob(new Blob([png], { type: "image/png" }), `google-review-card-${slug}.png`)
     } catch (error) {
-      setTemplateError(getErrorMessage(error, "Could not create the review card template."))
+      setTemplateError(getErrorMessage(error, "Template kartu ulasan tidak dapat dibuat."))
     } finally {
       setTemplateState(null)
     }
@@ -134,7 +134,9 @@ export function QrCodeList({ view = "active" }: { view?: "active" | "archived" }
       setItems((current) => current.filter((item) => item.id !== archiveTarget.item.id))
       setArchiveTarget(null)
     } catch (error) {
-      setArchiveError(getErrorMessage(error, "Could not archive this QR code. Please try again."))
+      setArchiveError(
+        getErrorMessage(error, "Kode QR ini tidak dapat diarsipkan. Silakan coba lagi."),
+      )
     } finally {
       setIsArchiving(false)
     }
@@ -165,7 +167,9 @@ export function QrCodeList({ view = "active" }: { view?: "active" | "archived" }
       setItems((current) => current.filter((item) => item.id !== restoreTarget.item.id))
       setRestoreTarget(null)
     } catch (error) {
-      setRestoreError(getErrorMessage(error, "Could not restore this QR code. Please try again."))
+      setRestoreError(
+        getErrorMessage(error, "Kode QR ini tidak dapat dipulihkan. Silakan coba lagi."),
+      )
     } finally {
       setIsRestoring(false)
     }
@@ -180,7 +184,7 @@ export function QrCodeList({ view = "active" }: { view?: "active" | "archived" }
       setItems([])
       setRequestError(
         organizationsError
-          ? getErrorMessage(organizationsError, "Could not load your businesses.")
+          ? getErrorMessage(organizationsError, "Bisnis Anda tidak dapat dimuat.")
           : null,
       )
       setIsLoading(isOrganizationsPending)
@@ -206,7 +210,7 @@ export function QrCodeList({ view = "active" }: { view?: "active" | "archived" }
       .catch((error: unknown) => {
         if (!disposed && requestId === requestRef.current) {
           setItems([])
-          setRequestError(getErrorMessage(error, "Could not load QR codes. Please try again."))
+          setRequestError(getErrorMessage(error, "Kode QR tidak dapat dimuat. Silakan coba lagi."))
         }
       })
       .finally(() => {
@@ -227,13 +231,13 @@ export function QrCodeList({ view = "active" }: { view?: "active" | "archived" }
       <Card>
         <CardHeader className="gap-4 border-b sm:flex-row sm:items-start sm:justify-between">
           <div>
-            <CardTitle>{isArchivedView ? "Archived QR codes" : "Your QR codes"}</CardTitle>
+            <CardTitle>{isArchivedView ? "Kode QR yang diarsipkan" : "Kode QR Anda"}</CardTitle>
             <CardDescription>
               {selectedOrganization
                 ? isArchivedView
-                  ? `Archived QR codes from ${selectedOrganization.name}.`
-                  : `QR codes assigned to ${selectedOrganization.name}.`
-                : "Select a business to load its QR codes."}
+                  ? `Kode QR yang diarsipkan dari ${selectedOrganization.name}.`
+                  : `Kode QR yang ditetapkan ke ${selectedOrganization.name}.`
+                : "Pilih bisnis untuk memuat kode QR-nya."}
             </CardDescription>
           </div>
           {isArchivedView ? (
@@ -242,7 +246,7 @@ export function QrCodeList({ view = "active" }: { view?: "active" | "archived" }
               data-astro-prefetch="viewport"
               className="inline-flex h-9 shrink-0 items-center justify-center rounded-lg border bg-background px-4 text-sm font-medium transition-colors hover:bg-muted"
             >
-              View active QR codes
+              Lihat kode QR aktif
             </a>
           ) : (
             <a
@@ -251,13 +255,13 @@ export function QrCodeList({ view = "active" }: { view?: "active" | "archived" }
               className="inline-flex h-9 shrink-0 items-center justify-center rounded-lg bg-primary px-4 text-sm font-medium text-primary-foreground transition-colors hover:bg-primary/80"
             >
               <QrCode className="mr-2 size-4" aria-hidden="true" />
-              Adopt a QR code
+              Klaim kode QR
             </a>
           )}
         </CardHeader>
         <CardContent className="p-0">
           {showOrganizationLoading || isLoading ? (
-            <div className="flex flex-col divide-y" aria-label="Loading QR codes">
+            <div className="flex flex-col divide-y" aria-label="Memuat kode QR">
               {["first", "second", "third"].map((row) => (
                 <div key={row} className="flex animate-pulse items-center gap-4 px-4 py-5 md:px-6">
                   <div className="h-4 w-40 rounded bg-muted" />
@@ -277,7 +281,7 @@ export function QrCodeList({ view = "active" }: { view?: "active" | "archived" }
                 onClick={() => setReloadToken((value) => value + 1)}
               >
                 <RefreshCw aria-hidden="true" />
-                Try again
+                Coba lagi
               </Button>
             </div>
           ) : showEmpty ? (
@@ -287,12 +291,12 @@ export function QrCodeList({ view = "active" }: { view?: "active" | "archived" }
                   <QrCode aria-hidden="true" />
                 </EmptyMedia>
                 <EmptyTitle>
-                  {isArchivedView ? "No archived QR codes" : "No QR codes yet"}
+                  {isArchivedView ? "Tidak ada kode QR yang diarsipkan" : "Belum ada kode QR"}
                 </EmptyTitle>
                 <EmptyDescription>
                   {isArchivedView
-                    ? "Archived QR codes will appear here until they are restored."
-                    : "Adopt a QR code from your business kit to make it available in this workspace."}
+                    ? "Kode QR yang diarsipkan akan muncul di sini sampai dipulihkan."
+                    : "Klaim kode QR dari kit bisnis Anda agar tersedia di ruang kerja ini."}
                 </EmptyDescription>
               </EmptyHeader>
               {!isArchivedView && (
@@ -301,7 +305,7 @@ export function QrCodeList({ view = "active" }: { view?: "active" | "archived" }
                   data-astro-prefetch="viewport"
                   className="inline-flex h-8 items-center justify-center rounded-lg bg-primary px-3 text-sm font-medium text-primary-foreground transition-colors hover:bg-primary/80"
                 >
-                  Adopt a QR code
+                  Klaim kode QR
                 </a>
               )}
             </Empty>
@@ -309,12 +313,12 @@ export function QrCodeList({ view = "active" }: { view?: "active" | "archived" }
             <Table>
               <TableHeader>
                 <TableRow>
-                  <TableHead className="min-w-56 px-4 md:px-6">QR code</TableHead>
+                  <TableHead className="min-w-56 px-4 md:px-6">Kode QR</TableHead>
                   <TableHead>Status</TableHead>
-                  <TableHead className="min-w-64">Destination</TableHead>
-                  <TableHead>{isArchivedView ? "Archived" : "Added"}</TableHead>
-                  <TableHead>Expires</TableHead>
-                  <TableHead className="text-right">Actions</TableHead>
+                  <TableHead className="min-w-64">Tujuan</TableHead>
+                  <TableHead>{isArchivedView ? "Diarsipkan" : "Ditambahkan"}</TableHead>
+                  <TableHead>Kedaluwarsa</TableHead>
+                  <TableHead className="text-right">Tindakan</TableHead>
                 </TableRow>
               </TableHeader>
               <TableBody>
@@ -336,7 +340,7 @@ export function QrCodeList({ view = "active" }: { view?: "active" | "archived" }
                       </TableCell>
                       <TableCell>
                         {isArchivedView ? (
-                          <Badge variant="outline">Archived</Badge>
+                          <Badge variant="outline">Diarsipkan</Badge>
                         ) : (
                           <Badge
                             variant={
@@ -348,10 +352,10 @@ export function QrCodeList({ view = "active" }: { view?: "active" | "archived" }
                             }
                           >
                             {isExpired
-                              ? "Expired"
+                              ? "Kedaluwarsa"
                               : item.configurationState === "active"
-                                ? "Active"
-                                : "Needs setup"}
+                                ? "Aktif"
+                                : "Perlu disiapkan"}
                           </Badge>
                         )}
                       </TableCell>
@@ -374,7 +378,7 @@ export function QrCodeList({ view = "active" }: { view?: "active" | "archived" }
                             />
                           </a>
                         ) : (
-                          <span className="text-sm text-muted-foreground">Not configured</span>
+                          <span className="text-sm text-muted-foreground">Belum dikonfigurasi</span>
                         )}
                       </TableCell>
                       <TableCell className="text-sm text-muted-foreground">
@@ -393,7 +397,7 @@ export function QrCodeList({ view = "active" }: { view?: "active" | "archived" }
                             disabled={isRestoring}
                           >
                             <RotateCcw />
-                            Restore
+                            Pulihkan
                           </Button>
                         ) : (
                           <div className="flex justify-end gap-2">
@@ -409,9 +413,7 @@ export function QrCodeList({ view = "active" }: { view?: "active" | "archived" }
                               ) : (
                                 <FileImage />
                               )}
-                              {templateState?.slug === item.slug
-                                ? "Creating..."
-                                : "Create template"}
+                              {templateState?.slug === item.slug ? "Membuat..." : "Buat template"}
                             </Button>
                             <Button
                               type="button"
@@ -422,7 +424,7 @@ export function QrCodeList({ view = "active" }: { view?: "active" | "archived" }
                               className="text-destructive hover:text-destructive"
                             >
                               <Archive />
-                              Archive
+                              Arsipkan
                             </Button>
                           </div>
                         )}
@@ -446,11 +448,11 @@ export function QrCodeList({ view = "active" }: { view?: "active" | "archived" }
             <AlertDialogMedia>
               <Archive aria-hidden="true" />
             </AlertDialogMedia>
-            <AlertDialogTitle>Archive this QR code?</AlertDialogTitle>
+            <AlertDialogTitle>Arsipkan kode QR ini?</AlertDialogTitle>
             <AlertDialogDescription>
-              This will remove <strong>{archiveTarget?.item.alias}</strong> from the active QR list
-              and stop its public redirect. The printed QR image and slug will be kept so an
-              organization admin can restore it later.
+              Ini akan menghapus <strong>{archiveTarget?.item.alias}</strong> dari daftar QR aktif
+              dan menghentikan pengalihannya secara publik. Gambar QR yang dicetak dan slug akan
+              tetap disimpan agar admin organisasi dapat memulihkannya nanti.
             </AlertDialogDescription>
           </AlertDialogHeader>
           {archiveTarget && (
@@ -465,14 +467,14 @@ export function QrCodeList({ view = "active" }: { view?: "active" | "archived" }
             </p>
           )}
           <AlertDialogFooter>
-            <AlertDialogCancel disabled={isArchiving}>Cancel</AlertDialogCancel>
+            <AlertDialogCancel disabled={isArchiving}>Batal</AlertDialogCancel>
             <AlertDialogAction
               variant="destructive"
               onClick={() => void archiveQr()}
               disabled={isArchiving}
             >
               {isArchiving ? <RefreshCw className="animate-spin" /> : <Archive />}
-              {isArchiving ? "Archiving..." : "Archive QR code"}
+              {isArchiving ? "Mengarsipkan..." : "Arsipkan kode QR"}
             </AlertDialogAction>
           </AlertDialogFooter>
         </AlertDialogContent>
@@ -483,10 +485,10 @@ export function QrCodeList({ view = "active" }: { view?: "active" | "archived" }
             <AlertDialogMedia>
               <RotateCcw aria-hidden="true" />
             </AlertDialogMedia>
-            <AlertDialogTitle>Restore this QR code?</AlertDialogTitle>
+            <AlertDialogTitle>Pulihkan kode QR ini?</AlertDialogTitle>
             <AlertDialogDescription>
-              This will return <strong>{restoreTarget?.item.alias}</strong> to the active QR list.
-              Its existing destination and slug will be kept.
+              Ini akan mengembalikan <strong>{restoreTarget?.item.alias}</strong> ke daftar QR
+              aktif. Tujuan dan slug yang ada akan tetap digunakan.
             </AlertDialogDescription>
           </AlertDialogHeader>
           {restoreTarget && (
@@ -501,10 +503,10 @@ export function QrCodeList({ view = "active" }: { view?: "active" | "archived" }
             </p>
           )}
           <AlertDialogFooter>
-            <AlertDialogCancel disabled={isRestoring}>Cancel</AlertDialogCancel>
+            <AlertDialogCancel disabled={isRestoring}>Batal</AlertDialogCancel>
             <AlertDialogAction onClick={() => void restoreQr()} disabled={isRestoring}>
               {isRestoring ? <RefreshCw className="animate-spin" /> : <RotateCcw />}
-              {isRestoring ? "Restoring..." : "Restore QR code"}
+              {isRestoring ? "Memulihkan..." : "Pulihkan kode QR"}
             </AlertDialogAction>
           </AlertDialogFooter>
         </AlertDialogContent>

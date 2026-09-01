@@ -46,7 +46,7 @@ function findQuery(url: URL, placeId: string | null): string | null {
 
 function boundedQuery(value: string): string {
   if (value.length > MAX_GOOGLE_MAPS_QUERY_LENGTH) {
-    throw new QrDomainError("INVALID_GOOGLE_MAPS_URL", "The Google Maps place query is too long.")
+    throw new QrDomainError("INVALID_GOOGLE_MAPS_URL", "Kueri tempat Google Maps terlalu panjang.")
   }
   return value
 }
@@ -67,14 +67,14 @@ type RawGoogleMapsUrl = {
 function parseRawGoogleMapsUrl(rawValue: string): RawGoogleMapsUrl {
   const rawUrl = rawValue.trim()
   if (rawUrl.length > MAX_GOOGLE_MAPS_URL_LENGTH) {
-    throw new QrDomainError("INVALID_GOOGLE_MAPS_URL", "The Google Maps URL is too long.")
+    throw new QrDomainError("INVALID_GOOGLE_MAPS_URL", "URL Google Maps terlalu panjang.")
   }
   let url: URL
 
   try {
     url = new URL(rawUrl)
   } catch (error) {
-    throw new QrDomainError("INVALID_GOOGLE_MAPS_URL", "The Google Maps URL is invalid.", {
+    throw new QrDomainError("INVALID_GOOGLE_MAPS_URL", "URL Google Maps tidak valid.", {
       cause: error,
     })
   }
@@ -114,7 +114,7 @@ export async function resolveGoogleMapsUrl(
   } catch (error) {
     throw new QrDomainError(
       "PLACE_RESOLUTION_FAILED",
-      "The Google Maps short URL could not be resolved.",
+      "URL singkat Google Maps tidak dapat diproses.",
       {
         cause: error,
       },
@@ -124,7 +124,7 @@ export async function resolveGoogleMapsUrl(
   if (!response.ok || !response.url || response.url === rawUrl) {
     throw new QrDomainError(
       "PLACE_RESOLUTION_FAILED",
-      "The Google Maps short URL could not be resolved.",
+      "URL singkat Google Maps tidak dapat diproses.",
     )
   }
 
@@ -143,7 +143,7 @@ export function parseGoogleMapsUrl(rawValue: string): ParsedGoogleMapsUrl {
     url.port ||
     !/^\/maps(?:\/|$)/i.test(url.pathname)
   ) {
-    throw new QrDomainError("INVALID_GOOGLE_MAPS_URL", "Only HTTPS Google Maps URLs are supported.")
+    throw new QrDomainError("INVALID_GOOGLE_MAPS_URL", "Hanya URL Google Maps HTTPS yang didukung.")
   }
 
   const placeId = findPlaceId(url)
@@ -151,7 +151,7 @@ export function parseGoogleMapsUrl(rawValue: string): ParsedGoogleMapsUrl {
   if (!placeId && !query) {
     throw new QrDomainError(
       "INVALID_GOOGLE_MAPS_URL",
-      "The Google Maps URL does not identify a place.",
+      "URL Google Maps tidak mengidentifikasi tempat.",
     )
   }
 

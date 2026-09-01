@@ -22,7 +22,7 @@ export function createQrPublicResponse({
         return createQrExpiredResponse()
       }
       if (result.kind === "setup") {
-        return new Response("This QR code is not configured yet.", {
+        return new Response("Kode QR ini belum dikonfigurasi.", {
           status: 200,
           headers: { "Cache-Control": "no-store" },
         })
@@ -74,21 +74,21 @@ export function createQrPublicResponse({
 }
 
 export function createQrNotFoundResponse(): Response {
-  return new Response("Not found", {
+  return new Response("Tidak ditemukan", {
     status: 404,
     headers: { "Cache-Control": "no-store" },
   })
 }
 
 export function createQrExpiredResponse(): Response {
-  return new Response("This QR code has expired.", {
+  return new Response("Kode QR ini sudah kedaluwarsa.", {
     status: 410,
     headers: { "Cache-Control": "no-store" },
   })
 }
 
 export function createQrUnavailableResponse(): Response {
-  return new Response("Temporarily unavailable", {
+  return new Response("Tidak tersedia untuk sementara", {
     status: 503,
     headers: {
       "Cache-Control": "no-store",

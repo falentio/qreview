@@ -7,26 +7,26 @@ import { TakumiPlayground } from "@/components/admin/takumi-playground"
 const user = Astro.locals.user
 ---
 
-<AdminLayout title="Overview" description="Manage the QR platform.">
+<AdminLayout title="Ringkasan" description="Kelola platform QR.">
   <div class="flex flex-1 flex-col gap-6 p-4 pt-0 md:p-6 md:pt-0">
     <div class="flex flex-col gap-2 pt-2">
-      <p class="text-sm font-medium text-muted-foreground">Platform administration</p>
-      <h1 class="text-3xl font-semibold tracking-tight">Welcome back, {user?.name}</h1>
+      <p class="text-sm font-medium text-muted-foreground">Administrasi platform</p>
+      <h1 class="text-3xl font-semibold tracking-tight">Selamat datang kembali, {user?.name}</h1>
       <p class="max-w-2xl text-muted-foreground">
-        Manage users, organizations, and QR codes across the platform.
+        Kelola pengguna, organisasi, dan kode QR di seluruh platform.
       </p>
     </div>
     <div class="grid gap-4 md:grid-cols-3">
       <section class="rounded-xl border bg-card p-5 shadow-xs">
-        <p class="text-sm text-muted-foreground">Total users</p>
+        <p class="text-sm text-muted-foreground">Total pengguna</p>
         <p class="mt-2 text-3xl font-semibold">0</p>
       </section>
       <section class="rounded-xl border bg-card p-5 shadow-xs">
-        <p class="text-sm text-muted-foreground">Organizations</p>
+        <p class="text-sm text-muted-foreground">Organisasi</p>
         <p class="mt-2 text-3xl font-semibold">0</p>
       </section>
       <section class="rounded-xl border bg-card p-5 shadow-xs">
-        <p class="text-sm text-muted-foreground">QR codes</p>
+        <p class="text-sm text-muted-foreground">Kode QR</p>
         <p class="mt-2 text-3xl font-semibold">0</p>
       </section>
     </div>

@@ -39,10 +39,10 @@ function validateName(value: string) {
   const name = value.trim()
 
   if (!name) {
-    return "Business name is required"
+    return "Nama bisnis wajib diisi"
   }
 
-  return name.length > 100 ? "Business name must be at most 100 characters" : undefined
+  return name.length > 100 ? "Nama bisnis maksimal 100 karakter" : undefined
 }
 
 export function OrganizationOnboardingForm({ className, ...props }: React.ComponentProps<"div">) {
@@ -62,25 +62,25 @@ export function OrganizationOnboardingForm({ className, ...props }: React.Compon
         })
 
         if (result.error) {
-          setError(result.error.message || "Could not create your business")
+          setError(result.error.message || "Bisnis Anda tidak dapat dibuat")
           return
         }
 
         const organizationId = result.data?.id
         if (!organizationId) {
-          setError("Could not create your business")
+          setError("Bisnis Anda tidak dapat dibuat")
           return
         }
 
         const activeResult = await authClient.organization.setActive({ organizationId })
         if (activeResult.error) {
-          setError(activeResult.error.message || "Could not activate your business")
+          setError(activeResult.error.message || "Bisnis Anda tidak dapat diaktifkan")
           return
         }
 
         await navigate("/app")
       } catch {
-        setError("Something went wrong. Please try again.")
+        setError("Terjadi kesalahan. Silakan coba lagi.")
       }
     },
   })
@@ -97,9 +97,9 @@ export function OrganizationOnboardingForm({ className, ...props }: React.Compon
           >
             <FieldGroup>
               <div className="flex flex-col gap-2 text-center">
-                <h1 className="text-2xl font-bold">Create your business</h1>
+                <h1 className="text-2xl font-bold">Buat bisnis Anda</h1>
                 <p className="text-balance text-muted-foreground">
-                  Set up a business for your QR codes and team.
+                  Siapkan bisnis untuk kode QR dan tim Anda.
                 </p>
               </div>
 
@@ -115,7 +115,7 @@ export function OrganizationOnboardingForm({ className, ...props }: React.Compon
 
                   return (
                     <Field data-invalid={isInvalid}>
-                      <FieldLabel htmlFor={field.name}>Business name</FieldLabel>
+                      <FieldLabel htmlFor={field.name}>Nama bisnis</FieldLabel>
                       <Input
                         id={field.name}
                         name={field.name}
@@ -148,7 +148,7 @@ export function OrganizationOnboardingForm({ className, ...props }: React.Compon
                 <form.Subscribe selector={(state) => state.isSubmitting}>
                   {(isSubmitting) => (
                     <Button type="submit" disabled={isSubmitting} className="w-full">
-                      {isSubmitting ? "Creating business..." : "Create business"}
+                      {isSubmitting ? "Membuat bisnis..." : "Buat bisnis"}
                     </Button>
                   )}
                 </form.Subscribe>
@@ -159,7 +159,7 @@ export function OrganizationOnboardingForm({ className, ...props }: React.Compon
       </Card>
 
       <FieldDescription className="px-6 text-center">
-        You can invite teammates and manage your business after setup.
+        Anda dapat mengundang anggota tim dan mengelola bisnis setelah penyiapan selesai.
       </FieldDescription>
     </div>
   )

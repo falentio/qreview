@@ -114,7 +114,7 @@ export function QrAnalyticsFillForm() {
       setStep("edit")
     } catch (error) {
       if (requestId !== verifyRequestRef.current) return
-      setScanError(getErrorMessage(error, "This QR code was not found or is not active."))
+      setScanError(getErrorMessage(error, "Kode QR ini tidak ditemukan atau tidak aktif."))
     } finally {
       if (requestId === verifyRequestRef.current) {
         verifyInFlightRef.current = false
@@ -127,7 +127,7 @@ export function QrAnalyticsFillForm() {
     event.preventDefault()
     const nextSlug = getSlugFromQrValue(manualSlug)
     if (!nextSlug) {
-      setScanError("Enter a valid 10-character slug or a QR code URL, such as /r/abc123def4.")
+      setScanError("Masukkan slug 10 karakter yang valid atau URL kode QR, seperti /r/abc123def4.")
       return
     }
     void verifySlug(nextSlug)
@@ -145,12 +145,12 @@ export function QrAnalyticsFillForm() {
       const result = await QrScanner.scanImage(file, { returnDetailedScanResult: true })
       const nextSlug = getSlugFromQrValue(result.data)
       if (!nextSlug) {
-        setScanError("That image does not contain a QR code from this app.")
+        setScanError("Gambar tersebut tidak berisi kode QR dari aplikasi ini.")
         return
       }
       await verifySlug(nextSlug)
     } catch (error) {
-      setScanError(getErrorMessage(error, "Could not read a QR code from that image."))
+      setScanError(getErrorMessage(error, "Kode QR tidak dapat dibaca dari gambar tersebut."))
     } finally {
       setIsUploading(false)
     }
@@ -173,15 +173,15 @@ export function QrAnalyticsFillForm() {
       !Number.isFinite(from.getTime()) ||
       !Number.isFinite(to.getTime())
     ) {
-      error = "Choose a valid start and end date."
+      error = "Pilih tanggal mulai dan tanggal akhir yang valid."
     } else if (from >= to) {
-      error = "The end date must be on or after the start date."
+      error = "Tanggal akhir harus sama dengan atau setelah tanggal mulai."
     } else if (to > currentHour) {
-      error = "Fill data only through completed UTC days."
+      error = "Isi data hanya sampai hari UTC yang telah selesai."
     } else if (to.getTime() - from.getTime() > MAX_FILL_RANGE_MS) {
-      error = "The fill range cannot be longer than 30 days."
+      error = "Rentang pengisian tidak boleh lebih dari 30 hari."
     } else if (!Number.isInteger(count) || count < 0 || count > MAX_REDIRECT_ATTEMPTS) {
-      error = "Attempts per hour must be a whole number between 0 and 1,000,000."
+      error = "Upaya per jam harus berupa bilangan bulat antara 0 dan 1.000.000."
     }
     setValidationError(error)
     setRequestError(null)
@@ -205,7 +205,7 @@ export function QrAnalyticsFillForm() {
       .catch((error: unknown) => {
         if (requestId === fillRequestRef.current) {
           setRequestError(
-            getErrorMessage(error, "Could not fill analytics data. Please try again."),
+            getErrorMessage(error, "Data analitik tidak dapat diisi. Silakan coba lagi."),
           )
         }
       })
@@ -226,17 +226,17 @@ export function QrAnalyticsFillForm() {
         accept="image/*"
         className="sr-only"
         onChange={(event) => void uploadQrImage(event)}
-        aria-label="Upload a QR code image"
+        aria-label="Unggah gambar kode QR"
       />
       <Card className="border-primary/20 bg-primary/[0.02]">
         <CardHeader className="border-b">
           <CardTitle className="flex items-center gap-2">
             <DatabaseZap className="size-4 text-primary" aria-hidden="true" />
-            Fill QR analytics
+            Isi analitik QR
           </CardTitle>
           <CardDescription>
-            Add deterministic hourly redirect data for a QR code while preparing or testing the
-            analytics dashboard. This tool is available to global admins only.
+            Tambahkan data pengalihan per jam yang konsisten untuk kode QR saat menyiapkan atau
+            menguji dasbor analitik. Alat ini hanya tersedia untuk admin global.
           </CardDescription>
         </CardHeader>
         <CardContent className="flex flex-col gap-4 pt-5 sm:flex-row sm:items-center sm:justify-between">
@@ -245,16 +245,16 @@ export function QrAnalyticsFillForm() {
               <Activity className="size-5" aria-hidden="true" />
             </div>
             <div>
-              <p className="text-sm font-medium">Populate completed UTC hours</p>
+              <p className="text-sm font-medium">Isi jam UTC yang telah selesai</p>
               <p className="mt-1 text-sm text-muted-foreground">
-                Existing hourly values are replaced.
+                Nilai per jam yang ada akan diganti.
               </p>
             </div>
           </div>
           <div className="flex w-full flex-col gap-2 sm:w-auto sm:flex-row">
             <Button type="button" onClick={openScanner} className="w-full sm:w-auto">
               <ScanLine aria-hidden="true" />
-              Use camera
+              Gunakan kamera
             </Button>
             <Button
               type="button"
@@ -263,7 +263,7 @@ export function QrAnalyticsFillForm() {
               className="w-full sm:w-auto"
             >
               <Upload aria-hidden="true" />
-              Upload QR image
+              Unggah gambar QR
             </Button>
           </div>
         </CardContent>
@@ -274,10 +274,10 @@ export function QrAnalyticsFillForm() {
           {step === "scan" && (
             <>
               <DialogHeader>
-                <DialogTitle>Choose a QR code</DialogTitle>
+                <DialogTitle>Pilih kode QR</DialogTitle>
                 <DialogDescription>
-                  Scan a printed QR code or enter its slug. The code must already exist before
-                  analytics data can be filled.
+                  Pindai kode QR tercetak atau masukkan slug-nya. Kode harus sudah ada sebelum data
+                  analitik dapat diisi.
                 </DialogDescription>
               </DialogHeader>
               <div className="flex flex-col gap-3">
@@ -286,7 +286,7 @@ export function QrAnalyticsFillForm() {
                   onScan={(value) => {
                     const nextSlug = getSlugFromQrValue(value)
                     if (!nextSlug) {
-                      setScanError("That QR code is not valid for this app.")
+                      setScanError("Kode QR tersebut tidak valid untuk aplikasi ini.")
                       return
                     }
                     void verifySlug(nextSlug)
@@ -299,7 +299,7 @@ export function QrAnalyticsFillForm() {
                     aria-live="polite"
                   >
                     <Spinner />
-                    Checking QR code...
+                    Memeriksa kode QR...
                   </p>
                 )}
                 {cameraError && (
@@ -320,11 +320,11 @@ export function QrAnalyticsFillForm() {
                   className="w-full"
                 >
                   {isUploading ? <Spinner /> : <Upload />}
-                  {isUploading ? "Reading QR image..." : "Upload a QR image instead"}
+                  {isUploading ? "Membaca gambar QR..." : "Unggah gambar QR sebagai gantinya"}
                 </Button>
                 <div className="flex items-center gap-3 text-xs text-muted-foreground">
                   <div className="h-px flex-1 bg-border" />
-                  <span>or enter the slug</span>
+                  <span>atau masukkan slug</span>
                   <div className="h-px flex-1 bg-border" />
                 </div>
                 <form className="flex flex-col gap-2 sm:flex-row" onSubmit={submitManualSlug}>
@@ -337,7 +337,7 @@ export function QrAnalyticsFillForm() {
                     placeholder="abc123def4"
                     autoComplete="off"
                     spellCheck={false}
-                    aria-label="QR code slug"
+                    aria-label="Slug kode QR"
                     disabled={isVerifying}
                   />
                   <Button
@@ -346,11 +346,11 @@ export function QrAnalyticsFillForm() {
                     className="sm:w-auto"
                     disabled={isVerifying}
                   >
-                    Use slug
+                    Gunakan slug
                   </Button>
                 </form>
                 <p className="text-xs text-muted-foreground">
-                  Camera access requires a secure connection and browser permission.
+                  Akses kamera memerlukan koneksi aman dan izin browser.
                 </p>
               </div>
             </>
@@ -359,18 +359,19 @@ export function QrAnalyticsFillForm() {
           {step === "edit" && verifiedQr && (
             <>
               <DialogHeader>
-                <DialogTitle>Fill analytics data</DialogTitle>
+                <DialogTitle>Isi data analitik</DialogTitle>
                 <DialogDescription>
-                  QR code{" "}
+                  Kode QR{" "}
                   <code className="rounded bg-muted px-1.5 py-0.5 text-xs">{verifiedQr.slug}</code>{" "}
-                  is ready. Set one value for every completed UTC hour in the range.
+                  siap. Tetapkan satu nilai untuk setiap jam UTC yang telah selesai dalam rentang
+                  ini.
                 </DialogDescription>
               </DialogHeader>
               <form className="flex flex-col gap-5" onSubmit={submitFill}>
                 <FieldGroup>
                   <div className="grid gap-4 sm:grid-cols-2">
                     <Field>
-                      <FieldLabel htmlFor="analytics-fill-from">Start date (UTC)</FieldLabel>
+                      <FieldLabel htmlFor="analytics-fill-from">Tanggal mulai (UTC)</FieldLabel>
                       <Input
                         id="analytics-fill-from"
                         type="date"
@@ -380,7 +381,7 @@ export function QrAnalyticsFillForm() {
                       />
                     </Field>
                     <Field>
-                      <FieldLabel htmlFor="analytics-fill-to">End date (UTC)</FieldLabel>
+                      <FieldLabel htmlFor="analytics-fill-to">Tanggal akhir (UTC)</FieldLabel>
                       <Input
                         id="analytics-fill-to"
                         type="date"
@@ -392,7 +393,7 @@ export function QrAnalyticsFillForm() {
                   </div>
                   <Field>
                     <FieldLabel htmlFor="analytics-fill-attempts">
-                      Redirect attempts per hour
+                      Upaya pengalihan per jam
                     </FieldLabel>
                     <Input
                       id="analytics-fill-attempts"
@@ -404,8 +405,8 @@ export function QrAnalyticsFillForm() {
                       onChange={(event) => setRedirectAttempts(event.target.value)}
                     />
                     <FieldDescription>
-                      Every bucket in the selected range receives this exact value. Use 0 to clear
-                      the range.
+                      Setiap slot dalam rentang yang dipilih akan menerima nilai ini. Gunakan 0
+                      untuk mengosongkan rentang.
                     </FieldDescription>
                   </Field>
                   {validationError && <FieldError>{validationError}</FieldError>}
@@ -422,11 +423,11 @@ export function QrAnalyticsFillForm() {
                     onClick={backToScanner}
                     disabled={isSubmitting}
                   >
-                    Choose another QR
+                    Pilih QR lain
                   </Button>
                   <Button type="submit" disabled={isSubmitting}>
                     {isSubmitting ? <Spinner /> : <DatabaseZap />}
-                    {isSubmitting ? "Filling analytics..." : "Fill analytics"}
+                    {isSubmitting ? "Mengisi analitik..." : "Isi analitik"}
                   </Button>
                 </div>
               </form>
@@ -439,9 +440,10 @@ export function QrAnalyticsFillForm() {
                 <div className="mb-1 flex size-11 items-center justify-center rounded-full bg-emerald-500/10 text-emerald-600">
                   <CheckCircle2 className="size-6" aria-hidden="true" />
                 </div>
-                <DialogTitle>Analytics data filled</DialogTitle>
+                <DialogTitle>Data analitik berhasil diisi</DialogTitle>
                 <DialogDescription>
-                  The selected QR now has deterministic data for the chosen completed UTC hours.
+                  QR yang dipilih kini memiliki data yang konsisten untuk jam UTC yang telah
+                  selesai.
                 </DialogDescription>
               </DialogHeader>
               <div className="flex flex-col gap-2 rounded-lg border bg-muted/30 p-3 text-sm">
@@ -450,21 +452,21 @@ export function QrAnalyticsFillForm() {
                   <code>{slug}</code>
                 </div>
                 <div className="flex items-center justify-between gap-3">
-                  <span className="text-muted-foreground">Buckets filled</span>
-                  <span>{filledAnalytics.bucketsFilled.toLocaleString()}</span>
+                  <span className="text-muted-foreground">Slot terisi</span>
+                  <span>{filledAnalytics.bucketsFilled.toLocaleString("id-ID")}</span>
                 </div>
                 <div className="flex items-center justify-between gap-3">
-                  <span className="text-muted-foreground">Attempts per hour</span>
+                  <span className="text-muted-foreground">Upaya per jam</span>
                   <span>{redirectAttempts}</span>
                 </div>
               </div>
               <div className="flex flex-col-reverse gap-2 sm:flex-row sm:justify-end">
                 <Button type="button" variant="outline" onClick={openScanner}>
                   <ScanLine aria-hidden="true" />
-                  Fill another QR
+                  Isi QR lain
                 </Button>
                 <Button type="button" onClick={() => handleOpenChange(false)}>
-                  Done
+                  Selesai
                 </Button>
               </div>
             </>

@@ -29,7 +29,7 @@ export const requireGlobalAdmin = implementer.middleware(({ context, next }) => 
   const { user } = context as AuthenticatedContext
   if (user.role !== "admin") {
     throw new ORPCError("FORBIDDEN", {
-      message: "Global Better Auth admin access is required.",
+      message: "Akses admin global Better Auth diperlukan.",
     })
   }
 
@@ -47,13 +47,13 @@ export const requireOrgsAdmin = implementer.middleware(
       role = membership.role
     } catch {
       throw new ORPCError("FORBIDDEN", {
-        message: "You are not a member of this organization.",
+        message: "Anda bukan anggota organisasi ini.",
       })
     }
 
     if (!role.split(",").some((value) => value.trim() === "owner" || value.trim() === "admin")) {
       throw new ORPCError("FORBIDDEN", {
-        message: "Organization owner or admin access is required.",
+        message: "Akses pemilik atau admin organisasi diperlukan.",
       })
     }
 

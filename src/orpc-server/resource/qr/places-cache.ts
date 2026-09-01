@@ -46,7 +46,7 @@ export class CachedPlacesAdapter implements PlacesAdapter {
 
   async getPlaceDetails({ placeId }: { placeId: string }): Promise<PlaceDetails> {
     if (!isGooglePlaceId(placeId)) {
-      throw new QrDomainError("PLACE_RESOLUTION_FAILED", "The Google Place ID is invalid.")
+      throw new QrDomainError("PLACE_RESOLUTION_FAILED", "ID Tempat Google tidak valid.")
     }
 
     const key = `places:v1:details:${placeId}`

@@ -104,7 +104,7 @@ export class AnalyticsService {
     if (range.toBucket.getTime() - range.fromBucket.getTime() > MAX_FILL_RANGE_MS) {
       throw new AnalyticsDomainError(
         "INVALID_INPUT",
-        "Analytics fill range cannot be longer than 30 days.",
+        "Rentang pengisian analitik tidak boleh lebih dari 30 hari.",
       )
     }
     if (
@@ -114,7 +114,7 @@ export class AnalyticsService {
     ) {
       throw new AnalyticsDomainError(
         "INVALID_INPUT",
-        "Redirect attempts must be a whole number between 0 and 1,000,000.",
+        "Upaya pengalihan harus berupa bilangan bulat antara 0 dan 1.000.000.",
       )
     }
 
@@ -180,31 +180,34 @@ export class AnalyticsService {
     if (!start || !end) {
       throw new AnalyticsDomainError(
         "INVALID_INPUT",
-        "Analytics range timestamps must be valid UTC ISO timestamps.",
+        "Stempel waktu rentang analitik harus berupa stempel waktu ISO UTC yang valid.",
       )
     }
 
     const now = this.now()
     const cutoff = new Date(now.getTime() - RETENTION_MS)
     if (start >= end) {
-      throw new AnalyticsDomainError("INVALID_INPUT", "Analytics range must have from before to.")
+      throw new AnalyticsDomainError(
+        "INVALID_INPUT",
+        "Rentang analitik harus memiliki waktu mulai sebelum waktu akhir.",
+      )
     }
     if (end > now) {
       throw new AnalyticsDomainError(
         "INVALID_INPUT",
-        "Analytics range cannot extend into the future.",
+        "Rentang analitik tidak boleh mencakup masa depan.",
       )
     }
     if (end.getTime() - start.getTime() > RETENTION_MS || start < cutoff) {
       throw new AnalyticsDomainError(
         "INVALID_INPUT",
-        "Analytics range must be within the last 60 days.",
+        "Rentang analitik harus berada dalam 60 hari terakhir.",
       )
     }
     if (!isUtcHourBoundary(start) || !isUtcHourBoundary(end)) {
       throw new AnalyticsDomainError(
         "INVALID_INPUT",
-        "Analytics range timestamps must be UTC hour boundaries.",
+        "Stempel waktu rentang analitik harus berada pada batas jam UTC.",
       )
     }
 
@@ -221,12 +224,12 @@ export class AnalyticsService {
   private forbidden(): AnalyticsDomainError {
     return new AnalyticsDomainError(
       "FORBIDDEN",
-      "Global admin or organization admin access is required.",
+      "Akses admin global atau admin organisasi diperlukan.",
     )
   }
 
   private notFound(): AnalyticsDomainError {
-    return new AnalyticsDomainError("NOT_FOUND", "QR code not found.")
+    return new AnalyticsDomainError("NOT_FOUND", "Kode QR tidak ditemukan.")
   }
 
   private now(): Date {

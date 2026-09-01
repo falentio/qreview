@@ -108,14 +108,17 @@ export class QrService {
     }
 
     if (!parsed.query) {
-      throw new QrDomainError("INVALID_GOOGLE_MAPS_URL", "The Google Maps URL has no place query.")
+      throw new QrDomainError(
+        "INVALID_GOOGLE_MAPS_URL",
+        "URL Google Maps tidak memiliki kueri tempat.",
+      )
     }
 
     const candidates = await this.dependencies.places.search({ query: parsed.query })
     if (candidates.length === 0) {
       throw new QrDomainError(
         "PLACE_RESOLUTION_FAILED",
-        "Google Places found no matching location.",
+        "Google Places tidak menemukan lokasi yang cocok.",
       )
     }
     return { candidates: candidates.slice(0, 5).map(toCandidate) }
@@ -164,7 +167,7 @@ export class QrService {
   }): Promise<{ items: QrResponse[] }> {
     this.requireGlobalAdmin(actor)
     if (!Number.isInteger(count) || count < 1 || count > 100) {
-      throw new QrDomainError("INVALID_INPUT", "QR batch count must be between 1 and 100.")
+      throw new QrDomainError("INVALID_INPUT", "Jumlah batch QR harus antara 1 dan 100.")
     }
 
     const normalizedAlias = normalizeAlias(alias)
@@ -202,7 +205,7 @@ export class QrService {
   }): Promise<{ items: QrResponse[] }> {
     this.requireGlobalAdmin(actor)
     if (!Number.isInteger(count) || count < 1 || count > 100) {
-      throw new QrDomainError("INVALID_INPUT", "QR batch count must be between 1 and 100.")
+      throw new QrDomainError("INVALID_INPUT", "Jumlah batch QR harus antara 1 dan 100.")
     }
 
     const normalizedAlias = normalizeAlias(alias)
@@ -262,14 +265,14 @@ export class QrService {
     const existing = await this.dependencies.repository.findBySlug({ slug })
     if (!existing) throw this.notFound()
     if (existing.deletedAt)
-      throw new QrDomainError("ARCHIVED", "Archived QR codes cannot be claimed.")
+      throw new QrDomainError("ARCHIVED", "Kode QR yang diarsipkan tidak dapat diklaim.")
     if (
       !existing.claimable ||
       existing.organizationId ||
       existing.claimedById ||
       existing.claimedAt
     ) {
-      throw new QrDomainError("CONFLICT", "This QR code has already been claimed.")
+      throw new QrDomainError("CONFLICT", "Kode QR ini sudah diklaim.")
     }
 
     const now = this.now()
@@ -280,7 +283,7 @@ export class QrService {
       claimedAt: now,
       updatedAt: now,
     })
-    if (!claimed) throw new QrDomainError("CONFLICT", "This QR code has already been claimed.")
+    if (!claimed) throw new QrDomainError("CONFLICT", "Kode QR ini sudah diklaim.")
     return toResponse(claimed)
   }
 
@@ -314,7 +317,7 @@ export class QrService {
   }): Promise<QrResponse> {
     await this.requireOrganizationAdmin({ actor, organizationId })
     if ((id === undefined) === (slug === undefined)) {
-      throw new QrDomainError("INVALID_INPUT", "Provide exactly one QR id or slug.")
+      throw new QrDomainError("INVALID_INPUT", "Berikan tepat satu ID atau slug QR.")
     }
 
     const record =
@@ -354,7 +357,10 @@ export class QrService {
     const existing = await this.dependencies.repository.findBySlug({ slug })
     if (!existing) throw this.notFound()
     if (existing.deletedAt)
-      throw new QrDomainError("ARCHIVED", "Archived QR codes must be restored first.")
+      throw new QrDomainError(
+        "ARCHIVED",
+        "Kode QR yang diarsipkan harus dipulihkan terlebih dahulu.",
+      )
 
     const updatedAt = this.now()
     const projectedRecord = {
@@ -406,13 +412,16 @@ export class QrService {
   }): Promise<QrResponse> {
     await this.requireOrganizationAdmin({ actor, organizationId })
     if (alias === undefined && googleMapsUrl === undefined && googlePlaceId === undefined) {
-      throw new QrDomainError("INVALID_INPUT", "The QR code update is empty.")
+      throw new QrDomainError("INVALID_INPUT", "Pembaruan kode QR kosong.")
     }
 
     const existing = await this.dependencies.repository.findById({ id })
     if (!existing || existing.organizationId !== organizationId) throw this.notFound()
     if (existing.deletedAt)
-      throw new QrDomainError("ARCHIVED", "Archived QR codes must be restored first.")
+      throw new QrDomainError(
+        "ARCHIVED",
+        "Kode QR yang diarsipkan harus dipulihkan terlebih dahulu.",
+      )
 
     const target = await this.resolveOptionalTarget({ googleMapsUrl, googlePlaceId })
     const updated = await this.dependencies.repository.updateById({
@@ -442,7 +451,10 @@ export class QrService {
     const existing = await this.dependencies.repository.findBySlug({ slug })
     if (!existing) throw this.notFound()
     if (existing.deletedAt)
-      throw new QrDomainError("ARCHIVED", "Archived QR codes must be restored first.")
+      throw new QrDomainError(
+        "ARCHIVED",
+        "Kode QR yang diarsipkan harus dipulihkan terlebih dahulu.",
+      )
 
     const target = await this.resolveTarget({ googleMapsUrl, googlePlaceId })
     const updated = await this.dependencies.repository.updateMapBySlug({
@@ -512,9 +524,13 @@ export class QrService {
     try {
       record = await this.dependencies.repository.findBySlug({ slug })
     } catch (error) {
-      throw new QrDomainError("PUBLIC_UNAVAILABLE", "QR redirects are temporarily unavailable.", {
-        cause: error,
-      })
+      throw new QrDomainError(
+        "PUBLIC_UNAVAILABLE",
+        "Pengalihan QR tidak tersedia untuk sementara.",
+        {
+          cause: error,
+        },
+      )
     }
 
     if (!record) throw this.notFound()
@@ -564,7 +580,7 @@ export class QrService {
         }
       }
     }
-    throw new QrDomainError("SLUG_CONFLICT", "Could not generate a unique QR slug.")
+    throw new QrDomainError("SLUG_CONFLICT", "Slug QR unik tidak dapat dibuat.")
   }
 
   private async resolveOptionalTarget({
@@ -578,7 +594,7 @@ export class QrService {
     if (!googleMapsUrl || !googlePlaceId) {
       throw new QrDomainError(
         "INVALID_INPUT",
-        "Google Maps URL and Google Place ID must be supplied together.",
+        "URL Google Maps dan ID Tempat Google harus diberikan bersama.",
       )
     }
     return this.resolveTarget({ googleMapsUrl, googlePlaceId })
@@ -592,13 +608,13 @@ export class QrService {
     googlePlaceId: string
   }): Promise<QrTarget> {
     if (!isGooglePlaceId(googlePlaceId)) {
-      throw new QrDomainError("PLACE_RESOLUTION_FAILED", "The Google Place ID is invalid.")
+      throw new QrDomainError("PLACE_RESOLUTION_FAILED", "ID Tempat Google tidak valid.")
     }
     const parsed = await resolveGoogleMapsUrl(googleMapsUrl, this.dependencies.fetcher)
     if (parsed.placeId && parsed.placeId !== googlePlaceId) {
       throw new QrDomainError(
         "PLACE_RESOLUTION_FAILED",
-        "The selected place does not match the Google Maps URL.",
+        "Tempat yang dipilih tidak sesuai dengan URL Google Maps.",
       )
     }
 
@@ -606,14 +622,14 @@ export class QrService {
       if (!parsed.query) {
         throw new QrDomainError(
           "PLACE_RESOLUTION_FAILED",
-          "The Google Maps URL has no place query.",
+          "URL Google Maps tidak memiliki kueri tempat.",
         )
       }
       const candidates = await this.dependencies.places.search({ query: parsed.query })
       if (!candidates.some((candidate) => candidate.placeId === googlePlaceId)) {
         throw new QrDomainError(
           "PLACE_RESOLUTION_FAILED",
-          "The selected place was not found for that Google Maps URL.",
+          "Tempat yang dipilih tidak ditemukan untuk URL Google Maps tersebut.",
         )
       }
     }
@@ -622,7 +638,7 @@ export class QrService {
     if (!isGoogleCanonicalReviewUrlForPlace(details.canonicalReviewUrl, googlePlaceId)) {
       throw new QrDomainError(
         "PLACE_RESOLUTION_FAILED",
-        "Google Places returned no canonical review URL for that location.",
+        "Google Places tidak mengembalikan URL ulasan kanonis untuk lokasi tersebut.",
       )
     }
     return {
@@ -643,7 +659,7 @@ export class QrService {
       organizationId,
       userId: actor.id,
     })
-    if (!role) throw new QrDomainError("FORBIDDEN", "You are not a member of this organization.")
+    if (!role) throw new QrDomainError("FORBIDDEN", "Anda bukan anggota organisasi ini.")
     return role
   }
 
@@ -656,13 +672,13 @@ export class QrService {
   }) {
     const role = await this.requireMember({ actor, organizationId })
     if (!role.split(",").some((value) => value.trim() === "owner" || value.trim() === "admin")) {
-      throw new QrDomainError("FORBIDDEN", "Organization owner or admin access is required.")
+      throw new QrDomainError("FORBIDDEN", "Akses pemilik atau admin organisasi diperlukan.")
     }
   }
 
   private requireGlobalAdmin(actor: QrActor): void {
     if (actor.role !== "admin") {
-      throw new QrDomainError("FORBIDDEN", "Global Better Auth admin access is required.")
+      throw new QrDomainError("FORBIDDEN", "Akses admin global Better Auth diperlukan.")
     }
   }
 
@@ -728,14 +744,14 @@ export class QrService {
   }
 
   private notFound(): QrDomainError {
-    return new QrDomainError("NOT_FOUND", "QR code not found.")
+    return new QrDomainError("NOT_FOUND", "Kode QR tidak ditemukan.")
   }
 }
 
 function normalizeAlias(value: string): string {
   const normalized = value.trim()
   if (!normalized || normalized.length > 120) {
-    throw new QrDomainError("INVALID_INPUT", "Alias must be between 1 and 120 characters.")
+    throw new QrDomainError("INVALID_INPUT", "Alias harus antara 1 dan 120 karakter.")
   }
   return normalized
 }
@@ -767,19 +783,28 @@ function parseExpiration(value: string | null | undefined): Date | null {
   if (/^\d{4}-\d{2}-\d{2}$/.test(value)) {
     const dateOnly = new Date(`${value}T00:00:00.000Z`)
     if (Number.isNaN(dateOnly.getTime()) || dateOnly.toISOString().slice(0, 10) !== value) {
-      throw new QrDomainError("INVALID_INPUT", "Expiry date must be a valid ISO date.")
+      throw new QrDomainError(
+        "INVALID_INPUT",
+        "Tanggal kedaluwarsa harus berupa tanggal ISO yang valid.",
+      )
     }
     dateOnly.setUTCDate(dateOnly.getUTCDate() + 1)
     return dateOnly
   }
 
   if (!/^\d{4}-\d{2}-\d{2}T00:00:00\.000Z$/.test(value)) {
-    throw new QrDomainError("INVALID_INPUT", "Expiry date must be a UTC calendar date.")
+    throw new QrDomainError(
+      "INVALID_INPUT",
+      "Tanggal kedaluwarsa harus berupa tanggal kalender UTC.",
+    )
   }
 
   const parsed = new Date(value)
   if (Number.isNaN(parsed.getTime()) || parsed.toISOString() !== value) {
-    throw new QrDomainError("INVALID_INPUT", "Expiry date must be a valid ISO date.")
+    throw new QrDomainError(
+      "INVALID_INPUT",
+      "Tanggal kedaluwarsa harus berupa tanggal ISO yang valid.",
+    )
   }
   return parsed
 }

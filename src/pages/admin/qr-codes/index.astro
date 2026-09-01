@@ -5,15 +5,15 @@ import AdminLayout from "@/layouts/admin-layout.astro"
 import { QrMapUpdate } from "@/components/admin/qr-map-update"
 ---
 
-<AdminLayout title="QR codes" description="Create and manage platform QR codes.">
+<AdminLayout title="Kode QR" description="Buat dan kelola kode QR platform.">
   <div class="flex flex-1 flex-col gap-6 p-4 pt-0 md:p-6 md:pt-0">
     <div class="flex flex-col gap-4 pt-2 sm:flex-row sm:items-end sm:justify-between">
       <div class="flex flex-col gap-2">
-        <p class="text-sm font-medium text-muted-foreground">Platform QR codes</p>
-        <h1 class="text-3xl font-semibold tracking-tight">QR codes</h1>
+        <p class="text-sm font-medium text-muted-foreground">Kode QR platform</p>
+        <h1 class="text-3xl font-semibold tracking-tight">Kode QR</h1>
         <p class="max-w-2xl text-muted-foreground">
-          Generate unclaimed QR records in batches, then assign them to organizations and prepare
-          their images in the browser.
+          Buat data kode QR yang belum diklaim dalam batch, lalu tetapkan ke organisasi dan siapkan
+          gambarnya di browser.
         </p>
       </div>
       <a
@@ -21,7 +21,7 @@ import { QrMapUpdate } from "@/components/admin/qr-map-update"
         data-astro-prefetch="viewport"
         class="inline-flex h-9 shrink-0 items-center justify-center rounded-lg bg-primary px-4 text-sm font-medium text-primary-foreground transition-colors hover:bg-primary/80"
       >
-        Create QR batch
+        Buat batch kode QR
       </a>
     </div>
 
@@ -33,17 +33,16 @@ import { QrMapUpdate } from "@/components/admin/qr-map-update"
           <path d="M3 3h6v6H3zM15 3h6v6h-6zM3 15h6v6H3zM15 15h2v2h-2zM19 15h2v6h-6v-2h4zM11 11h2v2h-2zM15 11h2v2h-2zM11 15h2v6h-2z" />
         </svg>
       </div>
-      <h2 class="mt-4 text-lg font-semibold">Create a QR batch</h2>
+      <h2 class="mt-4 text-lg font-semibold">Buat batch kode QR</h2>
       <p class="mt-1 max-w-md text-sm text-muted-foreground">
-        Start with a destination and number of records. Organization assignment happens later when
-        a code is claimed.
+        Mulai dengan tujuan dan jumlah data. Penetapan organisasi dilakukan nanti saat kode diklaim.
       </p>
       <a
         href="/admin/qr-codes/new"
         data-astro-prefetch="viewport"
         class="mt-5 inline-flex h-9 items-center justify-center rounded-lg border border-border bg-background px-4 text-sm font-medium transition-colors hover:bg-muted"
       >
-        Open batch form
+        Buka formulir batch
       </a>
     </section>
   </div>

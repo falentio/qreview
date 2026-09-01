@@ -45,28 +45,28 @@ function isActivePath(pathname: string, url: string) {
 export function AdminSidebar({ pathname, user, ...props }: AdminSidebarProps) {
   const navMain: AdminNavItem[] = [
     {
-      title: "Overview",
+      title: "Ringkasan",
       url: "/admin",
       icon: Command,
       isActive: isActivePath(pathname, "/admin"),
       prefetch: true,
     },
     {
-      title: "QR codes",
+      title: "Kode QR",
       url: "/admin/qr-codes",
       icon: QrCode,
       isActive: pathname === "/admin/qr-codes",
       prefetch: true,
     },
     {
-      title: "Create QR batch",
+      title: "Buat batch kode QR",
       url: "/admin/qr-codes/new",
       icon: Plus,
       isActive: pathname === "/admin/qr-codes/new",
       prefetch: true,
     },
     {
-      title: "Analytics data",
+      title: "Data analitik",
       url: "/admin/analytics",
       icon: DatabaseZap,
       isActive: isActivePath(pathname, "/admin/analytics"),
@@ -74,7 +74,7 @@ export function AdminSidebar({ pathname, user, ...props }: AdminSidebarProps) {
     },
   ]
 
-  const navSecondary = [{ title: "App", url: "/app", icon: LayoutDashboard }]
+  const navSecondary = [{ title: "Aplikasi", url: "/app", icon: LayoutDashboard }]
 
   return (
     <Sidebar variant="inset" {...props}>
@@ -83,22 +83,22 @@ export function AdminSidebar({ pathname, user, ...props }: AdminSidebarProps) {
           <SidebarMenuItem>
             <SidebarMenuButton
               size="lg"
-              tooltip="QR Admin"
+              tooltip="Admin QR"
               render={<a href="/admin" data-astro-prefetch="viewport" />}
             >
               <div className="flex aspect-square size-8 items-center justify-center rounded-lg bg-sidebar-primary text-sidebar-primary-foreground">
                 <ShieldCheck className="size-4" aria-hidden="true" />
               </div>
               <div className="grid flex-1 text-left text-sm leading-tight">
-                <span className="truncate font-semibold">QR Admin</span>
-                <span className="truncate text-xs">Platform control</span>
+                <span className="truncate font-semibold">Admin QR</span>
+                <span className="truncate text-xs">Kontrol platform</span>
               </div>
             </SidebarMenuButton>
           </SidebarMenuItem>
         </SidebarMenu>
       </SidebarHeader>
       <SidebarContent>
-        <NavMain items={navMain} pathname={pathname} label="Administration" />
+        <NavMain items={navMain} pathname={pathname} label="Administrasi" />
         <NavSecondary items={navSecondary} className="mt-auto" />
       </SidebarContent>
       <SidebarFooter>

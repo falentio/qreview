@@ -139,7 +139,7 @@ describe("createQrPublicResponse", () => {
       const response = await publicResponse({ slug: "abc123def4" })
 
       expect(response.status).toBe(200)
-      expect(await response.text()).toContain("not configured")
+      expect(await response.text()).toContain("belum dikonfigurasi")
       expect(response.headers.get("Cache-Control")).toBe("no-store")
       expect(response.headers.get("Location")).toBeNull()
     }
@@ -155,7 +155,7 @@ describe("createQrPublicResponse", () => {
     const response = await publicResponse({ slug: "abc123def4" })
 
     expect(response.status).toBe(410)
-    expect(await response.text()).toContain("expired")
+    expect(await response.text()).toContain("kedaluwarsa")
     expect(response.headers.get("Cache-Control")).toBe("no-store")
     expect(events).toHaveLength(0)
   })
@@ -185,7 +185,7 @@ describe("createQrPublicResponse", () => {
       const response = await publicResponse({ slug: "abc123def4" })
 
       expect(response.status).toBe(200)
-      expect(await response.text()).toContain("not configured")
+      expect(await response.text()).toContain("belum dikonfigurasi")
     }
   })
 
@@ -199,7 +199,7 @@ describe("createQrPublicResponse", () => {
       const response = await publicResponse({ slug: "abc123def4" })
 
       expect(response.status).toBe(200)
-      expect(await response.text()).toContain("not configured")
+      expect(await response.text()).toContain("belum dikonfigurasi")
     }
   })
 

@@ -12,7 +12,17 @@ pnpm version and its runtime uses the pinned Node.js version declared in
 1. Install dependencies with `vp install`.
 2. Enable the Vite+ Git hook dispatcher with `vp hooks enable`.
 3. Create a local `.dev.vars` file from `.dev.vars.example`.
-4. Run `vp run dev` to start Alchemy's local Astro/Workers development server.
+4. Run `vp run dev` to start Alchemy's local Astro/Workers development server. The
+   Alchemy CLI does not support `--background`; to leave the server running in the
+   background, use shell job control, for example:
+
+   ```sh
+   vp run dev > /tmp/qr-dev.log 2>&1 &
+   ```
+
+   The local server uses `http://localhost:1337`, matching `BETTER_AUTH_URL` in
+   `.dev.vars`.
+
 5. Generate the Better Auth schema with `vp run auth:generate`.
 6. Generate Drizzle migrations with `vp run db:generate`.
 
