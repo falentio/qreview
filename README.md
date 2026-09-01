@@ -36,9 +36,19 @@ Alchemy provisions the D1 database and KV namespaces declared in `alchemy.run.ts
 Migrations in `drizzle/` are applied automatically during deployment. Existing D1
 migration history from Wrangler or Drizzle is adopted automatically by Alchemy.
 
-Preview a stage with `vp run plan`. Deploy after reviewing the plan with
-`vp exec alchemy deploy --stage prod --env-file .env`. If Alchemy reports an
-unowned existing resource, verify its physical name and use `--adopt` explicitly.
+For production, set `BETTER_AUTH_URL=https://qr.rindi.tech` and any required API
+keys in the ignored `.env` file. Alchemy generates `BETTER_AUTH_SECRET` once and
+persists it in the Alchemy state store, keeping it stable across redeploys.
+Authenticate Alchemy with `vp exec alchemy login
+--profile prod --configure`, or use the existing `default` profile.
+
+The `rindi.tech` zone must be active in the same Cloudflare account as the Alchemy
+profile. Alchemy creates the `qr.rindi.tech` custom-domain DNS record and certificate;
+do not create a competing CNAME first. Preview the production stage with
+`vp exec alchemy plan --stage prod --profile prod --env-file .env`, then deploy with
+`vp exec alchemy deploy --stage prod --profile prod --env-file .env`. If Alchemy
+reports an unowned existing resource, verify its physical name and use `--adopt`
+explicitly.
 
 Before relying on KV during a production D1 outage, backfill existing records with
 `vp run backfill-qr-public-projection -- --remote --stage prod`. This invokes an

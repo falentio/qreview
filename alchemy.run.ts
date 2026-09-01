@@ -24,23 +24,34 @@ export const QrPublicProjection = Cloudflare.KV.Namespace("QrPublicProjection", 
   title: "QR_PUBLIC_PROJECTION",
 })
 
-export const Website = Cloudflare.Website.Astro("Website", {
-  compatibility: {
-    date: "2026-07-11",
-    flags: ["global_fetch_strictly_public"],
-  },
-  env: {
-    BETTER_AUTH_SECRET: Config.redacted("BETTER_AUTH_SECRET"),
-    BETTER_AUTH_URL: Config.string("BETTER_AUTH_URL"),
-    DB: Database,
-    GOOGLE_MAPS_API_KEY: Config.redacted("GOOGLE_MAPS_API_KEY").pipe(
-      Config.withDefault(Redacted.make("")),
-    ),
-    PLACES_CACHE: PlacesCache,
-    QR_PUBLIC_PROJECTION: QrPublicProjection,
-  },
-  observability: { enabled: true },
-})
+export const BetterAuthSecret = Alchemy.Random("BetterAuthSecret")
+
+export const Website = Cloudflare.Website.Astro(
+  "Website",
+  Effect.gen(function* () {
+    const { stage } = yield* Alchemy.Stack
+    const betterAuthSecret = yield* BetterAuthSecret
+
+    return {
+      domain: stage === "prod" ? "qr.rindi.tech" : undefined,
+      compatibility: {
+        date: "2026-07-11",
+        flags: ["global_fetch_strictly_public"],
+      },
+      env: {
+        BETTER_AUTH_SECRET: betterAuthSecret.text,
+        BETTER_AUTH_URL: Config.string("BETTER_AUTH_URL"),
+        DB: Database,
+        GOOGLE_MAPS_API_KEY: Config.redacted("GOOGLE_MAPS_API_KEY").pipe(
+          Config.withDefault(Redacted.make("")),
+        ),
+        PLACES_CACHE: PlacesCache,
+        QR_PUBLIC_PROJECTION: QrPublicProjection,
+      },
+      observability: { enabled: true },
+    }
+  }),
+)
 
 export type WebsiteEnv = Cloudflare.InferEnv<typeof Website>
 
