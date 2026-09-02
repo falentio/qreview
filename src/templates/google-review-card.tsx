@@ -259,7 +259,7 @@ function ActionPanel({ qrUrl }: { qrUrl: string }) {
               color: "#ffffff",
             }}
           >
-            Ketuk NFC untuk mengulas
+            Tap NFC untuk review
           </div>
         </div>
 
@@ -283,7 +283,7 @@ function ActionPanel({ qrUrl }: { qrUrl: string }) {
             zIndex: 1,
           }}
         >
-          ATAU
+          OR
         </div>
 
         <div style={{ ...actionColumnStyle, backgroundColor: "#ffffff" }}>
@@ -308,7 +308,7 @@ function ActionPanel({ qrUrl }: { qrUrl: string }) {
               color: "#162235",
             }}
           >
-            Pindai untuk mengulas
+            Scan untuk review
           </div>
         </div>
       </div>
@@ -393,7 +393,7 @@ export function GoogleReviewCard({ qrUrl }: GoogleReviewCardProps) {
               textAlign: "center",
             }}
           >
-            KETUK ATAU PINDAI UNTUK MENGULAS
+            Scan Atau Tap untuk review
           </div>
           <ActionPanel qrUrl={qrUrl} />
         </div>
