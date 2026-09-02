@@ -31,12 +31,16 @@ outside the repository under `~/.alchemy/profiles.json`.
 
 ## Production Environment
 
-Set the following values in the ignored `.env` file:
+Set the following value in the ignored `.env` file:
 
 ```env
-BETTER_AUTH_URL=https://qr.rindi.tech
 RAPIDAPI_KEY=replace-with-a-RapidAPI-key
 ```
+
+Alchemy derives `BETTER_AUTH_URL` from the stage domain: production uses
+`https://qr.rindi.tech`, while another stage uses
+`https://{stage}---qr.rindi.tech`. Set `BETTER_AUTH_URL` in the environment file
+only when an explicit override is needed.
 
 `RAPIDAPI_KEY` is a server-only secret used by the Google Maps short-link
 resolver. Keep it out of browser code and do not commit the `.env` file.
@@ -46,15 +50,16 @@ state. Do not add it to `.env`, delete the `BetterAuthSecret` resource, or clear
 the production Alchemy state. The same generated value must survive every
 redeploy so existing sessions remain valid.
 
-Do not pass `.dev.vars` directly to a production deployment. It contains the
-local Better Auth URL. If a value must be read from `.dev.vars` temporarily,
-load it into the shell and override the URL explicitly:
+Do not pass `.dev.vars` directly to a production deployment. It contains a
+local `BETTER_AUTH_URL`, which would override the inferred production URL. If a
+value must be read from `.dev.vars` temporarily, remove that override before
+planning or deploying:
 
 ```sh
 set -a
 . .dev.vars
 set +a
-export BETTER_AUTH_URL=https://qr.rindi.tech
+unset BETTER_AUTH_URL
 ```
 
 ## Plan And Deploy
@@ -119,18 +124,18 @@ on a similar name.
 
 ## Custom Domain
 
-The custom domain is configured in `alchemy.run.ts` only for the `prod` stage:
+The custom domain is configured in `alchemy.run.ts` for every stage:
 
 ```ts
-domain: stage === "prod" ? "qr.rindi.tech" : undefined,
+const domain = stage === "prod" ? "qr.rindi.tech" : `${stage}---qr.rindi.tech`
 ```
 
 Cloudflare creates the DNS record and certificate when the Worker custom domain
-is reconciled. Do not create a competing CNAME for `qr.rindi.tech`. The parent
+is reconciled. Do not create competing records for the stage domain. The parent
 zone must already be active in the selected Cloudflare account.
 
-The root domain and `www` are separate hostnames. Only `qr.rindi.tech` is
-configured by this stack.
+The root domain and `www` are separate hostnames. Production uses
+`qr.rindi.tech`; a stage named `staging` uses `staging---qr.rindi.tech`.
 
 ## Backfill KV
 

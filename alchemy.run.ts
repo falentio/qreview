@@ -27,15 +27,20 @@ export const Website = Cloudflare.Website.Astro(
     const { stage } = yield* Alchemy.Stack
     const betterAuthSecret = yield* BetterAuthSecret
 
+    const domain = stage === "prod" ? "qr.rindi.tech" : `${stage}---qr.rindi.tech`
+    const betterAuthUrl = Config.string("BETTER_AUTH_URL").pipe(
+      Config.withDefault(`https://${domain}`),
+    )
+
     return {
-      domain: stage === "prod" ? "qr.rindi.tech" : undefined,
+      domain,
       compatibility: {
         date: "2026-07-11",
         flags: ["global_fetch_strictly_public"],
       },
       env: {
         BETTER_AUTH_SECRET: betterAuthSecret.text,
-        BETTER_AUTH_URL: Config.string("BETTER_AUTH_URL"),
+        BETTER_AUTH_URL: betterAuthUrl,
         RAPIDAPI_KEY: Config.redacted("RAPIDAPI_KEY"),
         DB: Database,
         QR_PUBLIC_PROJECTION: QrPublicProjection,

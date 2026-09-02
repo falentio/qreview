@@ -38,11 +38,13 @@ migration history from Wrangler or Drizzle is adopted automatically by Alchemy.
 
 See [docs/deployment.md](docs/deployment.md) for the production deployment runbook.
 
-For production, set `BETTER_AUTH_URL=https://qr.rindi.tech` and the server-only
-`RAPIDAPI_KEY` in the ignored `.env` file. Alchemy generates
-`BETTER_AUTH_SECRET` once and persists it in the Alchemy state store, keeping it
-stable across redeploys. The RapidAPI key is used only by the server to expand
-Google Maps short links.
+For production, set the server-only `RAPIDAPI_KEY` in the ignored `.env` file.
+Alchemy derives `BETTER_AUTH_URL` from the stage domain by default:
+`https://qr.rindi.tech` for `prod` and `https://{stage}---qr.rindi.tech` for
+other stages. Set `BETTER_AUTH_URL` explicitly only when overriding that default.
+Alchemy generates `BETTER_AUTH_SECRET` once and persists it in the Alchemy state
+store, keeping it stable across redeploys. The RapidAPI key is used only by the
+server to expand Google Maps short links.
 Authenticate Alchemy with `vp exec alchemy login
 --profile prod --configure`, or use the existing `default` profile.
 
